@@ -14,7 +14,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      IMAGE_NAME: pezao-sound-api
+      IMAGE_NAME: herculessp/pezao-sound-api
 
     steps:
       - name: Checkout do código
