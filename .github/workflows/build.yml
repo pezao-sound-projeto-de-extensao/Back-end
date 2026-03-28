@@ -1,10 +1,12 @@
 name: build.yml
+
 on:
   pull_request:
     branches:
       - main
     types:
       - closed
+
 jobs:
   build-and-push:
     if: github.event.pull_request.merged == true
@@ -18,24 +20,11 @@ jobs:
       - name: Checkout do código
         uses: actions/checkout@v4
 
-
-      - name: Buscando cache das dependências Maven
-        uses: actions/cache@v5
-        with:
-          path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-
-      - name: Baixando as dependências Maven
-        run: mvn dependency:go-offline
-
-      - name: Build do .jar
-        run: mvn clean package -Pprod -DskipTests
-
       - name: Docker metadata para a tag
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.IMAGE_NAME }}
           tags: |
             type=ref,event=branch
             type=sha
@@ -53,4 +42,3 @@ jobs:
           file: Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
-
