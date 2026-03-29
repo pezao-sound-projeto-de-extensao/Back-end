@@ -33,7 +33,7 @@ public class ItemController {
     ) {
         ItemResponse response = service.create(request);
         URI uri = uriBuilder
-                .path("/api/v1/itens/{id}")
+                .path("/api/itens/{id}")
                 .buildAndExpand(response.id())
                 .toUri();
         return ResponseEntity.created(uri).body(response);
