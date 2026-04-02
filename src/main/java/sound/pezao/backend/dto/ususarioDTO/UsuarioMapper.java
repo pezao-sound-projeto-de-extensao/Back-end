@@ -3,6 +3,8 @@ package sound.pezao.backend.dto.ususarioDTO;
 import sound.pezao.backend.dto.cargoDTO.CargoMapper;
 import sound.pezao.backend.entities.Usuario;
 
+import java.util.List;
+
 public class UsuarioMapper {
 
     public static Usuario toEntity(UsuarioRequest usuarioRequest) {
@@ -24,5 +26,11 @@ public class UsuarioMapper {
                 CargoMapper.toResponse(usuario.getCargo())
 
         );
+    }
+
+    public static List<UsuarioResponse> toResponse(List<Usuario> usuarios){
+        return usuarios.stream()
+                .map(UsuarioMapper::toResponse)
+                .toList();
     }
 }
