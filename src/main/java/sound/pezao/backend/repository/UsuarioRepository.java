@@ -7,4 +7,5 @@ import sound.pezao.backend.entities.Usuario;
 @Repository
 public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
 
+    boolean existsByEmailIgnoreCase(String email);
 }

@@ -16,6 +16,7 @@ import java.time.LocalDateTime;
 
 @Entity
 @DynamicUpdate
+@Table(name = "usuarios")
 public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
