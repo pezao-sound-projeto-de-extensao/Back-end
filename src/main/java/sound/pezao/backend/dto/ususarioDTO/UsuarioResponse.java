@@ -11,6 +11,6 @@ public record UsuarioResponse(
         Boolean ativo,
         LocalDateTime ultimoAcesso,
         LocalDateTime criadoEm,
-        CargoResponse cargoResponse
+        CargoResponse cargo
 ) {
 }
