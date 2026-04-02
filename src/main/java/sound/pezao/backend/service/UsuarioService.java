@@ -31,6 +31,13 @@ public class UsuarioService {
     public List<UsuarioResponse> listar(){
         return UsuarioMapper.toResponse(usuarioRepository.findAll());
     }
+
+    public UsuarioResponse listar(int id){
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Usuario", id));
+        return UsuarioMapper.toResponse(usuario);
+    }
+
     public UsuarioResponse cadastrar(@Valid @RequestBody UsuarioRequest usuarioRequest){
 
         if (usuarioRepository.existsByEmailIgnoreCase(usuarioRequest.email())){

@@ -32,4 +32,9 @@ public class UsuarioController {
         UsuarioResponse usuarioResponse = usuarioService.cadastrar(usuarioRequest);
         return ResponseEntity.status(201).body(usuarioResponse);
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<UsuarioResponse> listar(@PathVariable int id){
+        return ResponseEntity.ok(usuarioService.listar(id));
+    }
 }
