@@ -1,11 +1,10 @@
 package sound.pezao.backend.controller;
 
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+import sound.pezao.backend.dto.ususarioDTO.UsuarioRequest;
 import sound.pezao.backend.dto.ususarioDTO.UsuarioResponse;
 import sound.pezao.backend.service.UsuarioService;
 
@@ -21,13 +20,16 @@ public class UsuarioController {
         this.usuarioService = usuarioService;
     }
 
-    @GetMapping("/")
+    @GetMapping
     public ResponseEntity<List<UsuarioResponse>> listar(){
         return ResponseEntity.ok(usuarioService.listar());
     }
 
     @PostMapping
-    public ResponseEntity<UsuarioResponse> cadastrar(){
-        usuarioService
+    public ResponseEntity<UsuarioResponse> cadastrar(
+            @Valid @RequestBody UsuarioRequest usuarioRequest
+            ){
+        UsuarioResponse usuarioResponse = usuarioService.cadastrar(usuarioRequest);
+        return ResponseEntity.status(201).body(usuarioResponse);
     }
 }
