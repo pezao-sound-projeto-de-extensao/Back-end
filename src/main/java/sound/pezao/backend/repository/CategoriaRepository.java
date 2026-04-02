@@ -5,5 +5,5 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import sound.pezao.backend.entities.Categoria;
 
 public interface CategoriaRepository extends JpaRepository<Categoria, Integer>{
-
+    boolean existsByNomeIgnoreCase(String nome);
 }
