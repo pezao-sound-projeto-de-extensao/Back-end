@@ -8,6 +8,8 @@ import sound.pezao.backend.dto.categoriaDTO.CategoriaMapper;
 import sound.pezao.backend.dto.categoriaDTO.CategoriaRequest;
 import sound.pezao.backend.dto.categoriaDTO.CategoriaResponse;
 import sound.pezao.backend.entities.Categoria;
+import sound.pezao.backend.exception.EntityNomeJaExisteException;
+import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.repository.CategoriaRepository;
 
 @Service
@@ -23,7 +25,19 @@ public class CategoriaService {
     }
 
     public CategoriaResponse create(CategoriaRequest request){
+        if (repository.existsByNomeIgnoreCase((request.name()))) {
+            throw new EntityNomeJaExisteException("Categoria", request.name());
+        }
         Categoria categoria = CategoriaMapper.toEntity(request);
+        repository.save(categoria);
+        return CategoriaMapper.toResponse(categoria);
+    }
+
+    public CategoriaResponse update(CategoriaRequest request, Integer id){
+        Categoria categoria = repository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Categoria", id));
+
+        categoria.setNome(request.name());
         repository.save(categoria);
         return CategoriaMapper.toResponse(categoria);
     }
