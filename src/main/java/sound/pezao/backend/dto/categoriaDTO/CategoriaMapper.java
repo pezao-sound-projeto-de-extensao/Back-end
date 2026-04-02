@@ -10,4 +10,14 @@ public class CategoriaMapper {
             .map(categoria -> new CategoriaResponse(categoria.getNome()))
             .toList();
     }
+
+    public static Categoria toEntity(CategoriaRequest request) {
+        Categoria categoria = new Categoria();
+        categoria.setNome(request.name());
+        return categoria;
+    }
+
+    public static CategoriaResponse toResponse(Categoria categoria) {
+        return new CategoriaResponse(categoria.getNome());
+    }
 }
