@@ -25,17 +25,15 @@ public class CategoriaService {
     }
 
     public CategoriaResponse create(CategoriaRequest request){
-        Categoria categoria = CategoriaMapper.toEntity(request);
-
-        if (!categoria.getNome().equalsIgnoreCase(request.nome())
-                && repository.existsByNomeIgnoreCase(request.nome())) {
+        if (repository.existsByNomeIgnoreCase(request.nome())) {
             throw new EntityNomeJaExisteException("Categoria", request.nome());
         }
-
+        
+        Categoria categoria = CategoriaMapper.toEntity(request);
         return CategoriaMapper.toResponse(repository.save(categoria));  
     }
 
-    public CategoriaResponse update(CategoriaRequest request, Integer id){
+    public CategoriaResponse update(Integer id, CategoriaRequest request){
         Categoria categoria = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Categoria", id));
 
