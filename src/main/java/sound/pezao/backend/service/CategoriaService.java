@@ -25,10 +25,13 @@ public class CategoriaService {
     }
 
     public CategoriaResponse create(CategoriaRequest request){
-        if (repository.existsByNomeIgnoreCase((request.nome()))) {
+        Categoria categoria = CategoriaMapper.toEntity(request);
+
+        if (!categoria.getNome().equalsIgnoreCase(request.nome())
+                && repository.existsByNomeIgnoreCase(request.nome())) {
             throw new EntityNomeJaExisteException("Categoria", request.nome());
         }
-        Categoria categoria = CategoriaMapper.toEntity(request);
+
         return CategoriaMapper.toResponse(repository.save(categoria));  
     }
 
