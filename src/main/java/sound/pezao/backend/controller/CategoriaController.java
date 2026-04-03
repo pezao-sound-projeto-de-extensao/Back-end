@@ -3,6 +3,7 @@ package sound.pezao.backend.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -34,12 +35,22 @@ public class CategoriaController {
     }
 
     @PostMapping
+    @Operation(summary = "Cria uma nova categoria")
     public ResponseEntity<CategoriaResponse> create(@RequestBody CategoriaRequest request){
+        System.out.println("BODY CRU: " + request.getNome());
         return ResponseEntity.status(201).body(service.create(request));
     }
 
     @PutMapping("/{id}")
+    @Operation(summary = "Atualiza uma categoria por id")
     public ResponseEntity<CategoriaResponse> update (@RequestBody CategoriaRequest request, @PathVariable Integer id){
         return ResponseEntity.ok(service.update(request, id));
+    }
+
+    @DeleteMapping("/{id}")
+    @Operation(summary = "Remove uma categoria por id")
+    public ResponseEntity<Void> delete(@PathVariable Integer id){
+        service.delete(id);
+        return ResponseEntity.noContent().build();
     }
 }
