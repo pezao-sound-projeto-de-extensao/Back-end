@@ -3,7 +3,6 @@ package sound.pezao.backend.service;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
-import sound.pezao.backend.dto.cargoDTO.CargoMapper;
 import sound.pezao.backend.dto.ususarioDTO.UsuarioMapper;
 import sound.pezao.backend.dto.ususarioDTO.UsuarioRequest;
 import sound.pezao.backend.dto.ususarioDTO.UsuarioResponse;
@@ -15,7 +14,6 @@ import sound.pezao.backend.repository.CargoRepository;
 import sound.pezao.backend.repository.UsuarioRepository;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 public class UsuarioService {
@@ -38,7 +36,7 @@ public class UsuarioService {
         return UsuarioMapper.toResponse(usuario);
     }
 
-    public UsuarioResponse cadastrar(@Valid @RequestBody UsuarioRequest usuarioRequest){
+    public UsuarioResponse cadastrar(@RequestBody UsuarioRequest usuarioRequest){
 
         if (usuarioRepository.existsByEmailIgnoreCase(usuarioRequest.email())){
             throw new EntityNomeJaExisteException("Usuario", usuarioRequest.email());
@@ -49,6 +47,26 @@ public class UsuarioService {
         Usuario usuario = UsuarioMapper.toEntity(usuarioRequest);
         usuario.setCargo(cargo);
 
+        return UsuarioMapper.toResponse(usuarioRepository.save(usuario));
+    }
+
+    public UsuarioResponse atualizar(
+            int id,
+            UsuarioRequest usuarioRequest
+    ){
+        if (!usuarioRepository.existsById(id)){
+            throw new EntityNotFoundException("Usuário", id);
+        }
+
+        if (usuarioRepository.existsByEmailIgnoreCaseAndIdNot(usuarioRequest.email(), id)){
+            throw new EntityNomeJaExisteException("Email", usuarioRequest.nome());
+        }
+
+        Cargo cargo = cargoRepository.findById(usuarioRequest.cargo_id())
+                .orElseThrow(() -> new EntityNotFoundException("Cargo", id));
+
+        Usuario usuario = UsuarioMapper.toEntity(usuarioRequest);
+        usuario.setCargo(cargo);
         return UsuarioMapper.toResponse(usuarioRepository.save(usuario));
     }
 }
