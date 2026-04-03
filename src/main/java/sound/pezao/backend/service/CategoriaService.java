@@ -25,8 +25,8 @@ public class CategoriaService {
     }
 
     public CategoriaResponse create(CategoriaRequest request){
-        if (repository.existsByNomeIgnoreCase((request.getNome()))) {
-            throw new EntityNomeJaExisteException("Categoria", request.getNome());
+        if (repository.existsByNomeIgnoreCase((request.nome()))) {
+            throw new EntityNomeJaExisteException("Categoria", request.nome());
         }
         Categoria categoria = CategoriaMapper.toEntity(request);
         return CategoriaMapper.toResponse(repository.save(categoria));  
@@ -36,7 +36,7 @@ public class CategoriaService {
         Categoria categoria = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Categoria", id));
 
-        categoria.setNome(request.getNome());
+        categoria.setNome(request.nome());
         repository.save(categoria);
         return CategoriaMapper.toResponse(categoria);
     }
