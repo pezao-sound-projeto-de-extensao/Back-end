@@ -2,6 +2,7 @@ package sound.pezao.backend.controller;
 
 import java.util.List;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -12,8 +13,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.web.bind.annotation.RequestBody;
 import sound.pezao.backend.dto.categoriaDTO.CategoriaRequest;
 import sound.pezao.backend.dto.categoriaDTO.CategoriaResponse;
 import sound.pezao.backend.service.CategoriaService;
@@ -36,14 +37,13 @@ public class CategoriaController {
 
     @PostMapping
     @Operation(summary = "Cria uma nova categoria")
-    public ResponseEntity<CategoriaResponse> create(@RequestBody CategoriaRequest request){
-        System.out.println("BODY CRU: " + request.getNome());
+    public ResponseEntity<CategoriaResponse> create(@RequestBody @Valid CategoriaRequest request){
         return ResponseEntity.status(201).body(service.create(request));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Atualiza uma categoria por id")
-    public ResponseEntity<CategoriaResponse> update (@RequestBody CategoriaRequest request, @PathVariable Integer id){
+    public ResponseEntity<CategoriaResponse> update (@RequestBody @Valid CategoriaRequest request, @PathVariable Integer id){
         return ResponseEntity.ok(service.update(request, id));
     }
 

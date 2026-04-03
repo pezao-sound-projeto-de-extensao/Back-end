@@ -13,7 +13,7 @@ public class CategoriaMapper {
 
     public static Categoria toEntity(CategoriaRequest request) {
         Categoria categoria = new Categoria();
-        categoria.setNome(request.getNome());
+        categoria.setNome(request.nome());
         return categoria;
     }
 
