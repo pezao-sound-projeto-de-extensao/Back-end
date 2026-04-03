@@ -3,7 +3,6 @@ package sound.pezao.backend.service;
 import org.springframework.stereotype.Service;
 import sound.pezao.backend.dto.alertaDTO.AlertaMapper;
 import sound.pezao.backend.dto.alertaDTO.AlertaResponse;
-import sound.pezao.backend.entities.Alerta;
 import sound.pezao.backend.repository.AlertaRepository;
 
 import java.util.List;
