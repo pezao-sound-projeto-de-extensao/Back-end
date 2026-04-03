@@ -44,7 +44,7 @@ public class CategoriaController {
     @PutMapping("/{id}")
     @Operation(summary = "Atualiza uma categoria por id")
     public ResponseEntity<CategoriaResponse> update (@PathVariable Integer id,@RequestBody @Valid CategoriaRequest request){
-        return ResponseEntity.ok(service.update(request, id));
+        return ResponseEntity.ok(service.update(id, request));
     }
 
     @DeleteMapping("/{id}")
