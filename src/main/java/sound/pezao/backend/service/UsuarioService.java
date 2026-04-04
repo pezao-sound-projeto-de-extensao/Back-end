@@ -76,6 +76,7 @@ public class UsuarioService {
                 .orElseThrow(() -> new EntityNotFoundException("Usuário", id));
 
         usuario.setAtivo(!usuario.isAtivo());
+        usuarioRepository.save(usuario);
     }
 
 }
