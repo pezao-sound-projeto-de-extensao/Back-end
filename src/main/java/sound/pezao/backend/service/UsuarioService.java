@@ -1,6 +1,5 @@
 package sound.pezao.backend.service;
 
-import jakarta.validation.Valid;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 import sound.pezao.backend.dto.ususarioDTO.UsuarioMapper;
@@ -59,7 +58,7 @@ public class UsuarioService {
         }
 
         if (usuarioRepository.existsByEmailIgnoreCaseAndIdNot(usuarioRequest.email(), id)){
-            throw new EntityNomeJaExisteException("Email", usuarioRequest.nome());
+            throw new EntityNomeJaExisteException("Email", usuarioRequest.email());
         }
 
         Cargo cargo = cargoRepository.findById(usuarioRequest.cargo_id())
@@ -67,6 +66,16 @@ public class UsuarioService {
 
         Usuario usuario = UsuarioMapper.toEntity(usuarioRequest);
         usuario.setCargo(cargo);
+        usuario.setId(id);
         return UsuarioMapper.toResponse(usuarioRepository.save(usuario));
     }
+
+    public void ativar(int id){
+
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário", id));
+
+        usuario.setAtivo(!usuario.isAtivo());
+    }
+
 }
