@@ -46,4 +46,9 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.atualizar(id, usuarioRequest));
     }
     
+    @PatchMapping("/ativo/{id}")
+    public ResponseEntity<Void> ativar(@PathVariable int id){
+        usuarioService.ativar(id);
+        return ResponseEntity.noContent().build();
+    }
 }
