@@ -12,4 +12,11 @@ public class UnidadeMapper {
     public static List<UnidadeResponse> toResponse(List<Unidade> unidades){
         return unidades.stream().map(UnidadeMapper::toResponse).toList();
     }
+
+    public static Unidade toEntity(UnidadeRequest request){
+        Unidade unidade = new Unidade();
+        unidade.setNome(request.nome());
+        unidade.setAbreviacao(request.abreviacao());
+        return unidade;
+    }
 }

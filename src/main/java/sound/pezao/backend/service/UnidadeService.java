@@ -4,8 +4,12 @@ import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import sound.pezao.backend.dto.itemDTO.ItemMapper;
 import sound.pezao.backend.dto.unidadesDTO.UnidadeMapper;
+import sound.pezao.backend.dto.unidadesDTO.UnidadeRequest;
 import sound.pezao.backend.dto.unidadesDTO.UnidadeResponse;
+import sound.pezao.backend.entities.Unidade;
+import sound.pezao.backend.exception.EntityNomeJaExisteException;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.repository.UnidadeRepository;
 
@@ -21,9 +25,31 @@ public class UnidadeService {
         return UnidadeMapper.toResponse(repository.findAll());
     }
 
-    public UnidadeResponse findById(Integer id) {
-        return repository.findById(id)
-                .map(UnidadeMapper::toResponse)
+    public UnidadeResponse create(UnidadeRequest request) {
+        if (repository.existsByNomeIgnoreCase((request.nome()))) {
+            throw new EntityNomeJaExisteException("Unidade", request.nome());
+        }
+        Unidade unidade = UnidadeMapper.toEntity(request);
+        return UnidadeMapper.toResponse(repository.save(unidade));
+    }
+
+    public UnidadeResponse update(Integer id, UnidadeRequest request) {
+        Unidade unidade = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Unidade", id));
+
+        if (!unidade.getNome().equalsIgnoreCase(request.nome()) && repository.existsByNomeIgnoreCase(request.nome())) {
+            throw new EntityNomeJaExisteException("Unidade", request.nome());
+        }
+
+        unidade.setNome(request.nome());
+        unidade.setAbreviacao(request.abreviacao());
+        return UnidadeMapper.toResponse(repository.save(unidade));
+    }
+
+    public void delete(Integer id) {
+        if (!repository.existsById(id)) {
+            throw new EntityNotFoundException("Unidade", id);
+        }
+        repository.deleteById(id);
     }
 }
