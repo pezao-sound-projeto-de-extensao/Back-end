@@ -1,5 +1,7 @@
 package sound.pezao.backend.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 import sound.pezao.backend.dto.ususarioDTO.UsuarioMapper;
@@ -25,8 +27,9 @@ public class UsuarioService {
         this.cargoRepository = cargoRepository;
     }
 
-    public List<UsuarioResponse> listar(){
-        return UsuarioMapper.toResponse(usuarioRepository.findAll());
+    public Page<UsuarioResponse> listar(Pageable pageable){
+        Page<Usuario> usuarios = usuarioRepository.findAll(pageable);
+        return usuarios.map(UsuarioMapper::toResponse);
     }
 
     public UsuarioResponse listar(int id){
