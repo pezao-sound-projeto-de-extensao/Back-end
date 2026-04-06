@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import sound.pezao.backend.dto.unidadesDTO.UnidadeRequest;
 import sound.pezao.backend.dto.unidadesDTO.UnidadeResponse;
@@ -36,13 +37,13 @@ public class UnidadeController {
 
     @PostMapping
     @Operation(summary = "Cria uma nova unidade de medida com os dados fornecidos.")
-    public ResponseEntity<UnidadeResponse> create(@RequestBody UnidadeRequest request){
+    public ResponseEntity<UnidadeResponse> create(@RequestBody @Valid UnidadeRequest request){
         return ResponseEntity.status(201).body(service.create(request));
     }
 
     @PutMapping("/{id}")
     @Operation(summary = "Atualiza os detalhes de uma unidade de medida existente com base no ID fornecido e nos dados atualizados.")
-    public ResponseEntity<UnidadeResponse> update(@PathVariable Integer id, @RequestBody UnidadeRequest request){
+    public ResponseEntity<UnidadeResponse> update(@PathVariable Integer id, @RequestBody @Valid UnidadeRequest request){
         return ResponseEntity.ok(service.update(id, request));
     }
 
