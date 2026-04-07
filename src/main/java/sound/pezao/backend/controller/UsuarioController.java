@@ -7,8 +7,9 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import sound.pezao.backend.dto.ususarioDTO.UsuarioRequest;
-import sound.pezao.backend.dto.ususarioDTO.UsuarioResponse;
+
+import sound.pezao.backend.dto.usuarioDTO.UsuarioRequest;
+import sound.pezao.backend.dto.usuarioDTO.UsuarioResponse;
 import sound.pezao.backend.service.UsuarioService;
 
 import org.springframework.data.domain.Pageable;
