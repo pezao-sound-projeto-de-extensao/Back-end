@@ -6,8 +6,6 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
-import java.time.LocalDateTime;
-
 @Schema(description = "Dados para cadastro ou atualização de um item")
 public record ItemRequest(
         @Schema(description = "Nome do item", example = "Módulo amplificador 400W")
