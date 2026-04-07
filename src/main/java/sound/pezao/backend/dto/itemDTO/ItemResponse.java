@@ -2,8 +2,6 @@ package sound.pezao.backend.dto.itemDTO;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 
-import java.time.LocalDateTime;
-
 @Schema(description = "Dados retornados de um item")
 public record ItemResponse(
 
