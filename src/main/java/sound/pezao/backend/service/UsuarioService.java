@@ -4,17 +4,16 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
-import sound.pezao.backend.dto.ususarioDTO.UsuarioMapper;
-import sound.pezao.backend.dto.ususarioDTO.UsuarioRequest;
-import sound.pezao.backend.dto.ususarioDTO.UsuarioResponse;
+
+import sound.pezao.backend.dto.usuarioDTO.UsuarioMapper;
+import sound.pezao.backend.dto.usuarioDTO.UsuarioRequest;
+import sound.pezao.backend.dto.usuarioDTO.UsuarioResponse;
 import sound.pezao.backend.entities.Cargo;
 import sound.pezao.backend.entities.Usuario;
 import sound.pezao.backend.exception.EntityNomeJaExisteException;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.repository.CargoRepository;
 import sound.pezao.backend.repository.UsuarioRepository;
-
-import java.util.List;
 
 @Service
 public class UsuarioService {
