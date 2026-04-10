@@ -1,6 +1,9 @@
 package sound.pezao.backend.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+
+import java.util.Set;
 
 @Entity
 @Table(name = "permissoes")
@@ -10,6 +13,10 @@ public class Permissao {
   private Integer id;
   private String nome;
   private String descricao;
+
+  @ManyToMany(mappedBy = "permissoes")
+  @JsonIgnore
+  private Set<Cargo> cargos;
 
   public Permissao(){}
 
@@ -41,5 +48,13 @@ public class Permissao {
 
   public void setDescricao(String descricao) {
     this.descricao = descricao;
+  }
+
+  public Set<Cargo> getCargos() {
+    return cargos;
+  }
+
+  public void setCargos(Set<Cargo> cargos) {
+    this.cargos = cargos;
   }
 }
