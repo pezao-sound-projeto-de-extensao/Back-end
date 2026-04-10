@@ -21,7 +21,7 @@ public class PermissaoController {
     this.service = service;
   }
   @GetMapping
-  @Operation(summary = "Lista todos as permissões cadastradas")
+  @Operation(summary = "Lista todas as permissões cadastradas")
   public ResponseEntity<List<PermissaoResponse>> findAll(){
     return ResponseEntity.ok(service.findAll());
   }

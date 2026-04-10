@@ -8,6 +8,6 @@ import java.util.Optional;
 
 @Service
 public interface CargoRepository extends JpaRepository<Cargo, Integer> {
-
+    boolean existsByNomeIgnoreCase(String nome);
     Optional<Cargo> findCargoById(int id);
 }

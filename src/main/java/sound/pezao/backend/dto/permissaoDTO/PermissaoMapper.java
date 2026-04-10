@@ -18,10 +18,10 @@ public class PermissaoMapper {
         .toList();
   }
 
-  public static Permissao toEntity(PermissaoRequest permissaoRequest){
+  public static Permissao toEntity(PermissaoRequest request){
     Permissao permissao = new Permissao();
-    permissao.setNome(permissaoRequest.nome());
-    permissao.setDescricao(permissaoRequest.descricao());
+    permissao.setNome(request.nome());
+    permissao.setDescricao(request.descricao());
     return permissao;
   }
 }
