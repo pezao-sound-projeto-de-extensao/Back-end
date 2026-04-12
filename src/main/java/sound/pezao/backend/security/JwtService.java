@@ -11,7 +11,7 @@ import javax.crypto.SecretKey;
 import java.util.Date;
 import java.util.stream.Collectors;
 
-public class JtwService {
+public class JwtService {
     @Value("${jwt.secret:supersecretkey1234567890}")
     private String jwtSecret;
 
