@@ -8,9 +8,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
-import sound.pezao.backend.exception.EntityInativaException;
-import sound.pezao.backend.exception.EntityNotFoundException;
-import sound.pezao.backend.exception.EntityNomeJaExisteException;
+import sound.pezao.backend.exception.*;
 
 import java.net.URI;
 import java.time.Instant;
@@ -76,5 +74,27 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         problemDetail.setProperty("TimeStamp", Instant.now());
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+    }
+
+    @ExceptionHandler(LoginInvalidoException.class)
+    public ResponseEntity<ProblemDetail> handleDadosInvalidos(LoginInvalidoException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage()
+        );
+        problemDetail.setType(URI.create("about:blank"));
+        problemDetail.setProperty("TimeStamp", Instant.now());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+    }
+
+    @ExceptionHandler(PrimeiroAcessoException.class)
+    public ResponseEntity<ProblemDetail> handleSenhaPadrao(PrimeiroAcessoException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN, ex.getMessage()
+        );
+        problemDetail.setType(URI.create("about:blank"));
+        problemDetail.setProperty("TimeStamp", Instant.now());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problemDetail);
     }
 }

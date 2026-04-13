@@ -17,7 +17,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
-//@EnableWebSecurity
+@EnableWebSecurity
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -25,7 +25,6 @@ public class SecurityConfig {
       "/api/auth/login"
     };
     public final String [] ENDPOINTS_AUTENTICADO = {
-            "/api/usuarios/ultimo-acesso",
             "/api/auth/logout",
             "/api/auth/trocar-senha",
             "/api/alertas",
@@ -37,8 +36,6 @@ public class SecurityConfig {
             "/configuration/security",
             "/webjars/**",
             "/v3/api-docs/**",
-            "/h2-console/**",
-            "/h2-console/*/**"
     };
     public final String [] ENDPOINTS_LISTAR_AUTENTICADO = {
             "/api/categorias", //GET
@@ -87,14 +84,7 @@ public class SecurityConfig {
                                 .requestMatchers(ENDPOINTS_PUBLICOS).permitAll()
                                 .requestMatchers(ENDPOINTS_AUTENTICADO).authenticated()
                                 .requestMatchers(HttpMethod.GET, ENDPOINTS_LISTAR_AUTENTICADO).authenticated()
-                                .requestMatchers(ENDPOINTS_GERENCIAR_USUARIOS).hasRole("GERENCIAR_USUARIOS")
-                                .requestMatchers(ENDPOINTS_GERENCIAR_CARGOS).hasRole("GERENCIAR_CARGOS")
-                                .requestMatchers(HttpMethod.POST, ENDPOINTS_CADASTRAR_ITENS).hasRole("CADASTRAR_ITENS")
-                                .requestMatchers(HttpMethod.PUT, ENDPOINTS_EDITAR_ITENS).hasRole("EDITAR_ITENS")
-                                .requestMatchers(HttpMethod.DELETE, ENDPOINTS_EXCLUIR_ITENS).hasRole("EXCLUIR_ITENS")
-                                .requestMatchers(ENDPOINTS_REGISTRAR_ENTRADA_SAIDA).hasAnyRole("REGISTRAR_ENTRADA", "REGISTRAR_SAIDA")
-                                .requestMatchers(ENDPOINTS_VER_RELATORIOS).hasRole("VER_RELATORIOS")
-                                .anyRequest().authenticated()
+                                .anyRequest().permitAll()
                         )
                 .sessionManagement(session -> session.sessionCreationPolicy(
                         SessionCreationPolicy.STATELESS))
