@@ -27,7 +27,7 @@ public class Usuario {
     private boolean ativo;
     private LocalDateTime ultimoAcesso;
     private LocalDateTime criadoEm;
-    @ManyToOne
+    @ManyToOne (fetch = FetchType.LAZY)
     @JoinColumn(name = "cargo_id")
     private Cargo cargo;
 
