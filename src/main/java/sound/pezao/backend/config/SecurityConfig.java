@@ -22,11 +22,9 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     public final String [] ENDPOINTS_PUBLICOS = {
-      "/api/auth/login"
+      "/api/auth/login", "/api/auth/trocar-senha"
     };
     public final String [] ENDPOINTS_AUTENTICADO = {
-            "/api/auth/logout",
-            "/api/auth/trocar-senha",
             "/api/alertas",
             "/swagger-ui/**",
             "/swagger-ui.html",

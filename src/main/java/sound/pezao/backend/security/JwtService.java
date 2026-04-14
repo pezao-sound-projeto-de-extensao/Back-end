@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class JwtService {
-    @Value("${jwt.secret:supersecretkey1234567890}")
+    @Value("${jwt.secret:supersecretkey1234567890AmandaDanielHerculesIsaakZaqueu}")
     private String jwtSecret;
 
     @Value("${jwt.expiration:300000}")
@@ -28,7 +28,7 @@ public class JwtService {
 
         return Jwts.builder()
                 .subject(username)
-                .claim("roles", authorities)
+                .claim("permissions", authorities)
                 .issuedAt(new Date())
                 .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
                 .signWith(Keys.hmacShaKeyFor(jwtSecret.getBytes()))
