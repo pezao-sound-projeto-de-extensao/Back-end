@@ -25,6 +25,7 @@ public class CategoriaService {
         return CategoriaMapper.toResponse(repository.findAll());
     }
 
+
     @PreAuthorize("hasAuthority('CADASTRAR_ITENS')")
     public CategoriaResponse create(CategoriaRequest request){
         if (repository.existsByNomeIgnoreCase(request.nome())) {

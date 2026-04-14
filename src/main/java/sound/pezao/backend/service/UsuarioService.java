@@ -6,9 +6,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
-import sound.pezao.backend.dto.ususarioDTO.UsuarioMapper;
-import sound.pezao.backend.dto.ususarioDTO.UsuarioRequest;
-import sound.pezao.backend.dto.ususarioDTO.UsuarioResponse;
+
+import sound.pezao.backend.dto.usuarioDTO.UsuarioMapper;
+import sound.pezao.backend.dto.usuarioDTO.UsuarioRequest;
+import sound.pezao.backend.dto.usuarioDTO.UsuarioResponse;
 import sound.pezao.backend.entities.Cargo;
 import sound.pezao.backend.entities.Usuario;
 import sound.pezao.backend.exception.EntityNomeJaExisteException;
@@ -16,7 +17,6 @@ import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.repository.CargoRepository;
 import sound.pezao.backend.repository.UsuarioRepository;
 
-import java.util.List;
 @PreAuthorize("hasAuthority('GERENCIAR_USUARIOS')")
 @Service
 public class UsuarioService {

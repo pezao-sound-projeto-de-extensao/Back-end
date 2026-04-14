@@ -1,4 +1,4 @@
-package sound.pezao.backend.dto.ususarioDTO;
+package sound.pezao.backend.dto.usuarioDTO;
 
 import sound.pezao.backend.dto.cargoDTO.CargoMapper;
 import sound.pezao.backend.entities.Usuario;
