@@ -14,6 +14,8 @@ import sound.pezao.backend.repository.UsuarioRepository;
 import sound.pezao.backend.security.JwtService;
 import sound.pezao.backend.security.UserAuthenticated;
 
+import java.time.LocalDateTime;
+
 @Service
 public class AuthenticationService {
     private final JwtService jwtService;
@@ -39,7 +41,8 @@ public class AuthenticationService {
                         authRequest.senha()
                 )
         );
-
+        usuario.setUltimoAcesso(LocalDateTime.now());
+        usuarioRepository.save(usuario);
         String token = jwtService.generateToken(authentication);
         UserAuthenticated userDetails = (UserAuthenticated) authentication.getPrincipal();
         return new AuthResponse(token, userDetails.getUsername());
