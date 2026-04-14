@@ -11,6 +11,7 @@ import sound.pezao.backend.dto.authDTO.AuthResponse;
 import sound.pezao.backend.dto.authDTO.AuthTrocarSenhaRequest;
 import sound.pezao.backend.dto.ususarioDTO.UsuarioMapper;
 import sound.pezao.backend.entities.Usuario;
+import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.exception.LoginInvalidoException;
 import sound.pezao.backend.exception.PrimeiroAcessoException;
 import sound.pezao.backend.repository.UsuarioRepository;
@@ -39,7 +40,7 @@ public class AuthenticationService {
                 .orElseThrow(LoginInvalidoException::new);
 
         boolean senhaInicial = passwordEncoder.matches(
-                "PezaoSenha",
+                UsuarioService.senhaPadrao,
                 usuario.getSenhaHash()
         );
 
@@ -64,7 +65,7 @@ public class AuthenticationService {
                 .orElseThrow(LoginInvalidoException::new);
 
         boolean senhaInicial = passwordEncoder.matches(
-                "PezaoSenha",
+                UsuarioService.senhaPadrao,
                 usuario.getSenhaHash()
         );
 
@@ -85,6 +86,14 @@ public class AuthenticationService {
 
         System.out.println(passwordEncoder.matches(authTrocarSenhaRequest.senhaNova(), usuario.getSenhaHash()));
 
+    }
+
+    public void resetarSenha(int id){
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário", id));
+
+        usuario.setSenhaHash(passwordEncoder.encode(UsuarioService.senhaPadrao));
+        usuarioRepository.save(usuario);
     }
 
 }

@@ -24,6 +24,7 @@ public class UsuarioService {
     final CargoRepository cargoRepository;
     final PasswordEncoder passwordEncoder;
 
+    final static String senhaPadrao = ("PezaoSenha");
     public UsuarioService(UsuarioRepository usuarioRepository, CargoRepository cargoRepository, PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
         this.cargoRepository = cargoRepository;
@@ -51,7 +52,7 @@ public class UsuarioService {
 
         Usuario usuario = UsuarioMapper.toEntity(usuarioRequest);
         usuario.setCargo(cargo);
-        usuario.setSenhaHash(passwordEncoder.encode("PezaoSenha"));
+        usuario.setSenhaHash(passwordEncoder.encode(senhaPadrao));
         return UsuarioMapper.toResponse(usuarioRepository.save(usuario));
     }
 

@@ -2,10 +2,7 @@ package sound.pezao.backend.controller;
 
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import sound.pezao.backend.dto.authDTO.AuthRequest;
 import sound.pezao.backend.dto.authDTO.AuthResponse;
 import sound.pezao.backend.dto.authDTO.AuthTrocarSenhaRequest;
@@ -29,6 +26,12 @@ public class AuthenticationController {
     @PostMapping("/trocar-senha")
     public ResponseEntity<Void> trocarSenha(@Valid @RequestBody AuthTrocarSenhaRequest authTrocarSenhaRequest){
         authenticationService.trocarSenha(authTrocarSenhaRequest);
+        return ResponseEntity.noContent().build();
+    }
+
+    @PutMapping("/resetar-senha/{id}")
+    public ResponseEntity<Void> resetarSenha (@RequestParam int id){
+        authenticationService.resetarSenha(id);
         return ResponseEntity.noContent().build();
     }
 }
