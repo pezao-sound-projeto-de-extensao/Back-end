@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import sound.pezao.backend.dto.authDTO.AuthRequest;
 import sound.pezao.backend.dto.authDTO.AuthResponse;
+import sound.pezao.backend.dto.authDTO.AuthTrocarSenhaRequest;
 import sound.pezao.backend.service.AuthenticationService;
 
 @RestController
@@ -22,7 +23,12 @@ public class AuthenticationController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login (@Valid  @RequestBody AuthRequest authRequest){
-
         return ResponseEntity.ok(authenticationService.authenticate(authRequest));
+    }
+
+    @PostMapping("/trocar-senha")
+    public ResponseEntity<Void> trocarSenha(@Valid @RequestBody AuthTrocarSenhaRequest authTrocarSenhaRequest){
+        authenticationService.trocarSenha(authTrocarSenhaRequest);
+        return ResponseEntity.noContent().build();
     }
 }

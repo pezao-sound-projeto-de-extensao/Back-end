@@ -15,7 +15,7 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     boolean existsByEmailIgnoreCaseAndIdNot(String email, int id);
 
     @Query("select u from Usuario u join fetch u.cargo c join fetch c.permissoes where u.email = :email")
-    Optional<Usuario> findByEmailCompleto(String username);
+    Optional<Usuario> findByEmailCompleto(String email);
 
     Optional<Usuario> findByEmail(String email);
 }

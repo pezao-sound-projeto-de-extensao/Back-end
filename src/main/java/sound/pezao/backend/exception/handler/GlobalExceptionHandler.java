@@ -79,12 +79,12 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(LoginInvalidoException.class)
     public ResponseEntity<ProblemDetail> handleDadosInvalidos(LoginInvalidoException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
-                HttpStatus.BAD_REQUEST, ex.getMessage()
+                HttpStatus.UNAUTHORIZED, ex.getMessage()
         );
         problemDetail.setType(URI.create("about:blank"));
         problemDetail.setProperty("TimeStamp", Instant.now());
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
     }
 
     @ExceptionHandler(PrimeiroAcessoException.class)
