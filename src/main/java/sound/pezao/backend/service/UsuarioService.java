@@ -2,6 +2,7 @@ package sound.pezao.backend.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -16,7 +17,7 @@ import sound.pezao.backend.repository.CargoRepository;
 import sound.pezao.backend.repository.UsuarioRepository;
 
 import java.util.List;
-
+@PreAuthorize("hasAuthority('GERENCIAR_USUARIOS')")
 @Service
 public class UsuarioService {
 
