@@ -1,6 +1,7 @@
 package sound.pezao.backend.service;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -88,6 +89,7 @@ public class AuthenticationService {
 
     }
 
+    @PreAuthorize("hasAuthority('GERENCIAR_USUARIOS')")
     public void resetarSenha(int id){
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário", id));

@@ -1,6 +1,7 @@
 package sound.pezao.backend.service;
 
 import jakarta.transaction.Transactional;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import sound.pezao.backend.dto.cargoDTO.CargoMapper;
 import sound.pezao.backend.dto.cargoDTO.CargoRequest;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@PreAuthorize("hasAuthority('GERENCIAR_CARGOS')")
 @Service
 public class CargoService {
   private final CargoRepository cargoRepository;
