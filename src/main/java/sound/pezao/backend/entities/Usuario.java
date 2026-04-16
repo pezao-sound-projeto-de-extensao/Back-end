@@ -1,6 +1,7 @@
 package sound.pezao.backend.entities;
 
 import jakarta.persistence.*;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -23,11 +24,13 @@ public class Usuario {
     private int id;
     private String nome;
     private String email;
+    @Column(length = 2000)
     private String senhaHash;
+
     private boolean ativo;
     private LocalDateTime ultimoAcesso;
     private LocalDateTime criadoEm;
-    @ManyToOne
+    @ManyToOne (fetch = FetchType.LAZY)
     @JoinColumn(name = "cargo_id")
     private Cargo cargo;
 

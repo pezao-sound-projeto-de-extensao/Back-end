@@ -2,6 +2,8 @@ package sound.pezao.backend.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
@@ -15,15 +17,19 @@ import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.repository.CargoRepository;
 import sound.pezao.backend.repository.UsuarioRepository;
 
+@PreAuthorize("hasAuthority('GERENCIAR_USUARIOS')")
 @Service
 public class UsuarioService {
 
     final UsuarioRepository usuarioRepository;
     final CargoRepository cargoRepository;
+    final PasswordEncoder passwordEncoder;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, CargoRepository cargoRepository) {
+    final static String senhaPadrao = ("PezaoSenha");
+    public UsuarioService(UsuarioRepository usuarioRepository, CargoRepository cargoRepository, PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
         this.cargoRepository = cargoRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     public Page<UsuarioResponse> listar(Pageable pageable){
@@ -47,7 +53,7 @@ public class UsuarioService {
 
         Usuario usuario = UsuarioMapper.toEntity(usuarioRequest);
         usuario.setCargo(cargo);
-
+        usuario.setSenhaHash(passwordEncoder.encode(senhaPadrao));
         return UsuarioMapper.toResponse(usuarioRepository.save(usuario));
     }
 

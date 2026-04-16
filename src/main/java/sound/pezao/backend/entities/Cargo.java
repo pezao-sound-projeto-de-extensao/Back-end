@@ -20,7 +20,7 @@ public class Cargo {
     private String descricao;
     private LocalDateTime criadoEm;
 
-    @ManyToMany
+    @ManyToMany (fetch = FetchType.LAZY)
     @JoinTable(
         name = "cargo_permissoes",
         joinColumns = @JoinColumn(name = "cargo_id"),
