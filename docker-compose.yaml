@@ -11,4 +11,4 @@ services:
       MYSQL_ROOT_PASSWORD: root
       MYSQL_DATABASE: stockflow
     volumes:
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./bd.sql:/docker-entrypoint-initdb.d/init.sql

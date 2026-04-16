@@ -2,6 +2,7 @@ package sound.pezao.backend.service;
 
 import java.util.List;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 
 import sound.pezao.backend.dto.categoriaDTO.CategoriaMapper;
@@ -24,6 +25,8 @@ public class CategoriaService {
         return CategoriaMapper.toResponse(repository.findAll());
     }
 
+
+    @PreAuthorize("hasAuthority('CADASTRAR_ITENS')")
     public CategoriaResponse create(CategoriaRequest request){
         if (repository.existsByNomeIgnoreCase(request.nome())) {
             throw new EntityNomeJaExisteException("Categoria", request.nome());
@@ -33,6 +36,7 @@ public class CategoriaService {
         return CategoriaMapper.toResponse(repository.save(categoria));  
     }
 
+    @PreAuthorize("hasAuthority('EDITAR_ITENS')")
     public CategoriaResponse update(Integer id, CategoriaRequest request){
         Categoria categoria = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Categoria", id));
@@ -42,6 +46,7 @@ public class CategoriaService {
         return CategoriaMapper.toResponse(categoria);
     }
 
+    @PreAuthorize("hasAuthority('EDITAR_ITENS')")
     public void delete(Integer id){
         if (!repository.existsById(id)) {
             throw new EntityNotFoundException("Categoria", id);

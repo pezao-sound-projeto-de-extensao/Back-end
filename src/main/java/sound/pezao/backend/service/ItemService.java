@@ -2,6 +2,7 @@ package sound.pezao.backend.service;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import sound.pezao.backend.dto.itemDTO.ItemMapper;
 import sound.pezao.backend.dto.itemDTO.ItemRequest;
@@ -21,6 +22,7 @@ public class ItemService {
         this.repository = repository;
     }
 
+    @PreAuthorize("hasAuthority('CADASTRAR_ITENS')")
     public ItemResponse create(ItemRequest request) {
         if (repository.existsByNomeIgnoreCase((request.nome()))) {
             throw new EntityNomeJaExisteException("Item", request.nome());
@@ -40,6 +42,7 @@ public class ItemService {
         return ItemMapper.toResponse(item);
     }
 
+    @PreAuthorize("hasAuthority('EDITAR_ITENS')")
     public ItemResponse update(Integer id, ItemRequest request) {
         Item item = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Item", id));
@@ -62,6 +65,7 @@ public class ItemService {
         return ItemMapper.toResponse(repository.save(item));
     }
 
+    @PreAuthorize("hasAuthority('EXCLUIR_ITENS')")
     public void inativar(Integer id) {
         Item item = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Item", id));
@@ -69,6 +73,7 @@ public class ItemService {
         repository.save(item);
     }
 
+    @PreAuthorize("hasAuthority('EXCLUIR_ITENS')")
     public void reativar(Integer id) {
         Item item = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Item", id));
