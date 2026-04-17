@@ -1,16 +1,17 @@
 package sound.pezao.backend.exception.handler;
 
+import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.persistence.EntityExistsException;
 import org.springframework.http.*;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
-import sound.pezao.backend.exception.EntityInativaException;
-import sound.pezao.backend.exception.EntityNotFoundException;
-import sound.pezao.backend.exception.EntityNomeJaExisteException;
+import sound.pezao.backend.exception.*;
 
 import java.net.URI;
 import java.time.Instant;
@@ -77,4 +78,61 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
     }
+
+    @ExceptionHandler(LoginInvalidoException.class)
+    public ResponseEntity<ProblemDetail> handleDadosInvalidos(LoginInvalidoException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED, ex.getMessage()
+        );
+        problemDetail.setType(URI.create("about:blank"));
+        problemDetail.setProperty("TimeStamp", Instant.now());
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
+    }
+
+    @ExceptionHandler(PrimeiroAcessoException.class)
+    public ResponseEntity<ProblemDetail> handleSenhaPadrao(PrimeiroAcessoException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN, ex.getMessage()
+        );
+        problemDetail.setType(URI.create("about:blank"));
+        problemDetail.setProperty("TimeStamp", Instant.now());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problemDetail);
+    }
+
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ProblemDetail> handleAuthentication(AuthenticationException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED, ex.getMessage()
+        );
+        problemDetail.setType(URI.create("about:blank"));
+        problemDetail.setProperty("TimeStamp", Instant.now());
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ProblemDetail> handleAcessoNegado(AccessDeniedException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.FORBIDDEN, ex.getMessage()
+        );
+        problemDetail.setType(URI.create("about:blank"));
+        problemDetail.setProperty("TimeStamp", Instant.now());
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problemDetail);
+    }
+
+    @ExceptionHandler(ExpiredJwtException.class)
+    public ResponseEntity<ProblemDetail> handleTokenExpirado(ExpiredJwtException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.UNAUTHORIZED, ex.getMessage()
+        );
+        problemDetail.setType(URI.create("about:blank"));
+        problemDetail.setProperty("TimeStamp", Instant.now());
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
+    }
+
+
 }
