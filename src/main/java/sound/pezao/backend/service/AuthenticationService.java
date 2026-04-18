@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import sound.pezao.backend.dto.authDTO.AuthRequest;
 import sound.pezao.backend.dto.authDTO.AuthResponse;
 import sound.pezao.backend.dto.authDTO.AuthTrocarSenhaRequest;
-import sound.pezao.backend.dto.ususarioDTO.UsuarioMapper;
+import sound.pezao.backend.dto.usuarioDTO.UsuarioMapper;
 import sound.pezao.backend.entities.Usuario;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.exception.LoginInvalidoException;
