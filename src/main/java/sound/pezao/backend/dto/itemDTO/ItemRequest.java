@@ -12,6 +12,14 @@ public record ItemRequest(
         @NotBlank(message = "Nome é obrigatório")
         String nome,
 
+        @Schema(description = "ID da categoria do item", example = "1")
+        @NotNull(message = "Categoria é obrigatória")
+        Integer categoriaId,
+
+        @Schema(description = "ID da unidade de medida do item", example = "1")
+        @NotNull(message = "Unidade é obrigatória")
+        Integer unidadeId,
+
         @Schema(description = "Quantidade atual em estoque", example = "5")
         @NotNull(message = "Quantidade atual é obrigatória")
         @Min(value = 0, message = "Quantidade atual não pode ser negativa")
