@@ -1,6 +1,8 @@
 package sound.pezao.backend.dto.itemDTO;
 
+import sound.pezao.backend.entities.Categoria;
 import sound.pezao.backend.entities.Item;
+import sound.pezao.backend.entities.Unidade;
 
 public class ItemMapper {
 
@@ -16,9 +18,11 @@ public class ItemMapper {
         );
     }
 
-    public static Item toEntity(ItemRequest request) {
+    public static Item toEntity(ItemRequest request, Categoria categoria, Unidade unidade) {
         Item item = new Item();
         item.setNome(request.nome());
+        item.setCategoria(categoria);
+        item.setUnidade(unidade);
         item.setQuantidadeAtual(request.quantidadeAtual());
         item.setQuantidadeMinima(request.quantidadeMinima());
         item.setPrecoCusto(request.precoCusto());
