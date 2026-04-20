@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 import sound.pezao.backend.dto.itemDTO.ItemRequest;
 import sound.pezao.backend.dto.itemDTO.ItemResponse;
+import sound.pezao.backend.dto.unidadesDTO.UnidadeRequest;
+import sound.pezao.backend.dto.unidadesDTO.UnidadeResponse;
 import sound.pezao.backend.service.ItemService;
 
 import java.net.URI;
@@ -28,15 +30,11 @@ public class ItemController {
     @PostMapping
     @Operation(summary = "Cadastra um novo item")
     public ResponseEntity<ItemResponse> create(
-            @RequestBody @Valid ItemRequest request,
-            UriComponentsBuilder uriBuilder
+            @RequestBody @Valid ItemRequest request
     ) {
         ItemResponse response = service.create(request);
-        URI uri = uriBuilder
-                .path("/api/v1/itens/{id}")
-                .buildAndExpand(response.id())
-                .toUri();
-        return ResponseEntity.created(uri).body(response);
+
+        return ResponseEntity.status(201).body(response);
     }
 
     @GetMapping

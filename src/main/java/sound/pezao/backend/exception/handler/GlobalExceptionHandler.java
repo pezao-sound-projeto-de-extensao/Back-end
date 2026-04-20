@@ -101,6 +101,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problemDetail);
     }
 
+    @ExceptionHandler(EstoqueInsuficienteException.class)
+    public ResponseEntity<ProblemDetail> handleEstoqueInsuficiente(EstoqueInsuficienteException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+          HttpStatus.BAD_REQUEST, ex.getMessage()
+        );
+        problemDetail.setType(URI.create("about:blank"));
+        problemDetail.setProperty("TimeStamp", Instant.now());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ProblemDetail> handleAuthentication(AuthenticationException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(

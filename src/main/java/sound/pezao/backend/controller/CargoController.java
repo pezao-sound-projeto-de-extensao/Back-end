@@ -38,17 +38,11 @@ public class CargoController {
   @PostMapping
   @Operation(summary = "Cadastra um novo cargo")
   public ResponseEntity<CargoResponse> create(
-      @RequestBody @Valid CargoRequest request,
-      UriComponentsBuilder uriBuilder
+      @RequestBody @Valid CargoRequest request
   ) {
     CargoResponse response = service.create(request);
 
-    URI uri = uriBuilder
-        .path("/api/v1/cargos/{id}")
-        .buildAndExpand(response.id())
-        .toUri();
-
-    return ResponseEntity.created(uri).body(response);
+    return ResponseEntity.status(201).body(response);
   }
 
   @PutMapping("/{id}")
