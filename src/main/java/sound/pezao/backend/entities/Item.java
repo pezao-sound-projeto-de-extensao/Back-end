@@ -8,8 +8,17 @@ import java.time.LocalDateTime;
 @Table(name = "itens")
 public class Item {
     @Id
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
+
+    @ManyToOne
+    @JoinColumn(name = "categoria_id", nullable = false)
+    private Categoria categoria;
+
+    @ManyToOne
+    @JoinColumn(name = "unidade_id", nullable = false)
+    private Unidade unidade;
+
     String nome;
     Integer quantidadeAtual;
     Integer quantidadeMinima;
@@ -18,6 +27,22 @@ public class Item {
     Boolean ativo;
     LocalDateTime criadoEm;
     LocalDateTime atualizadoEm;
+
+    public Categoria getCategoria() {
+        return categoria;
+    }
+
+    public void setCategoria(Categoria categoria) {
+        this.categoria = categoria;
+    }
+
+    public Unidade getUnidade() {
+        return unidade;
+    }
+
+    public void setUnidade(Unidade unidade) {
+        this.unidade = unidade;
+    }
 
     public Integer getId() {
         return id;
