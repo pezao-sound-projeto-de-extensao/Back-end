@@ -1,7 +1,10 @@
 package sound.pezao.backend.controller;
 
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.web.PageableDefault;
@@ -17,6 +20,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/usuarios")
+@Tag(name = "Usuários", description = "Gerenciamento de usuários")
 public class UsuarioController {
 
     final UsuarioService usuarioService;
@@ -25,13 +29,17 @@ public class UsuarioController {
         this.usuarioService = usuarioService;
     }
 
+    @Operation(summary = "Busca paginada de todos os usuários")
     @GetMapping
     public ResponseEntity<Page<UsuarioResponse>> listar(
-            @PageableDefault(sort = "nome", direction = Sort.Direction.ASC) Pageable pageable
+            @ParameterObject
+            @PageableDefault(page = 0, size = 10, sort = "nome", direction = Sort.Direction.ASC)
+            Pageable pageable
             ){
         return ResponseEntity.ok(usuarioService.listar(pageable));
     }
 
+    @Operation(summary = "Cadastro de novo usuário")
     @PostMapping
     public ResponseEntity<UsuarioResponse> cadastrar(
             @Valid @RequestBody UsuarioRequest usuarioRequest
@@ -40,11 +48,13 @@ public class UsuarioController {
         return ResponseEntity.status(201).body(usuarioResponse);
     }
 
+    @Operation(summary = "Buscar informações do usuário baseado no ID")
     @GetMapping("/{id}")
     public ResponseEntity<UsuarioResponse> listar(@PathVariable int id){
         return ResponseEntity.ok(usuarioService.listar(id));
     }
 
+    @Operation(summary = "Atualizar informações do usuário")
     @PutMapping("/{id}")
     public ResponseEntity<UsuarioResponse> atualizar(
             @PathVariable int id,
@@ -52,7 +62,8 @@ public class UsuarioController {
     ){
         return ResponseEntity.ok(usuarioService.atualizar(id, usuarioRequest));
     }
-    
+
+    @Operation(summary = "Ativar ou desativar o usuário")
     @PatchMapping("/ativo/{id}")
     public ResponseEntity<Void> ativar(@PathVariable int id){
         usuarioService.ativar(id);
