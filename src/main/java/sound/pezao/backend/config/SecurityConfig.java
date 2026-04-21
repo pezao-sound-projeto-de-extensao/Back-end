@@ -23,7 +23,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     public final String [] ENDPOINTS_PUBLICOS = {
-      "/api/auth/login", "/api/auth/trocar-senha"
+      "/api/auth/login", "/api/auth/trocar-senha", "/api/health"
     };
     public final String [] ENDPOINTS_AUTENTICADO = {
             "/api/alertas",
