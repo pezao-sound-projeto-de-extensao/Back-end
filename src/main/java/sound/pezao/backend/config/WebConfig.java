@@ -13,4 +13,12 @@ public class WebConfig implements WebMvcConfigurer {
         public void configurePathMatch(PathMatchConfigurer configurer){
             configurer.addPathPrefix("/api", HandlerTypePredicate.forAnnotation(RestController.class));
         }
+
+        @Override
+        public void addCorsMappings(CorsRegistry registry) {
+            registry.addMapping("/**")
+                .allowedOrigins("*")
+                .allowedMethods("*")
+                .allowedHeaders("*");
+        }
 }
