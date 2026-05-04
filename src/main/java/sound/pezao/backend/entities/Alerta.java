@@ -2,7 +2,6 @@ package sound.pezao.backend.entities;
 
 import jakarta.persistence.*;
 import org.hibernate.annotations.Immutable;
-
 import java.time.LocalDateTime;
 
 @Entity
@@ -17,6 +16,12 @@ public class Alerta {
     @Column(name = "item_nome")
     private String itemNome;
 
+    @Column(name = "categoria_nome")
+    private String categoriaNome;
+
+    @Column(name = "unidade_medida")
+    private String unidadeMedida;
+
     @Column(name = "quantidade_atual")
     private Integer quantidadeAtual;
 
@@ -26,31 +31,19 @@ public class Alerta {
     @Column(name = "tipo_alerta")
     private String tipoAlerta;
 
-    @Column(name = "data_ocorrencia")
-    private LocalDateTime dataOcorrencia;
+    protected Alerta() {}
 
+    public Integer getItemId() { return itemId; }
 
-    public Integer getItemId() {
-        return itemId;
-    }
+    public String getItemNome() { return itemNome; }
 
-    public String getItemNome() {
-        return itemNome;
-    }
+    public String getCategoriaNome() { return categoriaNome; }
 
-    public Integer getQuantidadeAtual() {
-        return quantidadeAtual;
-    }
+    public String getUnidadeMedida() { return unidadeMedida; }
 
-    public Integer getQuantidadeMinima() {
-        return quantidadeMinima;
-    }
+    public Integer getQuantidadeAtual() { return quantidadeAtual; }
 
-    public String getTipoAlerta() {
-        return tipoAlerta;
-    }
+    public Integer getQuantidadeMinima() { return quantidadeMinima; }
 
-    public LocalDateTime getDataOcorrencia() {
-        return dataOcorrencia;
-    }
+    public String getTipoAlerta() { return tipoAlerta; }
 }
