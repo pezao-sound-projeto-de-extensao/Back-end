@@ -1,5 +1,6 @@
 package sound.pezao.backend.service;
 
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import sound.pezao.backend.dto.alertaDTO.AlertaMapper;
 import sound.pezao.backend.dto.alertaDTO.AlertaResponse;
@@ -17,6 +18,12 @@ public class AlertaService {
 
     public List<AlertaResponse> findAll(){
         return repository.findAll().stream()
+                .map(AlertaMapper::toResponse)
+                .toList();
+    }
+
+    public List<AlertaResponse> findByTipo(String tipo) {
+        return repository.findAllByTipo(tipo).stream()
                 .map(AlertaMapper::toResponse)
                 .toList();
     }
