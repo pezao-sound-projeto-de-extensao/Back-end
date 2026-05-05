@@ -1,6 +1,5 @@
 package sound.pezao.backend.service;
 
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import sound.pezao.backend.dto.alertaDTO.AlertaMapper;
 import sound.pezao.backend.dto.alertaDTO.AlertaResponse;
