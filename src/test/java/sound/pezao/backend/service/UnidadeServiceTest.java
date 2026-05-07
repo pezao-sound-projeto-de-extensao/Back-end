@@ -16,9 +16,11 @@ import sound.pezao.backend.dto.unidadesDTO.UnidadeRequest;
 import sound.pezao.backend.entities.Unidade;
 import sound.pezao.backend.repository.UnidadeRepository;
 import sound.pezao.backend.exception.EntityNomeJaExisteException;
+import sound.pezao.backend.exception.EntityNotFoundException;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @ExtendWith(MockitoExtension.class)
 class UnidadeServiceTest {
@@ -81,5 +83,45 @@ class UnidadeServiceTest {
         Assertions.assertEquals(unidadeSalva.getAbreviacao(), resultado.abreviacao());
     }
 
-    
+    @Test
+    @DisplayName("Deve retornar EntityNotFoundException quando tentar atualizar unidade inexistente")
+    void deveRetornarEntityNotFoundExceptionQuandoTentarAtualizarUnidadeInexistente(){
+        var request = new UnidadeRequest("Teste 01", "T1");
+        Optional<Unidade> unidadeVazia = Optional.empty();
+
+        Mockito.when(repository.findById(1)).thenReturn(unidadeVazia);
+        
+        Assertions.assertThrows(EntityNotFoundException.class, () -> service.update(1, request));
+    }
+
+    @Test
+    @DisplayName("Deve retornar EntityNomeJaExisteException quando tentar atualizar unidade para um nome já existente")
+    void deveRetornarEntityNomeJaExisteExceptionQuandoTentarAtualizarUnidadeParaNomeJaExistente(){
+        var request = new UnidadeRequest("Teste 01", "T1");
+        var unidadeExistente = new Unidade(1, "Teste 01", "T1");
+        var unidadeOutra = new Unidade(2, "Teste 02", "T2");
+        Optional<Unidade> unidadeOptional = Optional.of(unidadeExistente);
+
+        Mockito.when(repository.findById(1)).thenReturn(unidadeOptional);
+        Mockito.when(repository.existsByNomeIgnoreCase(request.nome())).thenReturn(true);
+
+        Assertions.assertThrows(EntityNomeJaExisteException.class, () -> service.update(1, request));
+    }
+
+    @Test
+    @DisplayName("Deve atualizar unidade com sucesso")
+    void deveAtualizarUnidadeComSucesso(){
+        var request = new UnidadeRequest("Teste 01", "T1");
+        var unidadeExistente = new Unidade(1, "Teste 01", "T1");
+        Optional<Unidade> unidadeOptional = Optional.of(unidadeExistente);
+
+        Mockito.when(repository.findById(1)).thenReturn(unidadeOptional);
+        Mockito.when(repository.existsByNomeIgnoreCase(request.nome())).thenReturn(false);
+        Mockito.when(repository.save(Mockito.any(Unidade.class))).thenReturn(unidadeExistente);
+
+        UnidadeResponse resultado = service.update(1, request);
+        Assertions.assertNotNull(resultado);
+        Assertions.assertEquals(unidadeExistente.getNome(), resultado.nome());
+        Assertions.assertEquals(unidadeExistente.getAbreviacao(), resultado.abreviacao());
+    }
 } 
