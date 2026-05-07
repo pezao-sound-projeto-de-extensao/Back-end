@@ -98,21 +98,21 @@ class UnidadeServiceTest {
     @DisplayName("Deve retornar EntityNomeJaExisteException quando tentar atualizar unidade para um nome já existente")
     void deveRetornarEntityNomeJaExisteExceptionQuandoTentarAtualizarUnidadeParaNomeJaExistente(){
         var request = new UnidadeRequest("Teste 01", "T1");
-        var unidadeExistente = new Unidade(1, "Teste 01", "T1");
-        var unidadeOutra = new Unidade(2, "Teste 02", "T2");
+        var unidadeExistente = new Unidade(1, "Teste Atual", "TA");
         Optional<Unidade> unidadeOptional = Optional.of(unidadeExistente);
 
         Mockito.when(repository.findById(1)).thenReturn(unidadeOptional);
         Mockito.when(repository.existsByNomeIgnoreCase(request.nome())).thenReturn(true);
 
         Assertions.assertThrows(EntityNomeJaExisteException.class, () -> service.update(1, request));
+        Mockito.verify(repository, Mockito.never()).save(Mockito.any(Unidade.class));
     }
 
     @Test
     @DisplayName("Deve atualizar unidade com sucesso")
     void deveAtualizarUnidadeComSucesso(){
         var request = new UnidadeRequest("Teste 01", "T1");
-        var unidadeExistente = new Unidade(1, "Teste 01", "T1");
+        var unidadeExistente = new Unidade(1, "Teste Atual", "TA");
         Optional<Unidade> unidadeOptional = Optional.of(unidadeExistente);
 
         Mockito.when(repository.findById(1)).thenReturn(unidadeOptional);
@@ -123,5 +123,22 @@ class UnidadeServiceTest {
         Assertions.assertNotNull(resultado);
         Assertions.assertEquals(unidadeExistente.getNome(), resultado.nome());
         Assertions.assertEquals(unidadeExistente.getAbreviacao(), resultado.abreviacao());
+    }
+
+    @Test
+    @DisplayName("Deve retornar EntityNotFoundException quando tentar deletar unidade inexistente")
+    void deveRetornarEntityNotFoundExceptionQuandoTentarDeletarUnidadeInexistente(){
+        Mockito.when(repository.existsById(1)).thenReturn(false);
+        Assertions.assertThrows(EntityNotFoundException.class, () -> service.delete(1));
+    }
+
+    @Test
+    @DisplayName("Deve deletar unidade com sucesso")
+    void deveDeletarUnidadeComSucesso(){
+        Mockito.when(repository.existsById(1)).thenReturn(true);
+        Mockito.doNothing().when(repository).deleteById(1);
+
+        service.delete(1);
+        Mockito.verify(repository, Mockito.times(1)).deleteById(1);
     }
 } 
