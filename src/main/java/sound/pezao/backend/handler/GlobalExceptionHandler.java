@@ -1,4 +1,4 @@
-package sound.pezao.backend.exception.handler;
+package sound.pezao.backend.handler;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.persistence.EntityExistsException;
