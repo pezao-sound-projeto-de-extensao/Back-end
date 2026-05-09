@@ -8,13 +8,13 @@ on:
       - synchronize
       - reopened
     branches:
+      - development
       - main
 
 jobs:
-  run-tests:
+  maven-verify:
     name: Maven Verify
     runs-on: ubuntu-latest
-    if: ${{ github.head_ref == 'development' }}
 
     steps:
       - name: Checkout do código
