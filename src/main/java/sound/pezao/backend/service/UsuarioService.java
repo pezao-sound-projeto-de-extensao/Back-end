@@ -43,7 +43,7 @@ public class UsuarioService {
         return UsuarioMapper.toResponse(usuario);
     }
 
-    public UsuarioResponse cadastrar(@RequestBody UsuarioRequest usuarioRequest){
+    public UsuarioResponse cadastrar(UsuarioRequest usuarioRequest){
 
         if (usuarioRepository.existsByEmailIgnoreCase(usuarioRequest.email())){
             throw new EntityNomeJaExisteException("Usuario", usuarioRequest.email());
