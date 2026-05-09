@@ -36,7 +36,7 @@ public class UsuarioController {
             @PageableDefault(page = 0, size = 10, sort = "nome", direction = Sort.Direction.ASC)
             Pageable pageable
             ){
-        System.out.println("oi");
+        System.out.println("oii");
         return ResponseEntity.ok(usuarioService.listar(pageable));
     }
 
