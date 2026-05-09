@@ -1,22 +1,20 @@
-name: run-tests.yml
+name: verify-pr.yml
 
 on:
   pull_request:
-    branches:
-      - main
     types:
       - opened
-      - reopened
+      - edited
       - synchronize
-
-concurrency:
-  group: pr-${{ github.event.pull_request.number }}
-  cancel-in-progress: true
+      - reopened
+    branches:
+      - main
 
 jobs:
-  verify:
+  run-tests:
     name: Maven Verify
     runs-on: ubuntu-latest
+    if: ${{ github.head_ref == 'development' }}
 
     steps:
       - name: Checkout do código
@@ -32,5 +30,5 @@ jobs:
       - name: Dar permissão ao Maven Wrapper
         run: chmod +x mvnw
 
-      - name: Rodar Maven Verify
+      - name: Executar Maven Verify
         run: ./mvnw --batch-mode --update-snapshots clean verify
