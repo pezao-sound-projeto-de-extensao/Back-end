@@ -108,7 +108,8 @@ class CategoriaServiceTest {
         CategoriaResponse resultado = service.update(1, request);
         Assertions.assertNotNull(resultado);
         Assertions.assertEquals(request.nome(), resultado.nome());
-        Mockito.verify(repository).save(Mockito.argThat(categoriaSalva -> request.nome().equals(categoriaSalva.getNome())));
+        Mockito.verify(repository).save(Mockito.argThat(categoriaAtualizada ->
+                categoriaAtualizada != null && request.nome().equals(categoriaAtualizada.getNome())));
     }
 
     @Test
