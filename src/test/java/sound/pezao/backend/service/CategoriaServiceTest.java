@@ -11,6 +11,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
@@ -108,8 +109,9 @@ class CategoriaServiceTest {
         CategoriaResponse resultado = service.update(1, request);
         Assertions.assertNotNull(resultado);
         Assertions.assertEquals(request.nome(), resultado.nome());
-        Mockito.verify(repository).save(Mockito.argThat(categoriaAtualizada ->
-                categoriaAtualizada != null && request.nome().equals(categoriaAtualizada.getNome())));
+        ArgumentCaptor<Categoria> categoriaCaptor = ArgumentCaptor.forClass(Categoria.class);
+        Mockito.verify(repository).save(categoriaCaptor.capture());
+        Assertions.assertEquals(request.nome(), categoriaCaptor.getValue().getNome());
     }
 
     @Test
