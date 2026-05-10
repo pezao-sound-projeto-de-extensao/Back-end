@@ -95,35 +95,20 @@ class CategoriaServiceTest {
         Assertions.assertThrows(EntityNotFoundException.class, () -> service.update(1, request));
     }
 
-//    @Test
-//    @DisplayName("Deve retornar EntityNomeJaExisteException quando tentar atualizar categoria para um nome já existente")
-//    void deveRetornarEntityNomeJaExisteExceptionQuandoTentarAtualizarCategoriaParaNomeJaExistente(){
-//        var request = new CategoriaRequest("Teste 01");
-//        var categoriaExistente = new Categoria(1, "Teste Atual", LocalDateTime.now());
-//        Optional<Categoria> categoriaOptional = Optional.of(categoriaExistente);
-//
-//        Mockito.when(repository.findById(1)).thenReturn(categoriaOptional);
-//        Mockito.when(repository.existsByNomeIgnoreCase(request.nome())).thenReturn(true);
-//
-//        Assertions.assertThrows(EntityNomeJaExisteException.class, () -> service.update(1, request));
-//        Mockito.verify(repository, Mockito.never()).save(Mockito.any(Categoria.class));
-//    }
+    @Test
+    @DisplayName("Deve atualizar categoria com sucesso")
+    void deveAtualizarCategoriaComSucesso(){
+        var request = new CategoriaRequest("Teste 01");
+        var categoriaExistente = new Categoria(1, "Teste Atual", LocalDateTime.now());
+        Optional<Categoria> categoriaOptional = Optional.of(categoriaExistente);
 
-//    @Test
-//    @DisplayName("Deve atualizar categoria com sucesso")
-//    void deveAtualizarCategoriaComSucesso(){
-//        var request = new CategoriaRequest("Teste 01");
-//        var categoriaExistente = new Categoria(1, "Teste Atual", LocalDateTime.now());
-//        Optional<Categoria> categoriaOptional = Optional.of(categoriaExistente);
-//
-//        Mockito.when(repository.findById(1)).thenReturn(categoriaOptional);
-//        Mockito.when(repository.existsByNomeIgnoreCase(request.nome())).thenReturn(false);
-//        Mockito.when(repository.save(Mockito.any(Categoria.class))).thenReturn(categoriaExistente);
-//
-//        CategoriaResponse resultado = service.update(1, request);
-//        Assertions.assertNotNull(resultado);
-//        Assertions.assertEquals(categoriaExistente.getNome(), resultado.nome());
-//    }
+        Mockito.when(repository.findById(1)).thenReturn(categoriaOptional);
+        Mockito.when(repository.save(Mockito.any(Categoria.class))).thenReturn(categoriaExistente);
+
+        CategoriaResponse resultado = service.update(1, request);
+        Assertions.assertNotNull(resultado);
+        Assertions.assertEquals(categoriaExistente.getNome(), resultado.nome());
+    }
 
     @Test
     @DisplayName("Deve retornar EntityNotFoundException quando tentar deletar categoria inexistente")
