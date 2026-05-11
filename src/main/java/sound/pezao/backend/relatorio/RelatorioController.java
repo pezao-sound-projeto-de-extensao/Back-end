@@ -14,7 +14,7 @@ import sound.pezao.backend.relatorio.dto.RelatorioResponseDTO;
 import java.time.LocalDate;
 
 @RestController
-@RequestMapping("/api/v1/relatorios")
+@RequestMapping("/relatorios")
 @Tag(name = "Relatórios", description = "Dados analíticos do estoque")
 public class RelatorioController {
 
