@@ -20,4 +20,10 @@ public class AlertaService {
                 .map(AlertaMapper::toResponse)
                 .toList();
     }
+
+    public List<AlertaResponse> findByTipo(String tipo) {
+        return repository.findAllByTipo(tipo).stream()
+                .map(AlertaMapper::toResponse)
+                .toList();
+    }
 }
