@@ -325,17 +325,34 @@ INSERT INTO itens (categoria_id, unidade_id, nome, quantidade_atual, quantidade_
 --
 
 DROP TABLE IF EXISTS `vw_alertas_estoque`;
+DROP VIEW IF EXISTS `vw_alertas_estoque`;
+
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `vw_alertas_estoque` (
-  `item_id` int NOT NULL,
-  `data_ocorrencia` datetime(6) DEFAULT NULL,
-  `item_nome` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `quantidade_atual` int DEFAULT NULL,
-  `quantidade_minima` int DEFAULT NULL,
-  `tipo_alerta` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  PRIMARY KEY (`item_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE VIEW `vw_alertas_estoque` AS
+SELECT
+    `i`.`id` AS `item_id`,
+    `i`.`atualizado_em` AS `data_ocorrencia`,
+    `i`.`nome` AS `item_nome`,
+    `c`.`nome` AS `categoria_nome`,
+    `u`.`abreviacao` AS `unidade_medida`,
+    `i`.`quantidade_atual` AS `quantidade_atual`,
+    `i`.`quantidade_minima` AS `quantidade_minima`,
+    CASE
+        WHEN `i`.`quantidade_atual` = 0 THEN 'zerado'
+        ELSE 'estoque_baixo'
+    END AS `tipo_alerta`
+FROM
+    `itens` `i`
+INNER JOIN
+    `categorias` `c` ON `i`.`categoria_id` = `c`.`id`
+INNER JOIN
+    `unidades` `u` ON `i`.`unidade_id` = `u`.`id`
+WHERE
+    `i`.`ativo` = 1
+    AND `i`.`quantidade_atual` <= `i`.`quantidade_minima`;
+
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
