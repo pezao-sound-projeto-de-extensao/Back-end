@@ -33,6 +33,16 @@ public class Alerta {
 
     protected Alerta() {}
 
+    public Alerta(Integer itemId, String itemNome, String categoriaNome, String unidadeMedida, Integer quantidadeAtual, Integer quantidadeMinima, String tipoAlerta) {
+        this.itemId = itemId;
+        this.itemNome = itemNome;
+        this.categoriaNome = categoriaNome;
+        this.unidadeMedida = unidadeMedida;
+        this.quantidadeAtual = quantidadeAtual;
+        this.quantidadeMinima = quantidadeMinima;
+        this.tipoAlerta = tipoAlerta;
+    }
+
     public Integer getItemId() { return itemId; }
 
     public String getItemNome() { return itemNome; }

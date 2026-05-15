@@ -22,7 +22,7 @@ public class AlertaService {
     }
 
     public List<AlertaResponse> findByTipo(String tipo) {
-        return repository.findAllByTipo(tipo).stream()
+        return repository.findAllByTipoAlerta(tipo).stream()
                 .map(AlertaMapper::toResponse)
                 .toList();
     }

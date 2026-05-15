@@ -6,5 +6,5 @@ import sound.pezao.backend.entities.Alerta;
 import java.util.List;
 
 public interface AlertaRepository extends JpaRepository<Alerta, Integer> {
-    List<Alerta> findAllByTipo(String tipo);
+    List<Alerta> findAllByTipoAlerta(String tipo);
 }
