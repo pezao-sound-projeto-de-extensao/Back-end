@@ -126,6 +126,21 @@ class UnidadeServiceTest {
     }
 
     @Test
+    @DisplayName("Deve atualizar unidade com sucesso mantendo o mesmo nome")
+    void deveAtualizarUnidadeComSucessoMantendoOMesmoNome(){
+        var request = new UnidadeRequest("Teste Atual", "XX");
+        var unidadeExistente = new Unidade(1, "Teste Atual", "TA");
+        Optional<Unidade> unidadeOptional = Optional.of(unidadeExistente);
+
+        Mockito.when(repository.findById(1)).thenReturn(unidadeOptional);
+        Mockito.when(repository.save(Mockito.any(Unidade.class))).thenReturn(unidadeExistente);
+
+        UnidadeResponse resultado = service.update(1, request);
+        Assertions.assertNotNull(resultado);
+        Mockito.verify(repository, Mockito.never()).existsByNomeIgnoreCase(Mockito.anyString());
+    }
+
+    @Test
     @DisplayName("Deve retornar EntityNotFoundException quando tentar deletar unidade inexistente")
     void deveRetornarEntityNotFoundExceptionQuandoTentarDeletarUnidadeInexistente(){
         Mockito.when(repository.existsById(1)).thenReturn(false);
