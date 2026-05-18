@@ -1,6 +1,9 @@
 package sound.pezao.backend.dto.itemDTO;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import sound.pezao.backend.dto.imagemProdutoDTO.ImagemProdutoResponse;
+
+import java.util.List;
 
 @Schema(description = "Dados retornados de um item")
 public record ItemResponse(
@@ -24,6 +27,9 @@ public record ItemResponse(
         Double precoVenda,
 
         @Schema(description = "Item ativo ou inativo", example = "true")
-        Boolean ativo
+        Boolean ativo,
+
+        @Schema(description = "Imagens do item")
+        List<ImagemProdutoResponse> imagens
 
 ) {}
