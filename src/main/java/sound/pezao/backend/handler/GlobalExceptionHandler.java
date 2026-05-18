@@ -145,5 +145,16 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
     }
 
+    @ExceptionHandler(ArquivoInvalidoException.class)
+    public ResponseEntity<ProblemDetail> handleArquivoInvalido(ArquivoInvalidoException ex) {
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
+                HttpStatus.BAD_REQUEST, ex.getMessage()
+        );
+        problemDetail.setType(URI.create("about:blank"));
+        problemDetail.setProperty("TimeStamp", Instant.now());
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail);
+    }
+
 
 }
