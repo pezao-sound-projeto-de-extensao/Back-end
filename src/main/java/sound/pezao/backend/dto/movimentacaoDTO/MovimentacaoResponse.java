@@ -1,9 +1,10 @@
 package sound.pezao.backend.dto.movimentacaoDTO;
 
-import sound.pezao.backend.dto.itemDTO.ItemResponse;
+import sound.pezao.backend.dto.notaEntradaDTO.NotaEntradaResponse;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record MovimentacaoResponse(
         Integer id,
@@ -14,6 +15,7 @@ public record MovimentacaoResponse(
         Integer estoqueDepois,
         LocalDate data,
         String observacao,
-        LocalDateTime criadoEm
+        LocalDateTime criadoEm,
+        List<NotaEntradaResponse> notas
 ) {
 }

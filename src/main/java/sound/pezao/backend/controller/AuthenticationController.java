@@ -36,7 +36,7 @@ public class AuthenticationController {
 
     @Operation(summary = "Resetar a senha do usuário para a padrão")
     @PutMapping("/resetar-senha/{id}")
-    public ResponseEntity<Void> resetarSenha (@RequestParam int id){
+    public ResponseEntity<Void> resetarSenha (@PathVariable int id){
         authenticationService.resetarSenha(id);
         return ResponseEntity.noContent().build();
     }
