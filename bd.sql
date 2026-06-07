@@ -180,6 +180,40 @@ INSERT INTO `itens_seq` VALUES (1);
 UNLOCK TABLES;
 
 --
+-- Table structure for table `imagem_produto`
+--
+
+DROP TABLE IF EXISTS `imagem_produto`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `imagem_produto` (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT 'ID da imagem do produto',
+  `item_id` int NOT NULL COMMENT 'FK para itens',
+  `nome_arquivo` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Nome original do arquivo enviado',
+  `caminho` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Chave/caminho relativo do arquivo no storage',
+  `mime_type` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Tipo MIME do arquivo',
+  `tamanho_bytes` int DEFAULT NULL COMMENT 'Tamanho do arquivo em bytes',
+  `criado_em` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Data do upload',
+  PRIMARY KEY (`id`),
+  KEY `fk_imagem_produto_item` (`item_id`),
+  CONSTRAINT `fk_imagem_produto_item` FOREIGN KEY (`item_id`) REFERENCES `itens` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Imagens vinculadas aos itens';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `imagem_produto`
+--
+
+LOCK TABLES `imagem_produto` WRITE;
+/*!40000 ALTER TABLE `imagem_produto` DISABLE KEYS */;
+INSERT INTO `imagem_produto` (`item_id`, `nome_arquivo`, `caminho`, `mime_type`, `tamanho_bytes`) VALUES
+  (1, 'amplificador-frente.jpg', 'imagens-produto/exemplo-amplificador-frente.jpg', 'image/jpeg', 102400),
+  (1, 'amplificador-traseira.jpg', 'imagens-produto/exemplo-amplificador-traseira.jpg', 'image/jpeg', 98304),
+  (5, 'cabo-rca.png', 'imagens-produto/exemplo-cabo-rca.png', 'image/png', 51200);
+/*!40000 ALTER TABLE `imagem_produto` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `movimentacoes`
 --
 
@@ -212,7 +246,44 @@ CREATE TABLE `movimentacoes` (
 
 LOCK TABLES `movimentacoes` WRITE;
 /*!40000 ALTER TABLE `movimentacoes` DISABLE KEYS */;
+INSERT INTO `movimentacoes` (`item_id`, `usuario_id`, `tipo`, `quantidade`, `estoque_antes`, `estoque_depois`, `data`, `observacao`) VALUES
+  (1, 1, 'entrada', 5, 3, 8, '2026-04-15', 'Compra fornecedor — NF 1042');
 /*!40000 ALTER TABLE `movimentacoes` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `nota_entrada`
+--
+
+DROP TABLE IF EXISTS `nota_entrada`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `nota_entrada` (
+  `id` int NOT NULL AUTO_INCREMENT COMMENT 'ID do arquivo da nota',
+  `movimentacao_id` int NOT NULL COMMENT 'FK para movimentacoes',
+  `tipo` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'imagem ou nota_fiscal',
+  `nome_arquivo` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Nome original do arquivo enviado',
+  `caminho` varchar(500) COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Chave/caminho relativo do arquivo no storage',
+  `mime_type` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Tipo MIME do arquivo',
+  `tamanho_bytes` int DEFAULT NULL COMMENT 'Tamanho do arquivo em bytes',
+  `criado_em` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Data do upload',
+  PRIMARY KEY (`id`),
+  KEY `fk_nota_entrada_movimentacao` (`movimentacao_id`),
+  CONSTRAINT `fk_nota_entrada_movimentacao` FOREIGN KEY (`movimentacao_id`) REFERENCES `movimentacoes` (`id`),
+  CONSTRAINT `chk_nota_entrada_tipo` CHECK ((`tipo` in (_utf8mb4'imagem',_utf8mb4'nota_fiscal')))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Arquivos vinculados a movimentação — nota fiscal/imagem';
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `nota_entrada`
+--
+
+LOCK TABLES `nota_entrada` WRITE;
+/*!40000 ALTER TABLE `nota_entrada` DISABLE KEYS */;
+INSERT INTO `nota_entrada` (`movimentacao_id`, `tipo`, `nome_arquivo`, `caminho`, `mime_type`, `tamanho_bytes`) VALUES
+  (1, 'nota_fiscal', 'nf-1042.pdf', 'notas-entrada/exemplo-nf-1042.pdf', 'application/pdf', 204800),
+  (1, 'imagem', 'recibo.jpg', 'notas-entrada/exemplo-recibo.jpg', 'image/jpeg', 81920);
+/*!40000 ALTER TABLE `nota_entrada` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --

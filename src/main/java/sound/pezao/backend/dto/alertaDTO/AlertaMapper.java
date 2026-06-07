@@ -7,6 +7,8 @@ public class AlertaMapper {
         return new AlertaResponse(
                 alerta.getItemId(),
                 alerta.getItemNome(),
+                alerta.getCategoriaNome(),
+                alerta.getUnidadeMedida(),
                 alerta.getQuantidadeAtual(),
                 alerta.getQuantidadeMinima(),
                 alerta.getTipoAlerta()
