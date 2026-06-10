@@ -17,4 +17,5 @@ public class HealthController {
     public ResponseEntity<Void> health(){
         return ResponseEntity.ok().build();
     }
+    
 }
