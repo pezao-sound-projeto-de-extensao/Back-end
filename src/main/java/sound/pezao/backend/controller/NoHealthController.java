@@ -8,14 +8,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/health")
-@Tag(name = "Health", description = "Verifica a saúde da aplicação")
-public class HealthController {
-
+@RequestMapping("/no-health")
+@Tag(name = "Health", description = "Endpoint de teste")
+public class NoHealthController {
     @GetMapping
-    @Operation(summary = "Informar a saúde da aplicação")
-    public ResponseEntity<Void> health(){
-        return ResponseEntity.ok().build();
+    @Operation(summary = "Simula erro 500")
+    public ResponseEntity<Void> noHealth(){
+        return ResponseEntity.internalServerError().build();
     }
-    
 }
