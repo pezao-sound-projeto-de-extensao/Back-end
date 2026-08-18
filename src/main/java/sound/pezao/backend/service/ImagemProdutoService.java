@@ -52,11 +52,13 @@ public class ImagemProdutoService {
         }
     }
 
+    @PreAuthorize("hasAuthority('EDITAR_ITENS')")
     public List<ImagemProdutoResponse> listar(Integer itemId) {
         garantirItemExiste(itemId);
         return ImagemProdutoMapper.toResponseList(repository.findByItem_Id(itemId));
     }
 
+    @PreAuthorize("hasAuthority('EDITAR_ITENS')")
     public ArquivoDownload baixar(Integer itemId, Integer imagemId) {
         ImagemProduto imagem = buscarDoItem(itemId, imagemId);
         return new ArquivoDownload(
