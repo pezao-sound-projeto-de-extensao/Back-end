@@ -1,5 +1,6 @@
 package sound.pezao.backend.service;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import sound.pezao.backend.dto.arquivoDTO.ArquivoDownload;
@@ -34,6 +35,7 @@ public class NotaEntradaService {
         this.armazenamento = armazenamento;
     }
 
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public NotaEntradaResponse upload(Integer movimentacaoId, MultipartFile arquivo, String tipo) {
         if (tipo == null || !TIPOS_VALIDOS.contains(tipo)) {
             throw new ArquivoInvalidoException("Tipo inválido. Use 'imagem' ou 'nota_fiscal'.");
@@ -58,11 +60,13 @@ public class NotaEntradaService {
         }
     }
 
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public List<NotaEntradaResponse> listar(Integer movimentacaoId) {
         garantirMovimentacaoExiste(movimentacaoId);
         return NotaEntradaMapper.toResponseList(repository.findByMovimentacao_Id(movimentacaoId));
     }
 
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public ArquivoDownload baixar(Integer movimentacaoId, Integer notaId) {
         NotaEntrada nota = buscarDaMovimentacao(movimentacaoId, notaId);
         return new ArquivoDownload(
@@ -72,6 +76,7 @@ public class NotaEntradaService {
         );
     }
 
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public void deletar(Integer movimentacaoId, Integer notaId) {
         NotaEntrada nota = buscarDaMovimentacao(movimentacaoId, notaId);
         repository.delete(nota);
