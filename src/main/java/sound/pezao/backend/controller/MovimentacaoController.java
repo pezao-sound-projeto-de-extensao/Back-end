@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 import sound.pezao.backend.dto.movimentacaoDTO.MovimentacaoRequest;
@@ -29,6 +30,7 @@ public class MovimentacaoController {
 
     @GetMapping
     @Operation(summary = "Lista o histórico completo de movimentações com filtros opcionais")
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public ResponseEntity<List<MovimentacaoResponse>> listar(
             @RequestParam(required = false) Integer itemId,
             @RequestParam(required = false) String tipo,
@@ -47,6 +49,7 @@ public class MovimentacaoController {
 
     @PostMapping
     @Operation(summary = "Registra uma entrada ou saída de estoque")
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public ResponseEntity<MovimentacaoResponse> registrar(
             @RequestBody @Valid MovimentacaoRequest request
     ) {
@@ -57,6 +60,7 @@ public class MovimentacaoController {
 
     @DeleteMapping("/{id}")
     @Operation(summary = "Exclui uma movimentação e reverte o estoque automaticamente")
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public ResponseEntity<Void> deletar(@PathVariable Integer id) {
         facade.deletar(id);
         return ResponseEntity.noContent().build();
