@@ -6,6 +6,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import sound.pezao.backend.dto.arquivoDTO.ArquivoDownload;
@@ -27,6 +28,7 @@ public class ImagemProdutoController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Faz upload de uma imagem para o item")
+    @PreAuthorize("hasAuthority('EDITAR_ITENS')")
     public ResponseEntity<ImagemProdutoResponse> upload(
             @PathVariable Integer itemId,
             @RequestParam("arquivo") MultipartFile arquivo
@@ -36,12 +38,14 @@ public class ImagemProdutoController {
 
     @GetMapping
     @Operation(summary = "Lista as imagens de um item")
+    @PreAuthorize("hasAuthority('EDITAR_ITENS')")
     public ResponseEntity<List<ImagemProdutoResponse>> listar(@PathVariable Integer itemId) {
         return ResponseEntity.ok(service.listar(itemId));
     }
 
     @GetMapping("/{imagemId}/download")
     @Operation(summary = "Baixa o arquivo de uma imagem")
+    @PreAuthorize("hasAuthority('EDITAR_ITENS')")
     public ResponseEntity<Resource> download(
             @PathVariable Integer itemId,
             @PathVariable Integer imagemId
@@ -56,6 +60,7 @@ public class ImagemProdutoController {
 
     @DeleteMapping("/{imagemId}")
     @Operation(summary = "Remove uma imagem do item")
+    @PreAuthorize("hasAuthority('EXCLUIR_ITENS')")
     public ResponseEntity<Void> deletar(
             @PathVariable Integer itemId,
             @PathVariable Integer imagemId

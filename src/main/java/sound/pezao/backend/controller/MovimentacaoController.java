@@ -43,6 +43,7 @@ public class MovimentacaoController {
 
     @GetMapping("/{id}")
     @Operation(summary = "Busca uma movimentação pelo ID")
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public ResponseEntity<MovimentacaoResponse> buscarPorId(@PathVariable Integer id) {
         return ResponseEntity.ok(facade.buscarPorId(id));
     }
