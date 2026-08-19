@@ -8,6 +8,7 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import sound.pezao.backend.dto.arquivoDTO.ArquivoDownload;
@@ -29,6 +30,7 @@ public class NotaEntradaController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Faz upload de um arquivo (imagem ou nota fiscal) para a movimentação")
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public ResponseEntity<NotaEntradaResponse> upload(
             @PathVariable Integer movimentacaoId,
             @RequestParam("arquivo") MultipartFile arquivo,
@@ -41,12 +43,14 @@ public class NotaEntradaController {
 
     @GetMapping
     @Operation(summary = "Lista os arquivos de uma movimentação")
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public ResponseEntity<List<NotaEntradaResponse>> listar(@PathVariable Integer movimentacaoId) {
         return ResponseEntity.ok(service.listar(movimentacaoId));
     }
 
     @GetMapping("/{notaId}/download")
     @Operation(summary = "Baixa o arquivo de uma nota")
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public ResponseEntity<Resource> download(
             @PathVariable Integer movimentacaoId,
             @PathVariable Integer notaId
@@ -61,6 +65,7 @@ public class NotaEntradaController {
 
     @DeleteMapping("/{notaId}")
     @Operation(summary = "Remove um arquivo da movimentação")
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public ResponseEntity<Void> deletar(
             @PathVariable Integer movimentacaoId,
             @PathVariable Integer notaId
