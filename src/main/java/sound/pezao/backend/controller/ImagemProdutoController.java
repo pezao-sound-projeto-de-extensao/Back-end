@@ -3,6 +3,7 @@ package sound.pezao.backend.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -13,6 +14,7 @@ import sound.pezao.backend.dto.arquivoDTO.ArquivoDownload;
 import sound.pezao.backend.dto.imagemProdutoDTO.ImagemProdutoResponse;
 import sound.pezao.backend.service.ImagemProdutoService;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
@@ -51,10 +53,12 @@ public class ImagemProdutoController {
             @PathVariable Integer imagemId
     ) {
         ArquivoDownload arquivo = service.baixar(itemId, imagemId);
+        ContentDisposition disposition = ContentDisposition.inline()
+                .filename(arquivo.nomeArquivo(), StandardCharsets.UTF_8)
+                .build();
         return ResponseEntity.ok()
                 .contentType(resolverMediaType(arquivo.mimeType()))
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "inline; filename=\"" + arquivo.nomeArquivo() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
                 .body(arquivo.conteudo());
     }
 
