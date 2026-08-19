@@ -19,7 +19,6 @@ import sound.pezao.backend.repository.UsuarioRepository;
 import sound.pezao.backend.security.JwtService;
 import sound.pezao.backend.security.UserAuthenticated;
 
-import java.security.SecureRandom;
 import java.time.LocalDateTime;
 
 @Service
@@ -41,7 +40,6 @@ public class AuthenticationService {
         Usuario usuario = usuarioRepository.findByEmail(authRequest.email())
                 .orElseThrow(LoginInvalidoException::new);
 
-        // Nota: senha agora é sempre aleatória, sem necessidade de verificar senha padrão
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         authRequest.email(),
@@ -76,20 +74,14 @@ public class AuthenticationService {
     public void resetarSenha(int id){
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário", id));
-        String senhaAleatoria = gerarSenhaAleatoria();
-        usuario.setSenhaHash(passwordEncoder.encode(senhaAleatoria));
+
+        String senhaPadrao = gerarSenhaPadraoDoUsuario(usuario.getId());
+        usuario.setSenhaHash(passwordEncoder.encode(senhaPadrao));
         usuarioRepository.save(usuario);
     }
 
-    private String gerarSenhaAleatoria() {
-        SecureRandom random = new SecureRandom();
-        byte[] bytes = new byte[32];
-        random.nextBytes(bytes);
-        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
-        StringBuilder senha = new StringBuilder();
-        for (int i = 0; i < 12; i++) {
-            senha.append(chars.charAt(random.nextInt(chars.length())));
-        }
-        return senha.toString();
+    private String gerarSenhaPadraoDoUsuario(Integer usuarioId) {
+        // Essa função retorna uma senha padrão única por usuário, diferente ao que definimos antes de ser uma senha IGUAL para todos, ex: Pezao_0001, Pezao_0042, etc.
+        return "Pezao_" + String.format("%04d", usuarioId);
     }
 }
