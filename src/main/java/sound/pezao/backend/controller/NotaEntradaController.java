@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import sound.pezao.backend.dto.arquivoDTO.ArquivoDownload;
 import sound.pezao.backend.dto.notaEntradaDTO.NotaEntradaResponse;
 import sound.pezao.backend.service.NotaEntradaService;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
@@ -56,10 +58,12 @@ public class NotaEntradaController {
             @PathVariable Integer notaId
     ) {
         ArquivoDownload arquivo = service.baixar(movimentacaoId, notaId);
+        ContentDisposition disposition = ContentDisposition.inline()
+                .filename(arquivo.nomeArquivo(), StandardCharsets.UTF_8)
+                .build();
         return ResponseEntity.ok()
                 .contentType(resolverMediaType(arquivo.mimeType()))
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "inline; filename=\"" + arquivo.nomeArquivo() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
                 .body(arquivo.conteudo());
     }
 
