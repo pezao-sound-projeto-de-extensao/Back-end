@@ -19,6 +19,7 @@ import sound.pezao.backend.repository.UsuarioRepository;
 import sound.pezao.backend.security.JwtService;
 import sound.pezao.backend.security.UserAuthenticated;
 
+import java.security.SecureRandom;
 import java.time.LocalDateTime;
 
 @Service
@@ -40,14 +41,7 @@ public class AuthenticationService {
         Usuario usuario = usuarioRepository.findByEmail(authRequest.email())
                 .orElseThrow(LoginInvalidoException::new);
 
-        boolean senhaInicial = passwordEncoder.matches(
-                UsuarioService.senhaPadrao,
-                usuario.getSenhaHash()
-        );
-
-        if (senhaInicial){
-            throw new PrimeiroAcessoException("Altere a senha padrão antes de efetuar o login");
-        }
+        // Nota: senha agora é sempre aleatória, sem necessidade de verificar senha padrão
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         authRequest.email(),
@@ -65,14 +59,6 @@ public class AuthenticationService {
         Usuario usuario = usuarioRepository.findByEmail(authTrocarSenhaRequest.email())
                 .orElseThrow(LoginInvalidoException::new);
 
-        boolean senhaInicial = passwordEncoder.matches(
-                UsuarioService.senhaPadrao,
-                usuario.getSenhaHash()
-        );
-
-        if (!senhaInicial){
-            throw new PrimeiroAcessoException("A senha já foi alterada uma vez");
-        }
         boolean senhaCorreta = passwordEncoder.matches(
                 authTrocarSenhaRequest.senhaAtual(),
                 usuario.getSenhaHash()
@@ -84,18 +70,26 @@ public class AuthenticationService {
 
         usuario.setSenhaHash(passwordEncoder.encode(authTrocarSenhaRequest.senhaNova()));
         usuarioRepository.save(usuario);
-
-        System.out.println(passwordEncoder.matches(authTrocarSenhaRequest.senhaNova(), usuario.getSenhaHash()));
-
     }
 
     @PreAuthorize("hasAuthority('GERENCIAR_USUARIOS')")
     public void resetarSenha(int id){
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário", id));
-
-        usuario.setSenhaHash(passwordEncoder.encode(UsuarioService.senhaPadrao));
+        String senhaAleatoria = gerarSenhaAleatoria();
+        usuario.setSenhaHash(passwordEncoder.encode(senhaAleatoria));
         usuarioRepository.save(usuario);
     }
 
+    private String gerarSenhaAleatoria() {
+        SecureRandom random = new SecureRandom();
+        byte[] bytes = new byte[32];
+        random.nextBytes(bytes);
+        String chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%";
+        StringBuilder senha = new StringBuilder();
+        for (int i = 0; i < 12; i++) {
+            senha.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return senha.toString();
+    }
 }
