@@ -7,7 +7,7 @@ import sound.pezao.backend.entities.Categoria;
 public class CategoriaMapper {
     public static List<CategoriaResponse> toResponse(List<Categoria> categorias) {
         return categorias.stream()
-            .map(categoria -> new CategoriaResponse(categoria.getNome()))
+            .map(categoria -> new CategoriaResponse(categoria.getId(), categoria.getNome()))
             .toList();
     }
 
@@ -18,6 +18,6 @@ public class CategoriaMapper {
     }
 
     public static CategoriaResponse toResponse(Categoria categoria) {
-        return new CategoriaResponse(categoria.getNome());
+        return new CategoriaResponse(categoria.getId(), categoria.getNome());
     }
 }
