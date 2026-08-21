@@ -4,5 +4,8 @@ public record ItemResumoResponse(
         Integer id,
         String nome,
         Integer categoriaId,
-        String categoriaNome
+        String categoriaNome,
+        Integer unidadeId,
+        String unidadeNome,
+        String unidadeAbreviacao
 ) {}
