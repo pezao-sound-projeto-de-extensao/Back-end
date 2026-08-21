@@ -6,7 +6,7 @@ import sound.pezao.backend.entities.Unidade;
 
 public class UnidadeMapper {
     public static UnidadeResponse toResponse(Unidade unidade){
-        return new UnidadeResponse(unidade.getNome(), unidade.getAbreviacao());
+        return new UnidadeResponse(unidade.getId(), unidade.getNome(), unidade.getAbreviacao());
     }
 
     public static List<UnidadeResponse> toResponse(List<Unidade> unidades){
