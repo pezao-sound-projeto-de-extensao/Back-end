@@ -54,8 +54,8 @@ class UnidadeControllerTest {
         @DisplayName("Deve retornar 200 quando listar unidades com sucesso")
         void findAllDeveRetornar200QuandoListarUnidadesComSucesso() throws Exception {
             List<UnidadeResponse> response = List.of(
-                    new UnidadeResponse("Unidade", "un"),
-                    new UnidadeResponse("Quilograma", "kg")
+                    new UnidadeResponse(1, "Unidade", "un"),
+                    new UnidadeResponse(2, "Quilograma", "kg")
             );
 
             when(unidadeService.findAll()).thenReturn(response);
@@ -75,7 +75,7 @@ class UnidadeControllerTest {
         @DisplayName("Deve retornar 201 quando criar unidade com sucesso")
         void createDeveRetornar201QuandoCriarUnidadeComSucesso() throws Exception {
             UnidadeRequest request = new UnidadeRequest("Unidade", "un");
-            UnidadeResponse response = new UnidadeResponse("Unidade", "un");
+            UnidadeResponse response = new UnidadeResponse(1, "Unidade", "un");
 
             when(unidadeService.create(request)).thenReturn(response);
 
@@ -96,7 +96,7 @@ class UnidadeControllerTest {
         @DisplayName("Deve retornar 200 quando atualizar unidade com sucesso")
         void updateDeveRetornar200QuandoAtualizarUnidadeComSucesso() throws Exception {
             UnidadeRequest request = new UnidadeRequest("Quilograma", "kg");
-            UnidadeResponse response = new UnidadeResponse("Quilograma", "kg");
+            UnidadeResponse response = new UnidadeResponse(1, "Quilograma", "kg");
 
             when(unidadeService.update(1, request)).thenReturn(response);
 
