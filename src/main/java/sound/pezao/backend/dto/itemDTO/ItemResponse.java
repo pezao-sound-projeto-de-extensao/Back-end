@@ -14,6 +14,12 @@ public record ItemResponse(
         @Schema(description = "Nome do item", example = "Módulo amplificador 400W")
         String nome,
 
+        @Schema(description = "ID da categoria do item", example = "1")
+        Integer categoriaId,
+
+        @Schema(description = "Nome da categoria do item", example = "Som automotivo")
+        String categoriaNome,
+
         @Schema(description = "Quantidade atual em estoque", example = "5")
         Integer quantidadeAtual,
 
