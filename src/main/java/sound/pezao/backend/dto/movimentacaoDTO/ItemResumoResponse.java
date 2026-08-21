@@ -2,5 +2,10 @@ package sound.pezao.backend.dto.movimentacaoDTO;
 
 public record ItemResumoResponse(
         Integer id,
-        String nome
+        String nome,
+        Integer categoriaId,
+        String categoriaNome,
+        Integer unidadeId,
+        String unidadeNome,
+        String unidadeAbreviacao
 ) {}
