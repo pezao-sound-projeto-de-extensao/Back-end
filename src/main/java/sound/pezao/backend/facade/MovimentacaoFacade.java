@@ -1,12 +1,14 @@
 package sound.pezao.backend.facade;
 
 import jakarta.transaction.Transactional;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import sound.pezao.backend.dto.movimentacaoDTO.MovimentacaoMapper;
 import sound.pezao.backend.dto.movimentacaoDTO.MovimentacaoRequest;
 import sound.pezao.backend.dto.movimentacaoDTO.MovimentacaoResponse;
 import sound.pezao.backend.entities.Item;
 import sound.pezao.backend.entities.Movimentacao;
+import sound.pezao.backend.entities.Usuario;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.repository.ItemRepository;
 import sound.pezao.backend.repository.UsuarioRepository;
@@ -55,9 +57,14 @@ public class MovimentacaoFacade {
         Item item = itemRepository.findById(request.itemId())
                 .orElseThrow(() -> new EntityNotFoundException("Item não encontrado: ", request.itemId()));
 
+        String email = SecurityContextHolder.getContext().getAuthentication().getName();
+        Usuario usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário", 0));
+
         int estoqueAntes = estoqueService.aplicarMovimentacao(item, request.tipo(), request.quantidade());
 
         Movimentacao movimentacao = mapper.toEntity(request);
+        movimentacao.setUsuario(usuario);
         movimentacao.setEstoqueAntes(estoqueAntes);
         movimentacao.setEstoqueDepois(item.getQuantidadeAtual());
 
