@@ -20,6 +20,15 @@ public record ItemResponse(
         @Schema(description = "Nome da categoria do item", example = "Som automotivo")
         String categoriaNome,
 
+        @Schema(description = "ID da unidade do item", example = "1")
+        Integer unidadeId,
+
+        @Schema(description = "Nome da unidade do item", example = "Caixa")
+        String unidadeNome,
+
+        @Schema(description = "Abreviação da unidade do item", example = "cx")
+        String unidadeAbreviacao,
+
         @Schema(description = "Quantidade atual em estoque", example = "5")
         Integer quantidadeAtual,
 
