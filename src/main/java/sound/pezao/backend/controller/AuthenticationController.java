@@ -35,6 +35,13 @@ public class AuthenticationController {
         return ResponseEntity.ok(authenticationService.refreshToken(request.refreshToken()));
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @Valid @RequestBody RefreshTokenRequest request
+            ) {
+        authenticationService.logout(request.refreshToken());
+        return ResponseEntity.noContent().build();
+    }
     @Operation(summary = "Trocar senha no primeiro acesso")
     @PostMapping("/trocar-senha")
     public ResponseEntity<Void> trocarSenha(@Valid @RequestBody AuthTrocarSenhaRequest authTrocarSenhaRequest){
