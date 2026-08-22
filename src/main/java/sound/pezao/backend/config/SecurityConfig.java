@@ -32,7 +32,7 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final ObjectMapper objectMapper;
     public final String [] ENDPOINTS_PUBLICOS = {
-      "/api/auth/login", "/api/auth/trocar-senha", "/api/health", "/api/no-health"
+      "/api/auth/login", "/api/auth/trocar-senha", "/api/health", "/api/no-health", "/api/auth/refresh", "/api/auth/logout"
     };
     public final String [] ENDPOINTS_AUTENTICADO = {
             "/api/alertas",

@@ -8,7 +8,13 @@ import lombok.Setter;
 import java.time.Instant;
 
 @Entity
-@Table
+@Table (
+        name = "refresh_tokens",
+        indexes = {
+                @Index(name = "idx_refresh_token_usuario", columnList = "usuario_id"),
+                @Index(name = "idx_refresh_token_expira_em", columnList = "expira_em")
+        }
+)
 @NoArgsConstructor
 @Getter
 @Setter
