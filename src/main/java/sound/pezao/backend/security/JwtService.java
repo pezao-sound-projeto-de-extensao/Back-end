@@ -53,7 +53,6 @@ public class JwtService {
                 .compact();
     }
 
-    // Mantém compatibilidade caso AuthenticationService já use este método.
     public String generateToken(Authentication authentication) {
         return generateAccessToken(authentication);
     }
