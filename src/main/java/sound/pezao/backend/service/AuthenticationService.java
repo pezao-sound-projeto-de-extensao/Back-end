@@ -28,13 +28,15 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthenticationService(JwtService jwtService, AuthenticationManager authenticationManager,
-                                 UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
+                                 UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, RefreshTokenService refreshTokenService) {
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
+        this.refreshTokenService = refreshTokenService;
     }
 
     public AuthResponse authenticate(AuthRequest authRequest){
@@ -57,9 +59,10 @@ public class AuthenticationService {
         );
         usuario.setUltimoAcesso(LocalDateTime.now());
         usuarioRepository.save(usuario);
-        String token = jwtService.generateToken(authentication);
+        String accessToken = jwtService.generateToken(authentication);
+        String refreshToken = refreshTokenService.criar(usuario);
         UserAuthenticated userDetails = (UserAuthenticated) authentication.getPrincipal();
-        return new AuthResponse(token, userDetails.getUsername(), UsuarioMapper.toResponse(usuario));
+        return new AuthResponse(accessToken, refreshToken, userDetails.getUsername(), UsuarioMapper.toResponse(usuario));
     }
 
     public void trocarSenha(AuthTrocarSenhaRequest authTrocarSenhaRequest){
@@ -99,6 +102,25 @@ public class AuthenticationService {
         usuarioRepository.save(usuario);
     }
 
-    public AuthResponse refreshToken(@NotBlank String s) {
+    public AuthResponse refreshToken(String token) {
+        Usuario usuario = refreshTokenService.validar(token);
+
+        UserAuthenticated userDetails = new UserAuthenticated(usuario);
+
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities()
+        );
+
+        String accessToken = jwtService.generateToken(authentication);
+        String refreshToken = refreshTokenService.criar(usuario);
+
+        return new AuthResponse(accessToken, refreshToken, userDetails.getUsername(), UsuarioMapper.toResponse(usuario));
+
+    }
+
+    public void logout(String token){
+        refreshTokenService.revogar(token);
     }
 }
