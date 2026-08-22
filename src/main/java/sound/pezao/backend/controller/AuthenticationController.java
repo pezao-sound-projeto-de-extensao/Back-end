@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import sound.pezao.backend.dto.authDTO.AuthRequest;
 import sound.pezao.backend.dto.authDTO.AuthResponse;
 import sound.pezao.backend.dto.authDTO.AuthTrocarSenhaRequest;
+import sound.pezao.backend.dto.authDTO.RefreshTokenRequest;
 import sound.pezao.backend.service.AuthenticationService;
 
 @RestController
@@ -25,6 +26,13 @@ public class AuthenticationController {
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login (@Valid  @RequestBody AuthRequest authRequest){
         return ResponseEntity.ok(authenticationService.authenticate(authRequest));
+    }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(
+            @Valid @RequestBody RefreshTokenRequest request
+            ){
+        return ResponseEntity.ok(authenticationService.refreshToken(request.refreshToken()));
     }
 
     @Operation(summary = "Trocar senha no primeiro acesso")
