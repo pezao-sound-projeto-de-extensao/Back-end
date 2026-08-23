@@ -22,12 +22,13 @@ public class AuthenticationController {
         this.authenticationService = authenticationService;
     }
 
-    @Operation(summary = "Login e geração do token JWT.")
+    @Operation(summary = "Login e geração do accessToken e refreshToken.")
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login (@Valid  @RequestBody AuthRequest authRequest){
         return ResponseEntity.ok(authenticationService.authenticate(authRequest));
     }
 
+    @Operation(summary = "Gera novo accessToken e refreshToken.")
     @PostMapping("/refresh")
     public ResponseEntity<AuthResponse> refresh(
             @Valid @RequestBody RefreshTokenRequest request
@@ -35,6 +36,7 @@ public class AuthenticationController {
         return ResponseEntity.ok(authenticationService.refreshToken(request.refreshToken()));
     }
 
+    @Operation(summary = "Revoga o refreshToken")
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(
             @Valid @RequestBody RefreshTokenRequest request
