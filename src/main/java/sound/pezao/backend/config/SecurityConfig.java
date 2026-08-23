@@ -30,7 +30,6 @@ import java.time.Instant;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final ObjectMapper objectMapper;
     public final String [] ENDPOINTS_PUBLICOS = {
       "/api/auth/login", "/api/auth/trocar-senha", "/api/health", "/api/no-health", "/api/auth/refresh", "/api/auth/logout"
     };
@@ -77,16 +76,15 @@ public class SecurityConfig {
             "/api/relatorios/**"
     };
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter, ObjectMapper objectMapper) {
+    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-        this.objectMapper = objectMapper;
     }
 
     @Bean
     SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(Customizer.withDefaults())
+                .cors(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(ENDPOINTS_PUBLICOS).permitAll()
                         .requestMatchers(ENDPOINTS_AUTENTICADO).authenticated()
@@ -94,25 +92,8 @@ public class SecurityConfig {
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
-                                    HttpStatus.UNAUTHORIZED,
-                                    "Sessão expirada ou token inválido"
-                            );
-
-                            problemDetail.setType(URI.create("about:blank"));
-                            problemDetail.setTitle("Unauthorized");
-                            problemDetail.setProperty("TimeStamp", Instant.now());
-
-                            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-                            response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
-
-                            objectMapper.writeValue(response.getOutputStream(), problemDetail);
-                        })
-                )
-                .httpBasic(AbstractHttpConfigurer::disable)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .httpBasic(Customizer.withDefaults())
                 .build();
     }
 
