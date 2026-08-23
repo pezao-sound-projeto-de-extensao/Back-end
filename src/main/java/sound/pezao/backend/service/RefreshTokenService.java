@@ -89,7 +89,7 @@ public class RefreshTokenService {
     }
 
     private String gerarSegredo(){
-        byte[] bytes = new byte[64];
+        byte[] bytes = new byte[32];
         secureRandom.nextBytes(bytes);
         return Base64.getUrlEncoder()
                 .withoutPadding()
