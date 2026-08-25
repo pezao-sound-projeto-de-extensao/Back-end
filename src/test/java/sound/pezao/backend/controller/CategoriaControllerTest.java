@@ -54,8 +54,8 @@ class CategoriaControllerTest {
         @DisplayName("Deve retornar 200 quando listar categorias com sucesso")
         void findAllDeveRetornar200QuandoListarCategoriasComSucesso() throws Exception {
             List<CategoriaResponse> response = List.of(
-                    new CategoriaResponse("Som automotivo"),
-                    new CategoriaResponse("Acessórios")
+                    new CategoriaResponse(1, "Som automotivo"),
+                    new CategoriaResponse(2, "Acessórios")
             );
 
             when(categoriaService.findAll()).thenReturn(response);
@@ -75,7 +75,7 @@ class CategoriaControllerTest {
         @DisplayName("Deve retornar 201 quando criar categoria com sucesso")
         void createDeveRetornar201QuandoCriarCategoriaComSucesso() throws Exception {
             CategoriaRequest request = new CategoriaRequest("Som automotivo");
-            CategoriaResponse response = new CategoriaResponse("Som automotivo");
+            CategoriaResponse response = new CategoriaResponse(1, "Som automotivo");
 
             when(categoriaService.create(request)).thenReturn(response);
 
@@ -96,7 +96,7 @@ class CategoriaControllerTest {
         @DisplayName("Deve retornar 200 quando atualizar categoria com sucesso")
         void updateDeveRetornar200QuandoAtualizarCategoriaComSucesso() throws Exception {
             CategoriaRequest request = new CategoriaRequest("Som automotivo atualizado");
-            CategoriaResponse response = new CategoriaResponse("Som automotivo atualizado");
+            CategoriaResponse response = new CategoriaResponse(1, "Som automotivo atualizado");
 
             when(categoriaService.update(1, request)).thenReturn(response);
 

@@ -22,6 +22,7 @@ import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import sound.pezao.backend.dto.usuarioDTO.UsuarioCadastroResponse;
 import sound.pezao.backend.dto.usuarioDTO.UsuarioRequest;
 import sound.pezao.backend.dto.usuarioDTO.UsuarioResponse;
 import sound.pezao.backend.entities.Cargo;
@@ -139,22 +140,22 @@ class UsuarioServiceTest {
         void cadastrarDeveCadastrarUsuarioQuandoDadosValidos() {
             when(usuarioRepository.existsByEmailIgnoreCase(usuarioRequest.email())).thenReturn(false);
             when(cargoRepository.findById(usuarioRequest.cargo_id())).thenReturn(Optional.of(cargo));
-            when(passwordEncoder.encode(UsuarioService.senhaPadrao)).thenReturn("hash-padrao");
+            when(passwordEncoder.encode("Pezao_0001")).thenReturn("hash-padrao");
             when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocation -> {
                 Usuario u = invocation.getArgument(0);
                 u.setId(1);
                 return u;
             });
 
-            UsuarioResponse resultado = usuarioService.cadastrar(usuarioRequest);
+            UsuarioCadastroResponse resultado = usuarioService.cadastrar(usuarioRequest);
 
             assertNotNull(resultado);
             assertEquals(usuarioRequest.email(), resultado.email());
 
             verify(usuarioRepository).existsByEmailIgnoreCase(usuarioRequest.email());
             verify(cargoRepository).findById(usuarioRequest.cargo_id());
-            verify(passwordEncoder).encode(UsuarioService.senhaPadrao);
-            verify(usuarioRepository).save(any(Usuario.class));
+            verify(passwordEncoder).encode("Pezao_0001");
+            verify(usuarioRepository, times(2)).save(any(Usuario.class));
         }
 
         @Test
