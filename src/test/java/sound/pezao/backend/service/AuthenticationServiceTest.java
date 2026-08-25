@@ -16,7 +16,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -57,6 +56,9 @@ class AuthenticationServiceTest {
     @Mock
     private PasswordEncoder passwordEncoder;
 
+    @Mock
+    private RefreshTokenService refreshTokenService;
+
     @InjectMocks
     private AuthenticationService authenticationService;
 
@@ -80,8 +82,7 @@ class AuthenticationServiceTest {
         usuario.setEmail("teste@email.com");
         usuario.setSenhaHash("hash");
         usuario.setCargo(cargo);
-
-        SecurityContextHolder.clearContext();
+        usuario.setAtivo(true);
     }
 
     @Nested
@@ -90,61 +91,121 @@ class AuthenticationServiceTest {
 
         @Test
         @DisplayName("Deve lançar LoginInvalidoException quando usuário não existe")
-        void authenticateDeveLancarLoginInvalidoQuandoUsuarioNaoExiste() {
-            AuthRequest request = new AuthRequest("teste@email.com", "123");
+        void deveLancarLoginInvalidoQuandoUsuarioNaoExiste() {
+            AuthRequest request =
+                    new AuthRequest("teste@email.com", "123");
 
-            when(usuarioRepository.findByEmail("teste@email.com")).thenReturn(Optional.empty());
+            when(usuarioRepository.findByEmail("teste@email.com"))
+                    .thenReturn(Optional.empty());
 
-            assertThrows(LoginInvalidoException.class,
-                    () -> authenticationService.authenticate(request));
+            assertThrows(
+                    LoginInvalidoException.class,
+                    () -> authenticationService.authenticate(request)
+            );
 
-            verify(authenticationManager, never()).authenticate(any());
-            verify(usuarioRepository, never()).save(any());
-            verify(jwtService, never()).generateToken(any());
+            verify(authenticationManager, never())
+                    .authenticate(any());
+            verify(passwordEncoder, never())
+                    .matches(any(), any());
+            verify(usuarioRepository, never())
+                    .save(any());
+            verify(jwtService, never())
+                    .generateToken(any());
+            verify(refreshTokenService, never())
+                    .criar(any());
         }
 
         @Test
         @DisplayName("Deve lançar PrimeiroAcessoException quando senha padrão")
-        void authenticateDeveLancarPrimeiroAcessoQuandoSenhaPadrao() {
-            AuthRequest request = new AuthRequest("teste@email.com", "123");
+        void deveLancarPrimeiroAcessoQuandoSenhaPadrao() {
+            AuthRequest request =
+                    new AuthRequest("teste@email.com", "123");
 
-            when(usuarioRepository.findByEmail("teste@email.com")).thenReturn(Optional.of(usuario));
-            when(passwordEncoder.matches(UsuarioService.senhaPadrao, usuario.getSenhaHash())).thenReturn(true);
+            when(usuarioRepository.findByEmail("teste@email.com"))
+                    .thenReturn(Optional.of(usuario));
 
-            PrimeiroAcessoException ex = assertThrows(PrimeiroAcessoException.class,
-                    () -> authenticationService.authenticate(request));
+            when(passwordEncoder.matches(
+                    UsuarioService.senhaPadrao,
+                    usuario.getSenhaHash()
+            )).thenReturn(true);
 
-            assertEquals("Altere a senha padrão antes de efetuar o login", ex.getMessage());
-            verify(authenticationManager, never()).authenticate(any());
-            verify(usuarioRepository, never()).save(any());
-            verify(jwtService, never()).generateToken(any());
+            PrimeiroAcessoException exception =
+                    assertThrows(
+                            PrimeiroAcessoException.class,
+                            () -> authenticationService.authenticate(request)
+                    );
+
+            assertEquals(
+                    "Altere a senha padrão antes de efetuar o login",
+                    exception.getMessage()
+            );
+
+            verify(passwordEncoder).matches(
+                    UsuarioService.senhaPadrao,
+                    usuario.getSenhaHash()
+            );
+            verify(authenticationManager, never())
+                    .authenticate(any());
+            verify(usuarioRepository, never())
+                    .save(any());
+            verify(jwtService, never())
+                    .generateToken(any());
+            verify(refreshTokenService, never())
+                    .criar(any());
         }
 
         @Test
         @DisplayName("Deve retornar AuthResponse quando credenciais válidas")
-        void authenticateDeveRetornarAuthResponseQuandoCredenciaisValidas() {
-            AuthRequest request = new AuthRequest("teste@email.com", "123");
-            Authentication authentication = mock(Authentication.class);
-            UserAuthenticated userAuthenticated = mock(UserAuthenticated.class);
+        void deveRetornarAuthResponseQuandoCredenciaisValidas() {
+            AuthRequest request =
+                    new AuthRequest("teste@email.com", "123");
 
-            when(usuarioRepository.findByEmail("teste@email.com")).thenReturn(Optional.of(usuario));
-            when(passwordEncoder.matches(UsuarioService.senhaPadrao, usuario.getSenhaHash())).thenReturn(false);
-            when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class))).thenReturn(authentication);
-            when(jwtService.generateToken(authentication)).thenReturn("jwt-token");
-            when(authentication.getPrincipal()).thenReturn(userAuthenticated);
-            when(userAuthenticated.getUsername()).thenReturn("teste@email.com");
+            Authentication authentication = mockAuthentication();
+            UserAuthenticated userDetails = mockUserDetails();
 
-            AuthResponse response = authenticationService.authenticate(request);
+            when(usuarioRepository.findByEmail("teste@email.com"))
+                    .thenReturn(Optional.of(usuario));
+
+            when(passwordEncoder.matches(
+                    UsuarioService.senhaPadrao,
+                    usuario.getSenhaHash()
+            )).thenReturn(false);
+
+            when(authenticationManager.authenticate(
+                    any(UsernamePasswordAuthenticationToken.class)
+            )).thenReturn(authentication);
+
+            when(jwtService.generateToken(authentication))
+                    .thenReturn("access-token");
+
+            when(refreshTokenService.criar(usuario))
+                    .thenReturn("1.refresh-token");
+
+            when(authentication.getPrincipal())
+                    .thenReturn(userDetails);
+
+            when(userDetails.getUsername())
+                    .thenReturn("teste@email.com");
+
+            AuthResponse response =
+                    authenticationService.authenticate(request);
 
             assertNotNull(response);
-            assertEquals("jwt-token", response.token());
+            assertEquals("access-token", response.accessToken());
+            assertEquals("1.refresh-token", response.refreshToken());
             assertEquals("teste@email.com", response.username());
             assertNotNull(response.usuario());
             assertNotNull(usuario.getUltimoAcesso());
 
+            verify(passwordEncoder).matches(
+                    UsuarioService.senhaPadrao,
+                    usuario.getSenhaHash()
+            );
+            verify(authenticationManager)
+                    .authenticate(any(UsernamePasswordAuthenticationToken.class));
             verify(usuarioRepository).save(usuario);
-            verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
             verify(jwtService).generateToken(authentication);
+            verify(refreshTokenService).criar(usuario);
         }
     }
 
@@ -154,46 +215,84 @@ class AuthenticationServiceTest {
 
         @Test
         @DisplayName("Deve lançar LoginInvalidoException quando usuário não existe")
-        void trocarSenhaDeveLancarLoginInvalidoQuandoUsuarioNaoExiste() {
+        void deveLancarLoginInvalidoQuandoUsuarioNaoExiste() {
             AuthTrocarSenhaRequest request =
-                    new AuthTrocarSenhaRequest("teste@email.com", "atual", "nova");
+                    new AuthTrocarSenhaRequest(
+                            "teste@email.com",
+                            "atual",
+                            "nova"
+                    );
 
-            when(usuarioRepository.findByEmail("teste@email.com")).thenReturn(Optional.empty());
+            when(usuarioRepository.findByEmail("teste@email.com"))
+                    .thenReturn(Optional.empty());
 
-            assertThrows(LoginInvalidoException.class,
-                    () -> authenticationService.trocarSenha(request));
+            assertThrows(
+                    LoginInvalidoException.class,
+                    () -> authenticationService.trocarSenha(request)
+            );
 
             verify(usuarioRepository, never()).save(any());
         }
 
         @Test
         @DisplayName("Deve lançar PrimeiroAcessoException quando senha já foi alterada")
-        void trocarSenhaDeveLancarPrimeiroAcessoQuandoSenhaJaFoiAlterada() {
+        void deveLancarPrimeiroAcessoQuandoSenhaJaFoiAlterada() {
             AuthTrocarSenhaRequest request =
-                    new AuthTrocarSenhaRequest("teste@email.com", "atual", "nova");
+                    new AuthTrocarSenhaRequest(
+                            "teste@email.com",
+                            "atual",
+                            "nova"
+                    );
 
-            when(usuarioRepository.findByEmail("teste@email.com")).thenReturn(Optional.of(usuario));
-            when(passwordEncoder.matches(UsuarioService.senhaPadrao, usuario.getSenhaHash())).thenReturn(false);
+            when(usuarioRepository.findByEmail("teste@email.com"))
+                    .thenReturn(Optional.of(usuario));
 
-            PrimeiroAcessoException ex = assertThrows(PrimeiroAcessoException.class,
-                    () -> authenticationService.trocarSenha(request));
+            when(passwordEncoder.matches(
+                    UsuarioService.senhaPadrao,
+                    usuario.getSenhaHash()
+            )).thenReturn(false);
 
-            assertEquals("A senha já foi alterada uma vez", ex.getMessage());
+            PrimeiroAcessoException exception =
+                    assertThrows(
+                            PrimeiroAcessoException.class,
+                            () -> authenticationService.trocarSenha(request)
+                    );
+
+            assertEquals(
+                    "A senha já foi alterada uma vez",
+                    exception.getMessage()
+            );
+
             verify(usuarioRepository, never()).save(any());
         }
 
         @Test
         @DisplayName("Deve lançar LoginInvalidoException quando senha atual incorreta")
-        void trocarSenhaDeveLancarLoginInvalidoQuandoSenhaAtualIncorreta() {
+        void deveLancarLoginInvalidoQuandoSenhaAtualIncorreta() {
             AuthTrocarSenhaRequest request =
-                    new AuthTrocarSenhaRequest("teste@email.com", "atual", "nova");
+                    new AuthTrocarSenhaRequest(
+                            "teste@email.com",
+                            "atual",
+                            "nova"
+                    );
 
-            when(usuarioRepository.findByEmail("teste@email.com")).thenReturn(Optional.of(usuario));
-            when(passwordEncoder.matches(UsuarioService.senhaPadrao, usuario.getSenhaHash())).thenReturn(true);
-            when(passwordEncoder.matches("atual", usuario.getSenhaHash())).thenReturn(false);
+            when(usuarioRepository.findByEmail("teste@email.com"))
+                    .thenReturn(Optional.of(usuario));
 
-            assertThrows(LoginInvalidoException.class,
-                    () -> authenticationService.trocarSenha(request));
+            when(passwordEncoder.matches(
+                    UsuarioService.senhaPadrao,
+                    usuario.getSenhaHash()
+            )).thenReturn(true);
+
+            when(passwordEncoder.matches(
+                    "atual",
+                    usuario.getSenhaHash()
+            )).thenReturn(false);
+
+            assertThrows(
+                    LoginInvalidoException.class,
+                    () -> authenticationService.trocarSenha(request)
+            );
 
             verify(passwordEncoder, never()).encode(any());
             verify(usuarioRepository, never()).save(any());
@@ -201,35 +300,52 @@ class AuthenticationServiceTest {
 
         @Test
         @DisplayName("Deve salvar nova senha quando dados válidos")
-        void trocarSenhaDeveSalvarNovaSenhaQuandoDadosValidos() {
+        void deveSalvarNovaSenhaQuandoDadosValidos() {
             AuthTrocarSenhaRequest request =
-                    new AuthTrocarSenhaRequest("teste@email.com", "atual", "nova");
-            String novaHash = "hash-nova";
+                    new AuthTrocarSenhaRequest(
+                            "teste@email.com",
+                            "atual",
+                            "nova"
+                    );
 
-            when(usuarioRepository.findByEmail("teste@email.com")).thenReturn(Optional.of(usuario));
-            when(passwordEncoder.matches(UsuarioService.senhaPadrao, usuario.getSenhaHash())).thenReturn(true);
-            when(passwordEncoder.matches("atual", usuario.getSenhaHash())).thenReturn(true);
-            when(passwordEncoder.encode("nova")).thenReturn(novaHash);
+            when(usuarioRepository.findByEmail("teste@email.com"))
+                    .thenReturn(Optional.of(usuario));
+
+            when(passwordEncoder.matches(
+                    UsuarioService.senhaPadrao,
+                    usuario.getSenhaHash()
+            )).thenReturn(true);
+
+            when(passwordEncoder.matches(
+                    "atual",
+                    usuario.getSenhaHash()
+            )).thenReturn(true);
+
+            when(passwordEncoder.encode("nova"))
+                    .thenReturn("hash-nova");
 
             authenticationService.trocarSenha(request);
 
-            assertEquals(novaHash, usuario.getSenhaHash());
+            assertEquals("hash-nova", usuario.getSenhaHash());
             verify(passwordEncoder).encode("nova");
             verify(usuarioRepository).save(usuario);
         }
     }
 
     @Nested
-    @DisplayName("Voltar a senha do usuário para a senha padrão")
+    @DisplayName("Resetar senha do usuário")
     class ResetarSenhaTest {
 
         @Test
         @DisplayName("Deve lançar EntityNotFoundException quando usuário não existe")
-        void resetarSenhaDeveLancarEntityNotFoundQuandoUsuarioNaoExiste() {
-            when(usuarioRepository.findById(1)).thenReturn(Optional.empty());
+        void deveLancarEntityNotFoundQuandoUsuarioNaoExiste() {
+            when(usuarioRepository.findById(1))
+                    .thenReturn(Optional.empty());
 
-            assertThrows(EntityNotFoundException.class,
-                    () -> authenticationService.resetarSenha(1));
+            assertThrows(
+                    EntityNotFoundException.class,
+                    () -> authenticationService.resetarSenha(1)
+            );
 
             verify(passwordEncoder, never()).encode(any());
             verify(usuarioRepository, never()).save(any());
@@ -237,16 +353,96 @@ class AuthenticationServiceTest {
 
         @Test
         @DisplayName("Deve salvar senha padrão quando usuário existe")
-        void resetarSenhaDeveSalvarSenhaPadraoQuandoUsuarioExiste() {
-            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
-            when(passwordEncoder.encode(UsuarioService.senhaPadrao)).thenReturn("hash-padrao");
+        void deveSalvarSenhaPadraoQuandoUsuarioExiste() {
+            when(usuarioRepository.findById(1))
+                    .thenReturn(Optional.of(usuario));
+
+            when(passwordEncoder.encode(UsuarioService.senhaPadrao))
+                    .thenReturn("hash-padrao");
 
             authenticationService.resetarSenha(1);
 
             assertEquals("hash-padrao", usuario.getSenhaHash());
-            verify(passwordEncoder).encode(UsuarioService.senhaPadrao);
+            verify(passwordEncoder)
+                    .encode(UsuarioService.senhaPadrao);
             verify(usuarioRepository).save(usuario);
         }
+    }
+
+    @Nested
+    @DisplayName("Refresh token")
+    class RefreshTokenTest {
+
+        @Test
+        @DisplayName("Deve renovar os tokens")
+        void deveRenovarOsTokens() {
+            String refreshToken = "1.refresh-token";
+
+            when(refreshTokenService.validar(refreshToken))
+                    .thenReturn(usuario);
+
+            when(jwtService.generateToken(any(Authentication.class)))
+                    .thenReturn("novo-access-token");
+
+            when(refreshTokenService.criar(usuario))
+                    .thenReturn("2.novo-refresh-token");
+
+            AuthResponse response =
+                    authenticationService.refreshToken(refreshToken);
+
+            assertNotNull(response);
+            assertEquals("novo-access-token", response.accessToken());
+            assertEquals("2.novo-refresh-token", response.refreshToken());
+            assertEquals("teste@email.com", response.username());
+
+            verify(refreshTokenService).validar(refreshToken);
+            verify(jwtService).generateToken(any(Authentication.class));
+            verify(refreshTokenService).criar(usuario);
+        }
+
+        @Test
+        @DisplayName("Deve propagar erro quando refresh token inválido")
+        void devePropagarErroQuandoRefreshTokenInvalido() {
+            String refreshToken = "token-invalido";
+
+            when(refreshTokenService.validar(refreshToken))
+                    .thenThrow(new IllegalArgumentException(
+                            "Refresh token inválido"
+                    ));
+
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> authenticationService.refreshToken(refreshToken)
+            );
+
+            verify(jwtService, never())
+                    .generateToken(any());
+            verify(refreshTokenService, never())
+                    .criar(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("Logout")
+    class LogoutTest {
+
+        @Test
+        @DisplayName("Deve revogar o refresh token")
+        void deveRevogarRefreshToken() {
+            String refreshToken = "1.refresh-token";
+
+            authenticationService.logout(refreshToken);
+
+            verify(refreshTokenService).revogar(refreshToken);
+        }
+    }
+
+    private Authentication mockAuthentication() {
+        return mock(Authentication.class);
+    }
+
+    private UserAuthenticated mockUserDetails() {
+        return mock(UserAuthenticated.class);
     }
 }
 
@@ -263,13 +459,15 @@ class AuthenticationServiceSecurityTest {
                 JwtService jwtService,
                 AuthenticationManager authenticationManager,
                 UsuarioRepository usuarioRepository,
-                PasswordEncoder passwordEncoder
+                PasswordEncoder passwordEncoder,
+                RefreshTokenService refreshTokenService
         ) {
             return new AuthenticationService(
                     jwtService,
                     authenticationManager,
                     usuarioRepository,
-                    passwordEncoder
+                    passwordEncoder,
+                    refreshTokenService
             );
         }
     }
@@ -286,51 +484,59 @@ class AuthenticationServiceSecurityTest {
     @MockitoBean
     private PasswordEncoder passwordEncoder;
 
+    @MockitoBean
+    private RefreshTokenService refreshTokenService;
+
     @Resource
     private AuthenticationService authenticationService;
 
-    @Nested
-    @DisplayName("resetarSenha")
-    class ResetarSenhaTest {
+    @Test
+    @WithMockUser(authorities = "GERENCIAR_USUARIOS")
+    @DisplayName("Deve permitir resetar senha quando tem permissão")
+    void devePermitirResetarSenhaQuandoTemPermissao() {
+        Usuario usuario = new Usuario();
 
-        @Test
-        @WithMockUser(authorities = "GERENCIAR_USUARIOS")
-        @DisplayName("Deve permitir quando tem permissão")
-        void devePermitirQuandoTemPermissao() {
-            Usuario usuario = new Usuario();
+        when(usuarioRepository.findById(1))
+                .thenReturn(Optional.of(usuario));
 
-            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
-            when(passwordEncoder.encode(UsuarioService.senhaPadrao)).thenReturn("hash-padrao");
+        when(passwordEncoder.encode(UsuarioService.senhaPadrao))
+                .thenReturn("hash-padrao");
 
-            assertDoesNotThrow(() -> authenticationService.resetarSenha(1));
+        assertDoesNotThrow(
+                () -> authenticationService.resetarSenha(1)
+        );
 
-            verify(usuarioRepository).findById(1);
-            verify(passwordEncoder).encode(UsuarioService.senhaPadrao);
-            verify(usuarioRepository).save(usuario);
-        }
+        verify(usuarioRepository).findById(1);
+        verify(passwordEncoder)
+                .encode(UsuarioService.senhaPadrao);
+        verify(usuarioRepository).save(usuario);
+    }
 
-        @Test
-        @WithMockUser(authorities = "OUTRA_PERMISSAO")
-        @DisplayName("Deve negar quando não tem permissão")
-        void deveNegarQuandoNaoTemPermissao() {
-            assertThrows(AccessDeniedException.class,
-                    () -> authenticationService.resetarSenha(1));
+    @Test
+    @WithMockUser(authorities = "OUTRA_PERMISSAO")
+    @DisplayName("Deve negar resetar senha sem permissão")
+    void deveNegarResetarSenhaSemPermissao() {
+        assertThrows(
+                AccessDeniedException.class,
+                () -> authenticationService.resetarSenha(1)
+        );
 
-            verify(usuarioRepository, never()).findById(anyInt());
-            verify(passwordEncoder, never()).encode(any());
-            verify(usuarioRepository, never()).save(any());
-        }
+        verify(usuarioRepository, never()).findById(any());
+        verify(passwordEncoder, never()).encode(any());
+        verify(usuarioRepository, never()).save(any());
+    }
 
-        @Test
-        @WithAnonymousUser
-        @DisplayName("Deve negar quando anônimo")
-        void deveNegarQuandoAnonimo() {
-            assertThrows(AccessDeniedException.class,
-                    () -> authenticationService.resetarSenha(1));
+    @Test
+    @WithAnonymousUser
+    @DisplayName("Deve negar resetar senha para usuário anônimo")
+    void deveNegarResetarSenhaParaUsuarioAnonimo() {
+        assertThrows(
+                AccessDeniedException.class,
+                () -> authenticationService.resetarSenha(1)
+        );
 
-            verify(usuarioRepository, never()).findById(anyInt());
-            verify(passwordEncoder, never()).encode(any());
-            verify(usuarioRepository, never()).save(any());
-        }
+        verify(usuarioRepository, never()).findById(any());
+        verify(passwordEncoder, never()).encode(any());
+        verify(usuarioRepository, never()).save(any());
     }
 }
