@@ -9,11 +9,13 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.stream.Collectors;
 
 @Service
 public class JwtService {
+
     @Value("${jwt.secret:supersecretkey1234567890AmandaDanielHerculesIsaakZaqueu}")
     private String jwtSecret;
 
@@ -22,6 +24,7 @@ public class JwtService {
 
     public String generateToken(Authentication authentication) {
         String username = authentication.getName();
+
         String authorities = authentication.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .collect(Collectors.joining(","));
@@ -30,8 +33,10 @@ public class JwtService {
                 .subject(username)
                 .claim("permissions", authorities)
                 .issuedAt(new Date())
-                .expiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
-                .signWith(Keys.hmacShaKeyFor(jwtSecret.getBytes()))
+                .expiration(new Date(
+                        System.currentTimeMillis() + jwtExpirationMs
+                ))
+                .signWith(getKey())
                 .compact();
     }
 
@@ -44,12 +49,18 @@ public class JwtService {
                 .getSubject();
     }
 
-    public boolean isTokenValid(String token, UserDetails userDetails) {
+    public boolean isTokenValid(
+            String token,
+            UserDetails userDetails
+    ) {
         String username = extractUsername(token);
+
         return username.equals(userDetails.getUsername());
     }
 
     private SecretKey getKey() {
-        return Keys.hmacShaKeyFor(jwtSecret.getBytes());
+        return Keys.hmacShaKeyFor(
+                jwtSecret.getBytes(StandardCharsets.UTF_8)
+        );
     }
 }
