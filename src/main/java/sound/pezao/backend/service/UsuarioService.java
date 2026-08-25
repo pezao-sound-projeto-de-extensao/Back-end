@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import sound.pezao.backend.dto.usuarioDTO.UsuarioMapper;
 import sound.pezao.backend.dto.usuarioDTO.UsuarioRequest;
 import sound.pezao.backend.dto.usuarioDTO.UsuarioResponse;
+import sound.pezao.backend.dto.usuarioDTO.UsuarioCadastroResponse;
 import sound.pezao.backend.entities.Cargo;
 import sound.pezao.backend.entities.Usuario;
 import sound.pezao.backend.exception.EntityNomeJaExisteException;
@@ -25,7 +26,6 @@ public class UsuarioService {
     final CargoRepository cargoRepository;
     final PasswordEncoder passwordEncoder;
 
-    final static String senhaPadrao = ("PezaoSenha");
     public UsuarioService(UsuarioRepository usuarioRepository, CargoRepository cargoRepository, PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
         this.cargoRepository = cargoRepository;
@@ -43,7 +43,7 @@ public class UsuarioService {
         return UsuarioMapper.toResponse(usuario);
     }
 
-    public UsuarioResponse cadastrar(UsuarioRequest usuarioRequest){
+    public UsuarioCadastroResponse cadastrar(UsuarioRequest usuarioRequest){
 
         if (usuarioRepository.existsByEmailIgnoreCase(usuarioRequest.email())){
             throw new EntityNomeJaExisteException("Usuario", usuarioRequest.email());
@@ -53,8 +53,23 @@ public class UsuarioService {
 
         Usuario usuario = UsuarioMapper.toEntity(usuarioRequest);
         usuario.setCargo(cargo);
-        usuario.setSenhaHash(passwordEncoder.encode(senhaPadrao));
-        return UsuarioMapper.toResponse(usuarioRepository.save(usuario));
+        Usuario usuarioSalvo = usuarioRepository.save(usuario);
+
+        String senhaPadrao = gerarSenhaPadraoDoUsuario(usuarioSalvo.getId());
+        usuarioSalvo.setSenhaHash(passwordEncoder.encode(senhaPadrao));
+        usuarioRepository.save(usuarioSalvo);
+
+        return new UsuarioCadastroResponse(
+            usuarioSalvo.getId(),
+            usuarioSalvo.getNome(),
+            usuarioSalvo.getEmail(),
+            senhaPadrao,
+            usuarioSalvo.getCriadoEm()
+        );
+    }
+
+    private String gerarSenhaPadraoDoUsuario(Integer usuarioId) {
+        return "Pezao_" + String.format("%04d", usuarioId);
     }
 
     public UsuarioResponse atualizar(

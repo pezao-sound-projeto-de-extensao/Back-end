@@ -8,17 +8,20 @@ import sound.pezao.backend.dto.imagemProdutoDTO.ImagemProdutoMapper;
 import sound.pezao.backend.dto.imagemProdutoDTO.ImagemProdutoResponse;
 import sound.pezao.backend.entities.ImagemProduto;
 import sound.pezao.backend.entities.Item;
+import sound.pezao.backend.exception.ArquivoInvalidoException;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.repository.ImagemProdutoRepository;
 import sound.pezao.backend.repository.ItemRepository;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class ImagemProdutoService {
 
     private static final String SUBPASTA = "imagens-produto";
     private static final String MIME_PADRAO = "application/octet-stream";
+    private static final Set<String> MIME_PERMITIDOS = Set.of("image/png", "image/jpeg", "image/webp");
 
     private final ImagemProdutoRepository repository;
     private final ItemRepository itemRepository;
@@ -37,6 +40,10 @@ public class ImagemProdutoService {
         Item item = itemRepository.findById(itemId)
                 .orElseThrow(() -> new EntityNotFoundException("Item", itemId));
 
+        if (arquivo == null || !MIME_PERMITIDOS.contains(arquivo.getContentType())) {
+            throw new ArquivoInvalidoException("Tipo de arquivo não permitido. Envie uma imagem PNG, JPEG ou WEBP.");
+        }
+
         String caminho = armazenamento.salvar(arquivo, SUBPASTA);
         try {
             ImagemProduto imagem = new ImagemProduto();
@@ -52,11 +59,13 @@ public class ImagemProdutoService {
         }
     }
 
+    @PreAuthorize("hasAuthority('EDITAR_ITENS')")
     public List<ImagemProdutoResponse> listar(Integer itemId) {
         garantirItemExiste(itemId);
         return ImagemProdutoMapper.toResponseList(repository.findByItem_Id(itemId));
     }
 
+    @PreAuthorize("hasAuthority('EDITAR_ITENS')")
     public ArquivoDownload baixar(Integer itemId, Integer imagemId) {
         ImagemProduto imagem = buscarDoItem(itemId, imagemId);
         return new ArquivoDownload(

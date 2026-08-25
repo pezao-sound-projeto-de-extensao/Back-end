@@ -1,5 +1,6 @@
 package sound.pezao.backend.service;
 
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import sound.pezao.backend.dto.arquivoDTO.ArquivoDownload;
@@ -21,6 +22,8 @@ public class NotaEntradaService {
     private static final String SUBPASTA = "notas-entrada";
     private static final String MIME_PADRAO = "application/octet-stream";
     private static final Set<String> TIPOS_VALIDOS = Set.of("imagem", "nota_fiscal");
+    private static final Set<String> MIME_PERMITIDOS = Set.of(
+            "image/png", "image/jpeg", "image/webp", "application/pdf");
 
     private final NotaEntradaRepository repository;
     private final MovimentacaoRepository movimentacaoRepository;
@@ -34,9 +37,14 @@ public class NotaEntradaService {
         this.armazenamento = armazenamento;
     }
 
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public NotaEntradaResponse upload(Integer movimentacaoId, MultipartFile arquivo, String tipo) {
         if (tipo == null || !TIPOS_VALIDOS.contains(tipo)) {
             throw new ArquivoInvalidoException("Tipo inválido. Use 'imagem' ou 'nota_fiscal'.");
+        }
+
+        if (arquivo == null || !MIME_PERMITIDOS.contains(arquivo.getContentType())) {
+            throw new ArquivoInvalidoException("Tipo de arquivo não permitido. Envie PNG, JPEG, WEBP ou PDF.");
         }
 
         Movimentacao movimentacao = movimentacaoRepository.findById(movimentacaoId)
@@ -58,11 +66,13 @@ public class NotaEntradaService {
         }
     }
 
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public List<NotaEntradaResponse> listar(Integer movimentacaoId) {
         garantirMovimentacaoExiste(movimentacaoId);
         return NotaEntradaMapper.toResponseList(repository.findByMovimentacao_Id(movimentacaoId));
     }
 
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public ArquivoDownload baixar(Integer movimentacaoId, Integer notaId) {
         NotaEntrada nota = buscarDaMovimentacao(movimentacaoId, notaId);
         return new ArquivoDownload(
@@ -72,6 +82,7 @@ public class NotaEntradaService {
         );
     }
 
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public void deletar(Integer movimentacaoId, Integer notaId) {
         NotaEntrada nota = buscarDaMovimentacao(movimentacaoId, notaId);
         repository.delete(nota);

@@ -5,15 +5,18 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.core.io.Resource;
+import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import sound.pezao.backend.dto.arquivoDTO.ArquivoDownload;
 import sound.pezao.backend.dto.notaEntradaDTO.NotaEntradaResponse;
 import sound.pezao.backend.service.NotaEntradaService;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
@@ -29,6 +32,7 @@ public class NotaEntradaController {
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "Faz upload de um arquivo (imagem ou nota fiscal) para a movimentação")
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public ResponseEntity<NotaEntradaResponse> upload(
             @PathVariable Integer movimentacaoId,
             @RequestParam("arquivo") MultipartFile arquivo,
@@ -41,26 +45,31 @@ public class NotaEntradaController {
 
     @GetMapping
     @Operation(summary = "Lista os arquivos de uma movimentação")
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public ResponseEntity<List<NotaEntradaResponse>> listar(@PathVariable Integer movimentacaoId) {
         return ResponseEntity.ok(service.listar(movimentacaoId));
     }
 
     @GetMapping("/{notaId}/download")
     @Operation(summary = "Baixa o arquivo de uma nota")
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public ResponseEntity<Resource> download(
             @PathVariable Integer movimentacaoId,
             @PathVariable Integer notaId
     ) {
         ArquivoDownload arquivo = service.baixar(movimentacaoId, notaId);
+        ContentDisposition disposition = ContentDisposition.inline()
+                .filename(arquivo.nomeArquivo(), StandardCharsets.UTF_8)
+                .build();
         return ResponseEntity.ok()
                 .contentType(resolverMediaType(arquivo.mimeType()))
-                .header(HttpHeaders.CONTENT_DISPOSITION,
-                        "inline; filename=\"" + arquivo.nomeArquivo() + "\"")
+                .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
                 .body(arquivo.conteudo());
     }
 
     @DeleteMapping("/{notaId}")
     @Operation(summary = "Remove um arquivo da movimentação")
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public ResponseEntity<Void> deletar(
             @PathVariable Integer movimentacaoId,
             @PathVariable Integer notaId

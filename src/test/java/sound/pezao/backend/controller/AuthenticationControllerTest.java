@@ -51,7 +51,7 @@ class AuthenticationControllerTest {
         @DisplayName("Deve retornar 200 quando login realizado com sucesso")
         void loginDeveRetornar200QuandoLoginRealizadoComSucesso() throws Exception {
             AuthRequest request = new AuthRequest("teste@email.com", "1234567");
-            AuthResponse response = new AuthResponse("token", "teste@email.com", null);
+            AuthResponse response = new AuthResponse("token","refresh",  "teste@email.com", null);
 
             when(authenticationService.authenticate(request)).thenReturn(response);
 

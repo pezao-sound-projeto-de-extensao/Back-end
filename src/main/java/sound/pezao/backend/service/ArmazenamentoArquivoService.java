@@ -5,6 +5,8 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import sound.pezao.backend.exception.ArquivoInvalidoException;
 
 import java.io.IOException;
@@ -15,6 +17,8 @@ import java.util.UUID;
 
 @Service
 public class ArmazenamentoArquivoService {
+
+    private static final Logger log = LoggerFactory.getLogger(ArmazenamentoArquivoService.class);
 
     private final Path raiz;
 
@@ -40,7 +44,8 @@ public class ArmazenamentoArquivoService {
             Files.createDirectories(destino);
             arquivo.transferTo(destino.resolve(nomeUnico));
         } catch (IOException e) {
-            throw new ArquivoInvalidoException("Falha ao salvar o arquivo: " + e.getMessage());
+            log.error("Falha ao salvar arquivo em {}", destino, e);
+            throw new ArquivoInvalidoException("Falha ao salvar o arquivo.");
         }
         return subpasta + "/" + nomeUnico;
     }
@@ -48,7 +53,7 @@ public class ArmazenamentoArquivoService {
     public Resource carregar(String caminho) {
         Resource recurso = new FileSystemResource(resolverSeguro(caminho));
         if (!recurso.exists() || !recurso.isReadable()) {
-            throw new ArquivoInvalidoException("Arquivo não encontrado no storage: " + caminho);
+            throw new ArquivoInvalidoException("Arquivo não encontrado.");
         }
         return recurso;
     }
@@ -57,14 +62,16 @@ public class ArmazenamentoArquivoService {
         try {
             Files.deleteIfExists(resolverSeguro(caminho));
         } catch (IOException e) {
-            throw new ArquivoInvalidoException("Falha ao remover o arquivo: " + e.getMessage());
+            log.error("Falha ao remover arquivo {}", caminho, e);
+            throw new ArquivoInvalidoException("Falha ao remover o arquivo.");
         }
     }
 
     private Path resolverSeguro(String caminho) {
         Path resolvido = raiz.resolve(caminho).normalize();
         if (!resolvido.startsWith(raiz)) {
-            throw new ArquivoInvalidoException("Caminho de arquivo inválido: " + caminho);
+            log.warn("Tentativa de acesso a caminho fora da raiz de armazenamento: {}", caminho);
+            throw new ArquivoInvalidoException("Caminho de arquivo inválido.");
         }
         return resolvido;
     }
