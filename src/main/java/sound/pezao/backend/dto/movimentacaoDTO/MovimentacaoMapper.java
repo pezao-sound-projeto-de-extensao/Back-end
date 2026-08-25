@@ -63,7 +63,12 @@ public class MovimentacaoMapper {
                 movimentacao.getId(),
                 new ItemResumoResponse(
                         movimentacao.getItem().getId(),
-                        movimentacao.getItem().getNome()
+                        movimentacao.getItem().getNome(),
+                        movimentacao.getItem().getCategoria().getId(),
+                        movimentacao.getItem().getCategoria().getNome(),
+                        movimentacao.getItem().getUnidade().getId(),
+                        movimentacao.getItem().getUnidade().getNome(),
+                        movimentacao.getItem().getUnidade().getAbreviacao()
                 ),
                 movimentacao.getTipo(),
                 movimentacao.getQuantidade(),

@@ -64,6 +64,8 @@ class ItemServiceTest {
         Item item = new Item();
         item.setId(id);
         item.setNome(nome);
+        item.setCategoria(categoria());
+        item.setUnidade(unidade());
         item.setQuantidadeAtual(5);
         item.setQuantidadeMinima(3);
         item.setPrecoCusto(180.0);

@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import sound.pezao.backend.dto.authDTO.AuthRequest;
 import sound.pezao.backend.dto.authDTO.AuthResponse;
 import sound.pezao.backend.dto.authDTO.AuthTrocarSenhaRequest;
+import sound.pezao.backend.dto.authDTO.RefreshTokenRequest;
 import sound.pezao.backend.service.AuthenticationService;
 
 @RestController
@@ -21,12 +22,28 @@ public class AuthenticationController {
         this.authenticationService = authenticationService;
     }
 
-    @Operation(summary = "Login e geração do token JWT.")
+    @Operation(summary = "Login e geração do accessToken e refreshToken.")
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login (@Valid  @RequestBody AuthRequest authRequest){
         return ResponseEntity.ok(authenticationService.authenticate(authRequest));
     }
 
+    @Operation(summary = "Gera novo accessToken e refreshToken.")
+    @PostMapping("/refresh")
+    public ResponseEntity<AuthResponse> refresh(
+            @Valid @RequestBody RefreshTokenRequest request
+            ){
+        return ResponseEntity.ok(authenticationService.refreshToken(request.refreshToken()));
+    }
+
+    @Operation(summary = "Revoga o refreshToken")
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(
+            @Valid @RequestBody RefreshTokenRequest request
+            ) {
+        authenticationService.logout(request.refreshToken());
+        return ResponseEntity.noContent().build();
+    }
     @Operation(summary = "Trocar senha no primeiro acesso")
     @PostMapping("/trocar-senha")
     public ResponseEntity<Void> trocarSenha(@Valid @RequestBody AuthTrocarSenhaRequest authTrocarSenhaRequest){
