@@ -2,6 +2,7 @@ package sound.pezao.backend.dto.itemDTO;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import sound.pezao.backend.dto.imagemProdutoDTO.ImagemProdutoResponse;
+import sound.pezao.backend.entities.StatusEstoque;
 
 import java.util.List;
 
@@ -40,6 +41,10 @@ public record ItemResponse(
 
         @Schema(description = "Preço de venda do item", example = "320.00")
         Double precoVenda,
+
+        @Schema(description = "Situação do estoque, calculada a partir da quantidade atual e da mínima",
+                example = "BAIXO", allowableValues = {"OK", "BAIXO", "ZERADO"})
+        StatusEstoque status,
 
         @Schema(description = "Item ativo ou inativo", example = "true")
         Boolean ativo,
