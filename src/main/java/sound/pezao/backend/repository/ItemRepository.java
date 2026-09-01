@@ -19,12 +19,28 @@ public interface ItemRepository extends JpaRepository<Item, Integer> {
         SELECT i FROM Item i
         WHERE (:ativo IS NULL OR i.ativo = :ativo)
         AND (:search IS NULL OR LOWER(i.nome) LIKE LOWER(CONCAT('%', :search, '%')))
+        AND (:categoriaId IS NULL OR i.categoria.id = :categoriaId)
+        AND (:apenasAlerta IS NULL OR :apenasAlerta = FALSE OR i.quantidadeAtual <= i.quantidadeMinima)
     """)
     Page<Item> findAllFiltered(
             @Param("ativo") Boolean ativo,
             @Param("search") String search,
+            @Param("categoriaId") Integer categoriaId,
+            @Param("apenasAlerta") Boolean apenasAlerta,
             Pageable pageable
     );
+
+    /**
+     * Itens que precisam de atenção no dashboard: zerados primeiro (quantidade 0),
+     * depois os de estoque baixo, do menor saldo para o maior.
+     */
+    @Query("""
+        SELECT i FROM Item i
+        WHERE i.ativo = true
+        AND i.quantidadeAtual <= i.quantidadeMinima
+        ORDER BY i.quantidadeAtual ASC, i.nome ASC
+    """)
+    List<Item> buscarItensParaAtencao();
 
     boolean existsByNomeIgnoreCase(String nome);
 
