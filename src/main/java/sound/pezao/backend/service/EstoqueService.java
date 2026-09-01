@@ -2,6 +2,7 @@ package sound.pezao.backend.service;
 
 import org.springframework.stereotype.Service;
 import sound.pezao.backend.entities.Item;
+import sound.pezao.backend.entities.TipoMovimentacao;
 import sound.pezao.backend.exception.EstoqueInsuficienteException;
 import sound.pezao.backend.repository.ItemRepository;
 
@@ -14,10 +15,15 @@ public class EstoqueService {
         this.itemRepository = itemRepository;
     }
 
-    public int aplicarMovimentacao(Item item, String tipo, Integer quantidade) {
-        int estoqueAntes = item.getQuantidadeAtual();
+    /**
+     * Aplica a movimentação no estoque do item e devolve o saldo anterior.
+     */
+    public int aplicarMovimentacao(Item item, TipoMovimentacao tipo, Integer quantidade) {
+        validarQuantidade(quantidade);
 
-        if (tipo.equals("saida")) {
+        int estoqueAntes = saldoAtual(item);
+
+        if (tipo == TipoMovimentacao.SAIDA) {
             if (estoqueAntes < quantidade) {
                 throw new EstoqueInsuficienteException(estoqueAntes, quantidade);
             }
@@ -30,12 +36,34 @@ public class EstoqueService {
         return estoqueAntes;
     }
 
-    public void reverterMovimentacao(Item item, String tipo, Integer quantidade) {
-        if (tipo.equals("entrada")) {
-            item.setQuantidadeAtual(item.getQuantidadeAtual() - quantidade);
+    /**
+     * Desfaz uma movimentação já aplicada. Reverter uma entrada cujo estoque já
+     * foi consumido deixaria o saldo negativo, então isso é recusado.
+     */
+    public void reverterMovimentacao(Item item, TipoMovimentacao tipo, Integer quantidade) {
+        validarQuantidade(quantidade);
+
+        int estoqueAtual = saldoAtual(item);
+
+        if (tipo == TipoMovimentacao.ENTRADA) {
+            if (estoqueAtual < quantidade) {
+                throw new EstoqueInsuficienteException(estoqueAtual, quantidade);
+            }
+            item.setQuantidadeAtual(estoqueAtual - quantidade);
         } else {
-            item.setQuantidadeAtual(item.getQuantidadeAtual() + quantidade);
+            item.setQuantidadeAtual(estoqueAtual + quantidade);
         }
+
         itemRepository.save(item);
+    }
+
+    private void validarQuantidade(Integer quantidade) {
+        if (quantidade == null || quantidade <= 0) {
+            throw new IllegalArgumentException("A quantidade movimentada deve ser maior que zero.");
+        }
+    }
+
+    private int saldoAtual(Item item) {
+        return item.getQuantidadeAtual() != null ? item.getQuantidadeAtual() : 0;
     }
 }
