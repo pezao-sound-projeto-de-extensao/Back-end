@@ -1,8 +1,10 @@
 package sound.pezao.backend.repository;
 
+import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import sound.pezao.backend.entities.Item;
@@ -10,6 +12,7 @@ import sound.pezao.backend.relatorio.dto.ItemCriticoDTO;
 import sound.pezao.backend.relatorio.dto.RelatorioKpiDTO;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ItemRepository extends JpaRepository<Item, Integer> {
     @Query("""
@@ -24,6 +27,14 @@ public interface ItemRepository extends JpaRepository<Item, Integer> {
     );
 
     boolean existsByNomeIgnoreCase(String nome);
+
+    /**
+     * Carrega o item travando a linha até o fim da transação, para que duas
+     * movimentações simultâneas não leiam o mesmo saldo e sobrescrevam uma à outra.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT i FROM Item i WHERE i.id = :id")
+    Optional<Item> findByIdParaMovimentacao(@Param("id") Integer id);
 
     @Query("""
         SELECT new sound.pezao.backend.relatorio.dto.RelatorioKpiDTO(
