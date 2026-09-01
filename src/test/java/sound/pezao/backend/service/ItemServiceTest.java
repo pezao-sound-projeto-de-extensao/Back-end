@@ -16,6 +16,7 @@ import sound.pezao.backend.dto.itemDTO.ItemResponse;
 import sound.pezao.backend.entities.Categoria;
 import sound.pezao.backend.entities.Item;
 import sound.pezao.backend.entities.Movimentacao;
+import sound.pezao.backend.entities.StatusEstoque;
 import sound.pezao.backend.entities.TipoMovimentacao;
 import sound.pezao.backend.entities.Unidade;
 import sound.pezao.backend.entities.Usuario;
@@ -192,23 +193,82 @@ class ItemServiceTest {
     void deveListarItensPaginados() {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Item> pagina = new PageImpl<>(List.of(item(1, "Amplificador", true)));
-        when(repository.findAllFiltered(null, null, pageable)).thenReturn(pagina);
+        when(repository.findAllFiltered(null, null, null, null, pageable)).thenReturn(pagina);
         when(imagemProdutoRepository.findByItem_IdIn(anyList())).thenReturn(List.of());
 
-        Page<ItemResponse> resultado = service.findAll(null, null, pageable);
+        Page<ItemResponse> resultado = service.findAll(null, null, null, null, pageable);
 
         assertEquals(1, resultado.getTotalElements());
+    }
+
+    @Test
+    @DisplayName("Deve repassar os filtros de categoria e alerta para o repositório")
+    void deveRepassarFiltrosDeCategoriaEAlerta() {
+        Pageable pageable = PageRequest.of(0, 10);
+        when(repository.findAllFiltered(true, "amp", 2, true, pageable))
+                .thenReturn(Page.empty(pageable));
+
+        service.findAll(true, "amp", 2, true, pageable);
+
+        verify(repository).findAllFiltered(true, "amp", 2, true, pageable);
     }
 
     @Test
     @DisplayName("Deve retornar página vazia quando não há itens")
     void deveRetornarPaginaVaziaQuandoNaoHaItens() {
         Pageable pageable = PageRequest.of(0, 10);
-        when(repository.findAllFiltered(null, null, pageable)).thenReturn(Page.empty(pageable));
+        when(repository.findAllFiltered(null, null, null, null, pageable)).thenReturn(Page.empty(pageable));
 
-        Page<ItemResponse> resultado = service.findAll(null, null, pageable);
+        Page<ItemResponse> resultado = service.findAll(null, null, null, null, pageable);
 
         assertTrue(resultado.isEmpty());
+    }
+
+    @Test
+    @DisplayName("Deve calcular o status do estoque em cada item da listagem")
+    void deveCalcularStatusNaListagem() {
+        Item zerado = item(1, "Strobo", true);
+        zerado.setQuantidadeAtual(0);
+        zerado.setQuantidadeMinima(2);
+
+        Item baixo = item(2, "Bateria", true);
+        baixo.setQuantidadeAtual(2);
+        baixo.setQuantidadeMinima(3);
+
+        Item ok = item(3, "Cabo", true);
+        ok.setQuantidadeAtual(15);
+        ok.setQuantidadeMinima(5);
+
+        Pageable pageable = PageRequest.of(0, 10);
+        when(repository.findAllFiltered(null, null, null, null, pageable))
+                .thenReturn(new PageImpl<>(List.of(zerado, baixo, ok)));
+        when(imagemProdutoRepository.findByItem_IdIn(anyList())).thenReturn(List.of());
+
+        List<ItemResponse> itens = service.findAll(null, null, null, null, pageable).getContent();
+
+        assertEquals(StatusEstoque.ZERADO, itens.get(0).status());
+        assertEquals(StatusEstoque.BAIXO, itens.get(1).status());
+        assertEquals(StatusEstoque.OK, itens.get(2).status());
+    }
+
+    @Test
+    @DisplayName("Deve montar respostas de uma lista buscando as imagens em uma única consulta")
+    void deveMontarRespostasDeUmaLista() {
+        List<Item> itens = List.of(item(1, "Amplificador", true), item(2, "Bateria", true));
+        when(imagemProdutoRepository.findByItem_IdIn(List.of(1, 2))).thenReturn(List.of());
+
+        List<ItemResponse> respostas = service.montarRespostas(itens);
+
+        assertEquals(2, respostas.size());
+        verify(imagemProdutoRepository).findByItem_IdIn(List.of(1, 2));
+    }
+
+    @Test
+    @DisplayName("Deve montar lista vazia sem consultar imagens")
+    void deveMontarListaVaziaSemConsultarImagens() {
+        assertTrue(service.montarRespostas(List.of()).isEmpty());
+
+        verify(imagemProdutoRepository, never()).findByItem_IdIn(anyList());
     }
 
     @Test

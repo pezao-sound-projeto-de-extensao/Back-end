@@ -99,17 +99,36 @@ public class ItemService {
         movimentacaoService.salvar(movimentacao);
     }
 
-    public Page<ItemResponse> findAll(Boolean ativo, String search, Pageable pageable) {
-        Page<Item> pagina = repository.findAllFiltered(ativo, search, pageable);
+    public Page<ItemResponse> findAll(Boolean ativo, String search, Integer categoriaId,
+                                      Boolean apenasAlerta, Pageable pageable) {
+        Page<Item> pagina = repository.findAllFiltered(ativo, search, categoriaId, apenasAlerta, pageable);
 
-        List<Integer> ids = pagina.getContent().stream().map(Item::getId).toList();
-        Map<Integer, List<ImagemProduto>> imagensPorItem = ids.isEmpty()
-                ? Map.of()
-                : imagemProdutoRepository.findByItem_IdIn(ids).stream()
-                        .collect(Collectors.groupingBy(imagem -> imagem.getItem().getId()));
+        Map<Integer, List<ImagemProduto>> imagensPorItem = buscarImagens(pagina.getContent());
 
         return pagina.map(item -> ItemMapper.toResponse(
                 item, imagensPorItem.getOrDefault(item.getId(), List.of())));
+    }
+
+    /**
+     * Monta as respostas de uma lista de itens carregando as imagens em uma única
+     * consulta, em vez de uma por item.
+     */
+    public List<ItemResponse> montarRespostas(List<Item> itens) {
+        Map<Integer, List<ImagemProduto>> imagensPorItem = buscarImagens(itens);
+
+        return itens.stream()
+                .map(item -> ItemMapper.toResponse(
+                        item, imagensPorItem.getOrDefault(item.getId(), List.of())))
+                .toList();
+    }
+
+    private Map<Integer, List<ImagemProduto>> buscarImagens(List<Item> itens) {
+        List<Integer> ids = itens.stream().map(Item::getId).toList();
+
+        return ids.isEmpty()
+                ? Map.of()
+                : imagemProdutoRepository.findByItem_IdIn(ids).stream()
+                        .collect(Collectors.groupingBy(imagem -> imagem.getItem().getId()));
     }
 
     public ItemResponse findById(Integer id) {
