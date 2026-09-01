@@ -1,3 +1,11 @@
+-- ============================================================================
+-- OBSOLETO — mantido apenas como referência histórica.
+-- O esquema do banco agora vive nas migrations do Flyway:
+--   src/main/resources/db/migration/
+-- Dados de demonstração: src/main/resources/db/demo/dados-demo.sql
+-- Não rode este arquivo em um banco gerenciado pelo Flyway (ele dropa tabelas).
+-- ============================================================================
+
 -- MySQL dump 10.13  Distrib 8.0.44, for Linux (x86_64)
 --
 -- Host: 127.0.0.1    Database: stockflow
