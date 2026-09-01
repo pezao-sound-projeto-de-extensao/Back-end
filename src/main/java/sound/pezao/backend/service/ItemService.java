@@ -1,5 +1,6 @@
 package sound.pezao.backend.service;
 
+import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -10,6 +11,8 @@ import sound.pezao.backend.dto.itemDTO.ItemResponse;
 import sound.pezao.backend.entities.Categoria;
 import sound.pezao.backend.entities.ImagemProduto;
 import sound.pezao.backend.entities.Item;
+import sound.pezao.backend.entities.Movimentacao;
+import sound.pezao.backend.entities.TipoMovimentacao;
 import sound.pezao.backend.entities.Unidade;
 import sound.pezao.backend.exception.EntityInativaException;
 import sound.pezao.backend.exception.EntityNotFoundException;
@@ -19,6 +22,7 @@ import sound.pezao.backend.repository.ImagemProdutoRepository;
 import sound.pezao.backend.repository.ItemRepository;
 import sound.pezao.backend.repository.UnidadeRepository;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -26,21 +30,30 @@ import java.util.stream.Collectors;
 @Service
 public class ItemService {
 
+    static final String OBSERVACAO_ESTOQUE_INICIAL = "Estoque inicial do cadastro do produto";
+
     private final ItemRepository repository;
     private final CategoriaRepository categoriaRepository;
     private final UnidadeRepository unidadeRepository;
     private final ImagemProdutoRepository imagemProdutoRepository;
+    private final MovimentacaoService movimentacaoService;
+    private final UsuarioAutenticadoService usuarioAutenticadoService;
 
     public ItemService(ItemRepository repository,
                        CategoriaRepository categoriaRepository,
                        UnidadeRepository unidadeRepository,
-                       ImagemProdutoRepository imagemProdutoRepository) {
+                       ImagemProdutoRepository imagemProdutoRepository,
+                       MovimentacaoService movimentacaoService,
+                       UsuarioAutenticadoService usuarioAutenticadoService) {
         this.repository = repository;
         this.categoriaRepository = categoriaRepository;
         this.unidadeRepository = unidadeRepository;
         this.imagemProdutoRepository = imagemProdutoRepository;
+        this.movimentacaoService = movimentacaoService;
+        this.usuarioAutenticadoService = usuarioAutenticadoService;
     }
 
+    @Transactional
     @PreAuthorize("hasAuthority('CADASTRAR_ITENS')")
     public ItemResponse create(ItemRequest request) {
         if (repository.existsByNomeIgnoreCase(request.nome())) {
@@ -54,7 +67,36 @@ public class ItemService {
                 .orElseThrow(() -> new EntityNotFoundException("Unidade", request.unidadeId()));
 
         Item item = ItemMapper.toEntity(request, categoria, unidade);
-        return ItemMapper.toResponse(repository.save(item));
+        Item salvo = repository.save(item);
+
+        registrarEstoqueInicial(salvo);
+
+        return ItemMapper.toResponse(salvo);
+    }
+
+    /**
+     * Todo saldo em estoque precisa ter uma movimentação que o explique. Um item
+     * cadastrado já com quantidade nasce com a entrada correspondente, senão o
+     * histórico e os relatórios nunca fecham com o saldo do item.
+     */
+    private void registrarEstoqueInicial(Item item) {
+        Integer quantidade = item.getQuantidadeAtual();
+
+        if (quantidade == null || quantidade <= 0) {
+            return;
+        }
+
+        Movimentacao movimentacao = new Movimentacao();
+        movimentacao.setItem(item);
+        movimentacao.setUsuario(usuarioAutenticadoService.obter());
+        movimentacao.setTipo(TipoMovimentacao.ENTRADA.getValor());
+        movimentacao.setQuantidade(quantidade);
+        movimentacao.setEstoqueAntes(0);
+        movimentacao.setEstoqueDepois(quantidade);
+        movimentacao.setData(LocalDate.now());
+        movimentacao.setObservacao(OBSERVACAO_ESTOQUE_INICIAL);
+
+        movimentacaoService.salvar(movimentacao);
     }
 
     public Page<ItemResponse> findAll(Boolean ativo, String search, Pageable pageable) {
@@ -99,7 +141,8 @@ public class ItemService {
         item.setNome(request.nome());
         item.setCategoria(categoria);
         item.setUnidade(unidade);
-        item.setQuantidadeAtual(request.quantidadeAtual());
+        // quantidadeAtual não é editável aqui: o saldo só muda por movimentação,
+        // senão o estoque deixa de bater com o histórico.
         item.setQuantidadeMinima(request.quantidadeMinima());
         item.setPrecoCusto(request.precoCusto());
         item.setPrecoVenda(request.precoVenda());

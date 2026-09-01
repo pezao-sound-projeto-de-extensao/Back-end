@@ -5,8 +5,7 @@ import sound.pezao.backend.dto.notaEntradaDTO.NotaEntradaMapper;
 import sound.pezao.backend.entities.Item;
 import sound.pezao.backend.entities.Movimentacao;
 import sound.pezao.backend.entities.NotaEntrada;
-import sound.pezao.backend.exception.EntityNotFoundException;
-import sound.pezao.backend.repository.ItemRepository;
+import sound.pezao.backend.entities.TipoMovimentacao;
 import sound.pezao.backend.repository.NotaEntradaRepository;
 
 import java.time.LocalDate;
@@ -17,12 +16,9 @@ import java.util.stream.Collectors;
 
 @Component
 public class MovimentacaoMapper {
-    private final ItemRepository itemRepository;
     private final NotaEntradaRepository notaEntradaRepository;
 
-    public MovimentacaoMapper(ItemRepository itemRepository,
-                              NotaEntradaRepository notaEntradaRepository) {
-        this.itemRepository = itemRepository;
+    public MovimentacaoMapper(NotaEntradaRepository notaEntradaRepository) {
         this.notaEntradaRepository = notaEntradaRepository;
     }
 
@@ -43,13 +39,14 @@ public class MovimentacaoMapper {
                 .toList();
     }
 
-    public Movimentacao toEntity(MovimentacaoRequest request) {
-        Item item = itemRepository.findById(request.itemId())
-                .orElseThrow(() -> new EntityNotFoundException("Item não encontrado: ", request.itemId()));
-
+    /**
+     * O item vem carregado pelo chamador, para não perder o lock aplicado na
+     * leitura feita dentro da transação da movimentação.
+     */
+    public Movimentacao toEntity(MovimentacaoRequest request, Item item) {
         Movimentacao movimentacao = new Movimentacao();
         movimentacao.setItem(item);
-        movimentacao.setTipo(request.tipo());
+        movimentacao.setTipo(TipoMovimentacao.fromValor(request.tipo()).getValor());
         movimentacao.setQuantidade(request.quantidade());
         movimentacao.setData(request.data() != null ? request.data() : LocalDate.now());
         movimentacao.setObservacao(request.observacao());
