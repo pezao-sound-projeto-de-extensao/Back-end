@@ -61,20 +61,19 @@ public class UsuarioService {
             int id,
             UsuarioRequest usuarioRequest
     ){
-        if (!usuarioRepository.existsById(id)){
-            throw new EntityNotFoundException("Usuário", id);
-        }
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário", id));
 
         if (usuarioRepository.existsByEmailIgnoreCaseAndIdNot(usuarioRequest.email(), id)){
             throw new EntityNomeJaExisteException("Email", usuarioRequest.email());
         }
 
         Cargo cargo = cargoRepository.findById(usuarioRequest.cargo_id())
-                .orElseThrow(() -> new EntityNotFoundException("Cargo", id));
+                .orElseThrow(() -> new EntityNotFoundException("Cargo", usuarioRequest.cargo_id()));
 
-        Usuario usuario = UsuarioMapper.toEntity(usuarioRequest);
+        usuario.setNome(usuarioRequest.nome());
+        usuario.setEmail(usuarioRequest.email());
         usuario.setCargo(cargo);
-        usuario.setId(id);
         return UsuarioMapper.toResponse(usuarioRepository.save(usuario));
     }
 

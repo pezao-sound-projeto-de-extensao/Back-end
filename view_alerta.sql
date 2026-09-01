@@ -1,4 +1,6 @@
 
+-- OBSOLETO — substituído por src/main/resources/db/migration/V4__view_alertas_estoque.sql
+
 CREATE OR REPLACE VIEW `vw_alertas_estoque` AS
 SELECT
     `i`.`id` AS `item_id`,
