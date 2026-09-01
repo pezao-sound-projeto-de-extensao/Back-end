@@ -38,13 +38,17 @@ public class ItemController {
     }
 
     @GetMapping
-    @Operation(summary = "Lista todos os itens com filtros opcionais")
+    @Operation(summary = "Lista todos os itens com filtros opcionais",
+            description = "Filtra por situação (ativo), nome (search), categoria (categoriaId) e, "
+                    + "com apenasAlerta=true, devolve somente os itens em alerta — estoque baixo ou zerado.")
     public ResponseEntity<Page<ItemResponse>> findAll(
             @RequestParam(required = false) Boolean ativo,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) Integer categoriaId,
+            @RequestParam(required = false) Boolean apenasAlerta,
             Pageable pageable
     ) {
-        return ResponseEntity.ok(service.findAll(ativo, search, pageable));
+        return ResponseEntity.ok(service.findAll(ativo, search, categoriaId, apenasAlerta, pageable));
     }
 
     @GetMapping("/{id}")
