@@ -7,11 +7,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import sound.pezao.backend.entities.Item;
+import sound.pezao.backend.entities.TipoMovimentacao;
 import sound.pezao.backend.exception.EstoqueInsuficienteException;
 import sound.pezao.backend.repository.ItemRepository;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -24,7 +26,7 @@ class EstoqueServiceTest {
     @InjectMocks
     private EstoqueService service;
 
-    private Item item(int quantidadeAtual) {
+    private Item item(Integer quantidadeAtual) {
         Item item = new Item();
         item.setId(1);
         item.setQuantidadeAtual(quantidadeAtual);
@@ -36,7 +38,7 @@ class EstoqueServiceTest {
     void deveAplicarEntrada() {
         Item item = item(10);
 
-        int estoqueAntes = service.aplicarMovimentacao(item, "entrada", 5);
+        int estoqueAntes = service.aplicarMovimentacao(item, TipoMovimentacao.ENTRADA, 5);
 
         assertEquals(10, estoqueAntes);
         assertEquals(15, item.getQuantidadeAtual());
@@ -48,7 +50,7 @@ class EstoqueServiceTest {
     void deveAplicarSaida() {
         Item item = item(10);
 
-        int estoqueAntes = service.aplicarMovimentacao(item, "saida", 4);
+        int estoqueAntes = service.aplicarMovimentacao(item, TipoMovimentacao.SAIDA, 4);
 
         assertEquals(10, estoqueAntes);
         assertEquals(6, item.getQuantidadeAtual());
@@ -61,7 +63,34 @@ class EstoqueServiceTest {
         Item item = item(3);
 
         assertThrows(EstoqueInsuficienteException.class,
-                () -> service.aplicarMovimentacao(item, "saida", 5));
+                () -> service.aplicarMovimentacao(item, TipoMovimentacao.SAIDA, 5));
+
+        verify(itemRepository, never()).save(item);
+    }
+
+    @Test
+    @DisplayName("Deve recusar movimentação com quantidade zero ou negativa")
+    void deveRecusarQuantidadeNaoPositiva() {
+        Item item = item(10);
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service.aplicarMovimentacao(item, TipoMovimentacao.ENTRADA, 0));
+        assertThrows(IllegalArgumentException.class,
+                () -> service.aplicarMovimentacao(item, TipoMovimentacao.SAIDA, -3));
+
+        assertEquals(10, item.getQuantidadeAtual());
+        verify(itemRepository, never()).save(item);
+    }
+
+    @Test
+    @DisplayName("Deve tratar item sem quantidade definida como estoque zero")
+    void deveTratarQuantidadeNulaComoZero() {
+        Item item = item(null);
+
+        int estoqueAntes = service.aplicarMovimentacao(item, TipoMovimentacao.ENTRADA, 7);
+
+        assertEquals(0, estoqueAntes);
+        assertEquals(7, item.getQuantidadeAtual());
     }
 
     @Test
@@ -69,7 +98,7 @@ class EstoqueServiceTest {
     void deveReverterEntrada() {
         Item item = item(15);
 
-        service.reverterMovimentacao(item, "entrada", 5);
+        service.reverterMovimentacao(item, TipoMovimentacao.ENTRADA, 5);
 
         assertEquals(10, item.getQuantidadeAtual());
         verify(itemRepository).save(item);
@@ -80,9 +109,21 @@ class EstoqueServiceTest {
     void deveReverterSaida() {
         Item item = item(6);
 
-        service.reverterMovimentacao(item, "saida", 4);
+        service.reverterMovimentacao(item, TipoMovimentacao.SAIDA, 4);
 
         assertEquals(10, item.getQuantidadeAtual());
         verify(itemRepository).save(item);
+    }
+
+    @Test
+    @DisplayName("Deve recusar reversão de entrada cujo estoque já foi consumido")
+    void deveRecusarReversaoQueDeixariaEstoqueNegativo() {
+        Item item = item(2);
+
+        assertThrows(EstoqueInsuficienteException.class,
+                () -> service.reverterMovimentacao(item, TipoMovimentacao.ENTRADA, 5));
+
+        assertEquals(2, item.getQuantidadeAtual());
+        verify(itemRepository, never()).save(item);
     }
 }
