@@ -17,7 +17,7 @@ public class MovimentacaoMapper {
 
         if (movimentacao.getUriNotaEntrada() != null) {
             notaInfo = new NotaInfo(
-                    "/api/movimentacoes/" +
+                    "/movimentacoes/" +
                             movimentacao.getId() +
                             "/nota/download",
                     movimentacao.getNomeNotaEntrada(),

@@ -12,7 +12,7 @@ public class ItemMapper {
 
         if (item.getUriImagem() != null) {
             imagemInfo = new ImagemInfo(
-                    "/api/itens/" + item.getId() + "/imagem/download",
+                    "/itens/" + item.getId() + "/imagem/download",
                     item.getNomeImagem(),
                     item.getMimeTypeImagem(),
                     item.getTamanhoImagem()
