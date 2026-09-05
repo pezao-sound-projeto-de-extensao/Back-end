@@ -1,7 +1,6 @@
 package sound.pezao.backend.dto.itemDTO;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import sound.pezao.backend.dto.imagemProdutoDTO.ImagemProdutoResponse;
 import sound.pezao.backend.entities.StatusEstoque;
 
 import java.util.List;

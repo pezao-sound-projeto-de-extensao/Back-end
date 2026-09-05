@@ -22,6 +22,11 @@ public class ItemMapper {
         return new ItemResponse(
                 item.getId(),
                 item.getNome(),
+                item.getCategoria().getId(),
+                item.getCategoria().getNome(),
+                item.getUnidade().getId(),
+                item.getUnidade().getNome(),
+                item.getUnidade().getAbreviacao(),
                 item.getQuantidadeAtual(),
                 item.getQuantidadeMinima(),
                 item.getPrecoCusto(),
