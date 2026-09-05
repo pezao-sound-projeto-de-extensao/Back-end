@@ -27,6 +27,9 @@ class MovimentacaoServiceTest {
     @Mock
     private MovimentacaoRepository movimentacaoRepository;
 
+    @Mock
+    private ArmazenamentoArquivoService armazenamento;
+
     @InjectMocks
     private MovimentacaoService service;
 
