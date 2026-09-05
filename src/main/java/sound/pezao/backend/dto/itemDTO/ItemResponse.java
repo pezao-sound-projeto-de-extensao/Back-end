@@ -1,50 +1,29 @@
 package sound.pezao.backend.dto.itemDTO;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import sound.pezao.backend.dto.imagemProdutoDTO.ImagemProdutoResponse;
 
-import java.util.List;
-
-@Schema(description = "Dados retornados de um item")
 public record ItemResponse(
-
-        @Schema(description = "ID do item", example = "1")
+        @Schema(description = "ID do item")
         Integer id,
 
-        @Schema(description = "Nome do item", example = "Módulo amplificador 400W")
+        @Schema(description = "Nome do item")
         String nome,
 
-        @Schema(description = "ID da categoria do item", example = "1")
-        Integer categoriaId,
-
-        @Schema(description = "Nome da categoria do item", example = "Som automotivo")
-        String categoriaNome,
-
-        @Schema(description = "ID da unidade do item", example = "1")
-        Integer unidadeId,
-
-        @Schema(description = "Nome da unidade do item", example = "Caixa")
-        String unidadeNome,
-
-        @Schema(description = "Abreviação da unidade do item", example = "cx")
-        String unidadeAbreviacao,
-
-        @Schema(description = "Quantidade atual em estoque", example = "5")
+        @Schema(description = "Quantidade atual em estoque")
         Integer quantidadeAtual,
 
-        @Schema(description = "Quantidade mínima antes de gerar alerta", example = "3")
+        @Schema(description = "Quantidade mínima em estoque")
         Integer quantidadeMinima,
 
-        @Schema(description = "Preço de custo do item", example = "180.00")
+        @Schema(description = "Preço de custo")
         Double precoCusto,
 
-        @Schema(description = "Preço de venda do item", example = "320.00")
+        @Schema(description = "Preço de venda")
         Double precoVenda,
 
-        @Schema(description = "Item ativo ou inativo", example = "true")
+        @Schema(description = "Item está ativo?")
         Boolean ativo,
 
-        @Schema(description = "Imagens do item")
-        List<ImagemProdutoResponse> imagens
-
+        @Schema(description = "Dados da imagem do item")
+        ImagemInfo imagem
 ) {}
