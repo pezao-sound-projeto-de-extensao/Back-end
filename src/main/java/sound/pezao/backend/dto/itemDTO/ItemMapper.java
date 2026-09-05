@@ -2,6 +2,7 @@ package sound.pezao.backend.dto.itemDTO;
 
 import sound.pezao.backend.entities.Categoria;
 import sound.pezao.backend.entities.Item;
+import sound.pezao.backend.entities.StatusEstoque;
 import sound.pezao.backend.entities.Unidade;
 
 public class ItemMapper {
@@ -25,6 +26,7 @@ public class ItemMapper {
                 item.getQuantidadeMinima(),
                 item.getPrecoCusto(),
                 item.getPrecoVenda(),
+                StatusEstoque.calcular(item.getQuantidadeAtual(), item.getQuantidadeMinima()),
                 item.getAtivo(),
                 imagemInfo
         );

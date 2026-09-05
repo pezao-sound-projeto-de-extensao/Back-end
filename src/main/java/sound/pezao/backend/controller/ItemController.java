@@ -1,5 +1,8 @@
 package sound.pezao.backend.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,6 +18,7 @@ import sound.pezao.backend.service.ItemService;
 
 @RestController
 @RequestMapping("/itens")
+@Tag(name = "Itens", description = "Gerenciamento de itens do estoque")
 public class ItemController {
 
     private final ItemService service;
@@ -25,42 +29,51 @@ public class ItemController {
 
     @PostMapping
     @PreAuthorize("hasAuthority('CADASTRAR_ITENS')")
+    @Operation(summary = "Cadastra um novo item")
     public ResponseEntity<ItemResponse> create(
-            @RequestBody ItemRequest request
+            @RequestBody @Valid ItemRequest request
     ) {
-        return ResponseEntity.status(201)
-                .body(service.create(request));
+        ItemResponse response = service.create(request);
+        return ResponseEntity.status(201).body(response);
     }
 
     @GetMapping
+    @Operation(
+            summary = "Lista todos os itens com filtros opcionais",
+            description = "Filtra por situação (ativo), nome (search), categoria (categoriaId) e, "
+                    + "com apenasAlerta=true, devolve somente os itens em alerta — estoque baixo ou zerado."
+    )
     public ResponseEntity<Page<ItemResponse>> findAll(
             @RequestParam(required = false) Boolean ativo,
             @RequestParam(required = false) String search,
+            @RequestParam(required = false) Integer categoriaId,
+            @RequestParam(required = false) Boolean apenasAlerta,
             Pageable pageable
     ) {
         return ResponseEntity.ok(
-                service.findAll(ativo, search, pageable)
+                service.findAll(ativo, search, categoriaId, apenasAlerta, pageable)
         );
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<ItemResponse> findById(
-            @PathVariable Integer id
-    ) {
+    @Operation(summary = "Busca um item pelo ID")
+    public ResponseEntity<ItemResponse> findById(@PathVariable Integer id) {
         return ResponseEntity.ok(service.findById(id));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAuthority('EDITAR_ITENS')")
+    @Operation(summary = "Atualiza um item existente")
     public ResponseEntity<ItemResponse> update(
             @PathVariable Integer id,
-            @RequestBody ItemRequest request
+            @RequestBody @Valid ItemRequest request
     ) {
         return ResponseEntity.ok(service.update(id, request));
     }
 
     @PostMapping("/{id}/imagem")
     @PreAuthorize("hasAuthority('EDITAR_ITENS')")
+    @Operation(summary = "Faz upload de uma imagem para o item")
     public ResponseEntity<ItemResponse> uploadImagem(
             @PathVariable Integer id,
             @RequestParam("arquivo") MultipartFile arquivo
@@ -70,6 +83,7 @@ public class ItemController {
     }
 
     @GetMapping("/{id}/imagem/download")
+    @Operation(summary = "Baixa o arquivo de uma imagem")
     public ResponseEntity<Resource> baixarImagem(
             @PathVariable Integer id
     ) {
@@ -96,6 +110,7 @@ public class ItemController {
 
     @DeleteMapping("/{id}/imagem")
     @PreAuthorize("hasAuthority('EXCLUIR_ITENS')")
+    @Operation(summary = "Remove uma imagem do item")
     public ResponseEntity<Void> deletarImagem(
             @PathVariable Integer id
     ) {
@@ -105,18 +120,16 @@ public class ItemController {
 
     @PatchMapping("/{id}/inativar")
     @PreAuthorize("hasAuthority('EXCLUIR_ITENS')")
-    public ResponseEntity<Void> inativar(
-            @PathVariable Integer id
-    ) {
+    @Operation(summary = "Inativa um item")
+    public ResponseEntity<Void> inativar(@PathVariable Integer id) {
         service.inativar(id);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{id}/reativar")
     @PreAuthorize("hasAuthority('EXCLUIR_ITENS')")
-    public ResponseEntity<Void> reativar(
-            @PathVariable Integer id
-    ) {
+    @Operation(summary = "Reativa um item")
+    public ResponseEntity<Void> reativar(@PathVariable Integer id) {
         service.reativar(id);
         return ResponseEntity.noContent().build();
     }
