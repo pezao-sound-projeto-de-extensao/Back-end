@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -194,7 +195,7 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Deve atualizar usuário quando dados válidos")
         void atualizarDeveAtualizarUsuarioQuandoDadosValidos() {
-            when(usuarioRepository.existsById(1)).thenReturn(true);
+            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(usuarioRepository.existsByEmailIgnoreCaseAndIdNot(usuarioRequest.email(), 1)).thenReturn(false);
             when(cargoRepository.findById(usuarioRequest.cargo_id())).thenReturn(Optional.of(cargo));
             when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -204,21 +205,44 @@ class UsuarioServiceTest {
             assertNotNull(resultado);
             assertEquals(usuarioRequest.email(), resultado.email());
 
-            verify(usuarioRepository).existsById(1);
+            verify(usuarioRepository).findById(1);
             verify(usuarioRepository).existsByEmailIgnoreCaseAndIdNot(usuarioRequest.email(), 1);
             verify(cargoRepository).findById(usuarioRequest.cargo_id());
             verify(usuarioRepository).save(any(Usuario.class));
         }
 
         @Test
+        @DisplayName("Deve preservar senha, status e data de criação ao atualizar")
+        void atualizarDevePreservarDadosNaoEditaveis() {
+            usuario.setSenhaHash("hash-original");
+            usuario.setAtivo(true);
+
+            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
+            when(usuarioRepository.existsByEmailIgnoreCaseAndIdNot(usuarioRequest.email(), 1)).thenReturn(false);
+            when(cargoRepository.findById(usuarioRequest.cargo_id())).thenReturn(Optional.of(cargo));
+            when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            usuarioService.atualizar(1, new UsuarioRequest("Nome Novo", "teste@email.com", 1));
+
+            ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+            verify(usuarioRepository).save(captor.capture());
+
+            Usuario salvo = captor.getValue();
+            assertEquals("hash-original", salvo.getSenhaHash());
+            assertTrue(salvo.isAtivo());
+            assertEquals("Nome Novo", salvo.getNome());
+            assertEquals(1, salvo.getId());
+        }
+
+        @Test
         @DisplayName("Deve lançar EntityNotFoundException quando usuário não existe")
         void atualizarDeveLancarEntityNotFoundExceptionQuandoUsuarioNaoExiste() {
-            when(usuarioRepository.existsById(1)).thenReturn(false);
+            when(usuarioRepository.findById(1)).thenReturn(Optional.empty());
 
             assertThrows(EntityNotFoundException.class,
                     () -> usuarioService.atualizar(1, usuarioRequest));
 
-            verify(usuarioRepository).existsById(1);
+            verify(usuarioRepository).findById(1);
             verify(usuarioRepository, never()).existsByEmailIgnoreCaseAndIdNot(anyString(), anyInt());
             verify(cargoRepository, never()).findById(anyInt());
             verify(usuarioRepository, never()).save(any());
@@ -227,13 +251,13 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Deve lançar EntityNomeJaExisteException quando email já existe em outro usuário")
         void atualizarDeveLancarEntityNomeJaExisteExceptionQuandoEmailJaExisteEmOutroUsuario() {
-            when(usuarioRepository.existsById(1)).thenReturn(true);
+            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(usuarioRepository.existsByEmailIgnoreCaseAndIdNot(usuarioRequest.email(), 1)).thenReturn(true);
 
             assertThrows(EntityNomeJaExisteException.class,
                     () -> usuarioService.atualizar(1, usuarioRequest));
 
-            verify(usuarioRepository).existsById(1);
+            verify(usuarioRepository).findById(1);
             verify(usuarioRepository).existsByEmailIgnoreCaseAndIdNot(usuarioRequest.email(), 1);
             verify(cargoRepository, never()).findById(anyInt());
             verify(usuarioRepository, never()).save(any());
@@ -242,14 +266,14 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Deve lançar EntityNotFoundException quando cargo não existe")
         void atualizarDeveLancarEntityNotFoundExceptionQuandoCargoNaoExiste() {
-            when(usuarioRepository.existsById(1)).thenReturn(true);
+            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(usuarioRepository.existsByEmailIgnoreCaseAndIdNot(usuarioRequest.email(), 1)).thenReturn(false);
             when(cargoRepository.findById(usuarioRequest.cargo_id())).thenReturn(Optional.empty());
 
             assertThrows(EntityNotFoundException.class,
                     () -> usuarioService.atualizar(1, usuarioRequest));
 
-            verify(usuarioRepository).existsById(1);
+            verify(usuarioRepository).findById(1);
             verify(usuarioRepository).existsByEmailIgnoreCaseAndIdNot(usuarioRequest.email(), 1);
             verify(cargoRepository).findById(usuarioRequest.cargo_id());
             verify(usuarioRepository, never()).save(any());

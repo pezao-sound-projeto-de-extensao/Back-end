@@ -1,5 +1,6 @@
 package sound.pezao.backend.service;
 
+import jakarta.transaction.Transactional;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -11,6 +12,8 @@ import sound.pezao.backend.dto.itemDTO.ItemRequest;
 import sound.pezao.backend.dto.itemDTO.ItemResponse;
 import sound.pezao.backend.entities.Categoria;
 import sound.pezao.backend.entities.Item;
+import sound.pezao.backend.entities.Movimentacao;
+import sound.pezao.backend.entities.TipoMovimentacao;
 import sound.pezao.backend.entities.Unidade;
 import sound.pezao.backend.exception.ArquivoInvalidoException;
 import sound.pezao.backend.exception.EntityInativaException;
@@ -20,26 +23,40 @@ import sound.pezao.backend.repository.CategoriaRepository;
 import sound.pezao.backend.repository.ItemRepository;
 import sound.pezao.backend.repository.UnidadeRepository;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Service
 public class ItemService {
+
+    static final String OBSERVACAO_ESTOQUE_INICIAL = "Estoque inicial do cadastro do produto";
 
     private final ItemRepository repository;
     private final CategoriaRepository categoriaRepository;
     private final UnidadeRepository unidadeRepository;
     private final ArmazenamentoArquivoService armazenamento;
+    private final MovimentacaoService movimentacaoService;
+    private final UsuarioAutenticadoService usuarioAutenticadoService;
 
     public ItemService(
             ItemRepository repository,
             CategoriaRepository categoriaRepository,
             UnidadeRepository unidadeRepository,
-            ArmazenamentoArquivoService armazenamento
+            ArmazenamentoArquivoService armazenamento,
+            MovimentacaoService movimentacaoService,
+            UsuarioAutenticadoService usuarioAutenticadoService
     ) {
         this.repository = repository;
         this.categoriaRepository = categoriaRepository;
         this.unidadeRepository = unidadeRepository;
         this.armazenamento = armazenamento;
+        this.movimentacaoService = movimentacaoService;
+        this.usuarioAutenticadoService = usuarioAutenticadoService;
     }
 
+    @Transactional
     @PreAuthorize("hasAuthority('CADASTRAR_ITENS')")
     public ItemResponse create(ItemRequest request) {
         if (repository.existsByNomeIgnoreCase(request.nome())) {
@@ -53,12 +70,55 @@ public class ItemService {
                 .orElseThrow(() -> new EntityNotFoundException("Unidade", request.unidadeId()));
 
         Item item = ItemMapper.toEntity(request, categoria, unidade);
-        return ItemMapper.toResponse(repository.save(item));
+        Item salvo = repository.save(item);
+
+        registrarEstoqueInicial(salvo);
+
+        return ItemMapper.toResponse(salvo);
     }
 
-    public Page<ItemResponse> findAll(Boolean ativo, String search, Pageable pageable) {
-        Page<Item> pagina = repository.findAllFiltered(ativo, search, pageable);
+    private void registrarEstoqueInicial(Item item) {
+        Integer quantidade = item.getQuantidadeAtual();
+
+        if (quantidade == null || quantidade <= 0) {
+            return;
+        }
+
+        Movimentacao movimentacao = new Movimentacao();
+        movimentacao.setItem(item);
+        movimentacao.setUsuario(usuarioAutenticadoService.obter());
+        movimentacao.setTipo(TipoMovimentacao.ENTRADA.getValor());
+        movimentacao.setQuantidade(quantidade);
+        movimentacao.setEstoqueAntes(0);
+        movimentacao.setEstoqueDepois(quantidade);
+        movimentacao.setData(LocalDate.now());
+        movimentacao.setObservacao(OBSERVACAO_ESTOQUE_INICIAL);
+
+        movimentacaoService.salvar(movimentacao);
+    }
+
+    public Page<ItemResponse> findAll(
+            Boolean ativo,
+            String search,
+            Integer categoriaId,
+            Boolean apenasAlerta,
+            Pageable pageable
+    ) {
+        Page<Item> pagina = repository.findAllFiltered(
+                ativo,
+                search,
+                categoriaId,
+                apenasAlerta,
+                pageable
+        );
+
         return pagina.map(ItemMapper::toResponse);
+    }
+
+    public List<ItemResponse> montarRespostas(List<Item> itens) {
+        return itens.stream()
+                .map(ItemMapper::toResponse)
+                .toList();
     }
 
     public ItemResponse findById(Integer id) {
@@ -90,7 +150,7 @@ public class ItemService {
         item.setNome(request.nome());
         item.setCategoria(categoria);
         item.setUnidade(unidade);
-        item.setQuantidadeAtual(request.quantidadeAtual());
+
         item.setQuantidadeMinima(request.quantidadeMinima());
         item.setPrecoCusto(request.precoCusto());
         item.setPrecoVenda(request.precoVenda());
@@ -100,6 +160,7 @@ public class ItemService {
     }
 
     @PreAuthorize("hasAuthority('EDITAR_ITENS')")
+    @Transactional
     public ItemResponse uploadImagem(Integer itemId, MultipartFile arquivo) {
         Item item = repository.findById(itemId)
                 .orElseThrow(() -> new EntityNotFoundException("Item", itemId));
@@ -158,6 +219,7 @@ public class ItemService {
     }
 
     @PreAuthorize("hasAuthority('EXCLUIR_ITENS')")
+    @Transactional
     public void deletarImagem(Integer itemId) {
         Item item = repository.findById(itemId)
                 .orElseThrow(() -> new EntityNotFoundException("Item", itemId));

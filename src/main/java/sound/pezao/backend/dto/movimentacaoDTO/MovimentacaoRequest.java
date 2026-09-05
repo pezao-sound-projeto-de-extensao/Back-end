@@ -3,6 +3,8 @@ package sound.pezao.backend.dto.movimentacaoDTO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -13,10 +15,12 @@ public record MovimentacaoRequest (
         Integer itemId,
 
         @NotBlank
+        @Pattern(regexp = "(?i)entrada|saida", message = "Tipo deve ser 'entrada' ou 'saida'")
         @Schema(description = "Tipo da movimentação", example = "entrada", allowableValues = {"entrada", "saida"})
         String tipo,
 
         @NotNull
+        @Positive(message = "Quantidade deve ser maior que zero")
         @Schema(description = "Quantidade movimentada", example = "5")
         Integer quantidade,
 

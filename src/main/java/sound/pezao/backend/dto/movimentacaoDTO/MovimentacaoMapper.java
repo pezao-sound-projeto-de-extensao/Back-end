@@ -1,12 +1,18 @@
 package sound.pezao.backend.dto.movimentacaoDTO;
 
+import org.springframework.stereotype.Component;
+import sound.pezao.backend.entities.Item;
 import sound.pezao.backend.entities.Movimentacao;
+import sound.pezao.backend.entities.TipoMovimentacao;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Component
 public class MovimentacaoMapper {
 
-    public static MovimentacaoResponse toResponse(
-            Movimentacao movimentacao
-    ) {
+    public MovimentacaoResponse toResponse(Movimentacao movimentacao) {
         NotaInfo notaInfo = null;
 
         if (movimentacao.getUriNotaEntrada() != null) {
@@ -22,32 +28,41 @@ public class MovimentacaoMapper {
 
         return new MovimentacaoResponse(
                 movimentacao.getId(),
+                new ItemResumoResponse(
+                        movimentacao.getItem().getId(),
+                        movimentacao.getItem().getNome(),
+                        movimentacao.getItem().getCategoria().getId(),
+                        movimentacao.getItem().getCategoria().getNome(),
+                        movimentacao.getItem().getUnidade().getId(),
+                        movimentacao.getItem().getUnidade().getNome(),
+                        movimentacao.getItem().getUnidade().getAbreviacao()
+                ),
                 movimentacao.getTipo(),
                 movimentacao.getQuantidade(),
                 movimentacao.getEstoqueAntes(),
                 movimentacao.getEstoqueDepois(),
                 movimentacao.getData(),
                 movimentacao.getObservacao(),
+                movimentacao.getCriadoEm(),
                 notaInfo
         );
     }
 
-    public static Movimentacao toEntity(
-            MovimentacaoRequest request
-    ) {
-        Movimentacao movimentacao = new Movimentacao();
-        movimentacao.setTipo(request.tipo());
-        movimentacao.setQuantidade(request.quantidade());
-        movimentacao.setData(request.data());
-        movimentacao.setObservacao(request.observacao());
-        return movimentacao;
+    public List<MovimentacaoResponse> toResponseList(List<Movimentacao> movimentacoes) {
+        return movimentacoes.stream()
+                .map(this::toResponse)
+                .toList();
     }
 
-    public static java.util.List<MovimentacaoResponse> toResponseList(
-            java.util.List<Movimentacao> movimentacoes
-    ) {
-        return movimentacoes.stream()
-                .map(MovimentacaoMapper::toResponse)
-                .toList();
+    public Movimentacao toEntity(MovimentacaoRequest request, Item item) {
+        Movimentacao movimentacao = new Movimentacao();
+        movimentacao.setItem(item);
+        movimentacao.setTipo(TipoMovimentacao.fromValor(request.tipo()).getValor());
+        movimentacao.setQuantidade(request.quantidade());
+        movimentacao.setData(request.data() != null ? request.data() : LocalDate.now());
+        movimentacao.setObservacao(request.observacao());
+        movimentacao.setCriadoEm(LocalDateTime.now());
+
+        return movimentacao;
     }
 }
