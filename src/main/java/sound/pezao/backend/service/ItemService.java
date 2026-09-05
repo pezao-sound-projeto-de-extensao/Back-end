@@ -1,27 +1,24 @@
 package sound.pezao.backend.service;
 
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 import sound.pezao.backend.dto.itemDTO.ItemMapper;
 import sound.pezao.backend.dto.itemDTO.ItemRequest;
 import sound.pezao.backend.dto.itemDTO.ItemResponse;
 import sound.pezao.backend.entities.Categoria;
-import sound.pezao.backend.entities.ImagemProduto;
 import sound.pezao.backend.entities.Item;
 import sound.pezao.backend.entities.Unidade;
+import sound.pezao.backend.exception.ArquivoInvalidoException;
 import sound.pezao.backend.exception.EntityInativaException;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.exception.EntityNomeJaExisteException;
 import sound.pezao.backend.repository.CategoriaRepository;
-import sound.pezao.backend.repository.ImagemProdutoRepository;
 import sound.pezao.backend.repository.ItemRepository;
 import sound.pezao.backend.repository.UnidadeRepository;
-
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class ItemService {
@@ -29,16 +26,18 @@ public class ItemService {
     private final ItemRepository repository;
     private final CategoriaRepository categoriaRepository;
     private final UnidadeRepository unidadeRepository;
-    private final ImagemProdutoRepository imagemProdutoRepository;
+    private final ArmazenamentoArquivoService armazenamento;
 
-    public ItemService(ItemRepository repository,
-                       CategoriaRepository categoriaRepository,
-                       UnidadeRepository unidadeRepository,
-                       ImagemProdutoRepository imagemProdutoRepository) {
+    public ItemService(
+            ItemRepository repository,
+            CategoriaRepository categoriaRepository,
+            UnidadeRepository unidadeRepository,
+            ArmazenamentoArquivoService armazenamento
+    ) {
         this.repository = repository;
         this.categoriaRepository = categoriaRepository;
         this.unidadeRepository = unidadeRepository;
-        this.imagemProdutoRepository = imagemProdutoRepository;
+        this.armazenamento = armazenamento;
     }
 
     @PreAuthorize("hasAuthority('CADASTRAR_ITENS')")
@@ -59,21 +58,13 @@ public class ItemService {
 
     public Page<ItemResponse> findAll(Boolean ativo, String search, Pageable pageable) {
         Page<Item> pagina = repository.findAllFiltered(ativo, search, pageable);
-
-        List<Integer> ids = pagina.getContent().stream().map(Item::getId).toList();
-        Map<Integer, List<ImagemProduto>> imagensPorItem = ids.isEmpty()
-                ? Map.of()
-                : imagemProdutoRepository.findByItem_IdIn(ids).stream()
-                        .collect(Collectors.groupingBy(imagem -> imagem.getItem().getId()));
-
-        return pagina.map(item -> ItemMapper.toResponse(
-                item, imagensPorItem.getOrDefault(item.getId(), List.of())));
+        return pagina.map(ItemMapper::toResponse);
     }
 
     public ItemResponse findById(Integer id) {
         Item item = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Item", id));
-        return ItemMapper.toResponse(item, imagemProdutoRepository.findByItem_Id(id));
+        return ItemMapper.toResponse(item);
     }
 
     @PreAuthorize("hasAuthority('EDITAR_ITENS')")
@@ -105,7 +96,49 @@ public class ItemService {
         item.setPrecoVenda(request.precoVenda());
 
         Item salvo = repository.save(item);
-        return ItemMapper.toResponse(salvo, imagemProdutoRepository.findByItem_Id(id));
+        return ItemMapper.toResponse(salvo);
+    }
+
+    @PreAuthorize("hasAuthority('EDITAR_ITENS')")
+    public ItemResponse uploadImagem(Integer itemId, MultipartFile arquivo) {
+        Item item = repository.findById(itemId)
+                .orElseThrow(() -> new EntityNotFoundException("Item", itemId));
+
+        String uriAntiga = item.getUriImagem();
+        String uriNova = armazenamento.salvar(arquivo, "imagens");
+
+        try {
+            item.setUriImagem(uriNova);
+            item.setNomeImagem(arquivo.getOriginalFilename());
+            item.setMimeTypeImagem(
+                    arquivo.getContentType() != null
+                            ? arquivo.getContentType()
+                            : "application/octet-stream"
+            );
+            item.setTamanhoImagem((int) arquivo.getSize());
+
+            Item salvo = repository.save(item);
+
+            if (uriAntiga != null && !uriAntiga.equals(uriNova)) {
+                armazenamento.deletar(uriAntiga);
+            }
+
+            return ItemMapper.toResponse(salvo);
+        } catch (RuntimeException e) {
+            armazenamento.deletar(uriNova);
+            throw e;
+        }
+    }
+
+    public Resource baixarImagem(Integer itemId) {
+        Item item = repository.findById(itemId)
+                .orElseThrow(() -> new EntityNotFoundException("Item", itemId));
+
+        if (item.getUriImagem() == null) {
+            throw new ArquivoInvalidoException("O item não possui imagem.");
+        }
+
+        return armazenamento.carregar(item.getUriImagem());
     }
 
     @PreAuthorize("hasAuthority('EXCLUIR_ITENS')")
@@ -122,5 +155,23 @@ public class ItemService {
                 .orElseThrow(() -> new EntityNotFoundException("Item", id));
         item.setAtivo(true);
         repository.save(item);
+    }
+
+    @PreAuthorize("hasAuthority('EXCLUIR_ITENS')")
+    public void deletarImagem(Integer itemId) {
+        Item item = repository.findById(itemId)
+                .orElseThrow(() -> new EntityNotFoundException("Item", itemId));
+
+        String uri = item.getUriImagem();
+        item.setUriImagem(null);
+        item.setNomeImagem(null);
+        item.setMimeTypeImagem(null);
+        item.setTamanhoImagem(null);
+
+        repository.save(item);
+
+        if (uri != null) {
+            armazenamento.deletar(uri);
+        }
     }
 }
