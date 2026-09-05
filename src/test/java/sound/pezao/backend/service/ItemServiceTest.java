@@ -24,7 +24,6 @@ import sound.pezao.backend.exception.EntityInativaException;
 import sound.pezao.backend.exception.EntityNomeJaExisteException;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.repository.CategoriaRepository;
-import sound.pezao.backend.repository.ImagemProdutoRepository;
 import sound.pezao.backend.repository.ItemRepository;
 import sound.pezao.backend.repository.UnidadeRepository;
 
@@ -58,7 +57,7 @@ class ItemServiceTest {
     private UnidadeRepository unidadeRepository;
 
     @Mock
-    private ImagemProdutoRepository imagemProdutoRepository;
+    private ArmazenamentoArquivoService armazenamento;
 
     @Mock
     private MovimentacaoService movimentacaoService;
@@ -189,12 +188,11 @@ class ItemServiceTest {
     }
 
     @Test
-    @DisplayName("Deve listar itens paginados com suas imagens")
+    @DisplayName("Deve listar itens paginados")
     void deveListarItensPaginados() {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Item> pagina = new PageImpl<>(List.of(item(1, "Amplificador", true)));
         when(repository.findAllFiltered(null, null, null, null, pageable)).thenReturn(pagina);
-        when(imagemProdutoRepository.findByItem_IdIn(anyList())).thenReturn(List.of());
 
         Page<ItemResponse> resultado = service.findAll(null, null, null, null, pageable);
 
@@ -242,7 +240,6 @@ class ItemServiceTest {
         Pageable pageable = PageRequest.of(0, 10);
         when(repository.findAllFiltered(null, null, null, null, pageable))
                 .thenReturn(new PageImpl<>(List.of(zerado, baixo, ok)));
-        when(imagemProdutoRepository.findByItem_IdIn(anyList())).thenReturn(List.of());
 
         List<ItemResponse> itens = service.findAll(null, null, null, null, pageable).getContent();
 
@@ -252,30 +249,25 @@ class ItemServiceTest {
     }
 
     @Test
-    @DisplayName("Deve montar respostas de uma lista buscando as imagens em uma única consulta")
+    @DisplayName("Deve montar respostas de uma lista")
     void deveMontarRespostasDeUmaLista() {
         List<Item> itens = List.of(item(1, "Amplificador", true), item(2, "Bateria", true));
-        when(imagemProdutoRepository.findByItem_IdIn(List.of(1, 2))).thenReturn(List.of());
 
         List<ItemResponse> respostas = service.montarRespostas(itens);
 
         assertEquals(2, respostas.size());
-        verify(imagemProdutoRepository).findByItem_IdIn(List.of(1, 2));
     }
 
     @Test
-    @DisplayName("Deve montar lista vazia sem consultar imagens")
+    @DisplayName("Deve montar lista vazia")
     void deveMontarListaVaziaSemConsultarImagens() {
         assertTrue(service.montarRespostas(List.of()).isEmpty());
-
-        verify(imagemProdutoRepository, never()).findByItem_IdIn(anyList());
     }
 
     @Test
     @DisplayName("Deve buscar item por id com sucesso")
     void deveBuscarItemPorId() {
         when(repository.findById(1)).thenReturn(Optional.of(item(1, "Amplificador", true)));
-        when(imagemProdutoRepository.findByItem_Id(1)).thenReturn(List.of());
 
         ItemResponse resposta = service.findById(1);
 
@@ -297,7 +289,6 @@ class ItemServiceTest {
         when(categoriaRepository.findById(1)).thenReturn(Optional.of(categoria()));
         when(unidadeRepository.findById(1)).thenReturn(Optional.of(unidade()));
         when(repository.save(any(Item.class))).thenReturn(item(1, "Amplificador Novo", true));
-        when(imagemProdutoRepository.findByItem_Id(1)).thenReturn(List.of());
 
         ItemResponse resposta = service.update(1, request("Amplificador Novo"));
 
@@ -314,9 +305,7 @@ class ItemServiceTest {
         when(categoriaRepository.findById(1)).thenReturn(Optional.of(categoria()));
         when(unidadeRepository.findById(1)).thenReturn(Optional.of(unidade()));
         when(repository.save(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(imagemProdutoRepository.findByItem_Id(1)).thenReturn(List.of());
 
-        // o request pede 99 unidades; o saldo tem que continuar 7
         ItemResponse resposta = service.update(1, request("Amplificador", 99));
 
         assertEquals(7, resposta.quantidadeAtual());
