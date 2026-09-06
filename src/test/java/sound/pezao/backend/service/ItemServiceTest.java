@@ -7,10 +7,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 import sound.pezao.backend.dto.itemDTO.ItemRequest;
 import sound.pezao.backend.dto.itemDTO.ItemResponse;
 import sound.pezao.backend.entities.Categoria;
@@ -20,6 +23,7 @@ import sound.pezao.backend.entities.StatusEstoque;
 import sound.pezao.backend.entities.TipoMovimentacao;
 import sound.pezao.backend.entities.Unidade;
 import sound.pezao.backend.entities.Usuario;
+import sound.pezao.backend.exception.ArquivoInvalidoException;
 import sound.pezao.backend.exception.EntityInativaException;
 import sound.pezao.backend.exception.EntityNomeJaExisteException;
 import sound.pezao.backend.exception.EntityNotFoundException;
@@ -32,13 +36,12 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -376,5 +379,136 @@ class ItemServiceTest {
         when(repository.findById(99)).thenReturn(Optional.empty());
 
         assertThrows(EntityNotFoundException.class, () -> service.reativar(99));
+    }
+
+    @Test
+    @DisplayName("Deve fazer upload de imagem com sucesso")
+    void deveFazerUploadImagemComSucesso() throws Exception {
+        Item item = item(1, "Amplificador", true);
+        MultipartFile arquivo = new MockMultipartFile(
+                "arquivo",
+                "foto.jpg",
+                "image/jpeg",
+                "conteudo".getBytes()
+        );
+
+        when(repository.findById(1)).thenReturn(Optional.of(item));
+        when(armazenamento.salvar(arquivo, "imagens")).thenReturn("imagens/uuid-foto.jpg");
+        when(repository.save(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ItemResponse resposta = service.uploadImagem(1, arquivo);
+
+        assertNotNull(resposta);
+        assertEquals("Amplificador", resposta.nome());
+        assertNotNull(resposta.imagem());
+        assertEquals("/itens/1/imagem/download", resposta.imagem().url());
+        verify(repository).save(item);
+        verify(armazenamento).salvar(arquivo, "imagens");
+    }
+
+    @Test
+    @DisplayName("Deve deletar imagem antiga ao fazer upload de nova imagem")
+    void deveDeletarImagemAntigaAoFazerUpload() throws Exception {
+        Item item = item(1, "Amplificador", true);
+        item.setUriImagem("imagens/uuid-antiga.jpg");
+        MultipartFile arquivo = new MockMultipartFile(
+                "arquivo",
+                "foto.jpg",
+                "image/jpeg",
+                "conteudo".getBytes()
+        );
+
+        when(repository.findById(1)).thenReturn(Optional.of(item));
+        when(armazenamento.salvar(arquivo, "imagens")).thenReturn("imagens/uuid-nova.jpg");
+        doNothing().when(armazenamento).deletar("imagens/uuid-antiga.jpg");
+        when(repository.save(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.uploadImagem(1, arquivo);
+
+        verify(armazenamento).deletar("imagens/uuid-antiga.jpg");
+        assertEquals("imagens/uuid-nova.jpg", item.getUriImagem());
+    }
+
+    @Test
+    @DisplayName("Deve reverter upload se salvar no banco falhar")
+    void deveReverterUploadSeSalvarFalhar() throws Exception {
+        Item item = item(1, "Amplificador", true);
+        MultipartFile arquivo = new MockMultipartFile(
+                "arquivo",
+                "foto.jpg",
+                "image/jpeg",
+                "conteudo".getBytes()
+        );
+
+        when(repository.findById(1)).thenReturn(Optional.of(item));
+        when(armazenamento.salvar(arquivo, "imagens")).thenReturn("imagens/uuid-foto.jpg");
+        doNothing().when(armazenamento).deletar("imagens/uuid-foto.jpg");
+        when(repository.save(any(Item.class))).thenThrow(new RuntimeException("Erro no banco"));
+
+        assertThrows(RuntimeException.class, () -> service.uploadImagem(1, arquivo));
+
+        verify(armazenamento).deletar("imagens/uuid-foto.jpg");
+    }
+
+    @Test
+    @DisplayName("Deve baixar imagem com sucesso")
+    void deveBaixarImagemComSucesso() {
+        Item item = item(1, "Amplificador", true);
+        item.setUriImagem("imagens/uuid-foto.jpg");
+        Resource recurso = new MockMultipartFile("arquivo", "foto.jpg", "image/jpeg", "conteudo".getBytes()).getResource();
+
+        when(repository.findById(1)).thenReturn(Optional.of(item));
+        when(armazenamento.carregar("imagens/uuid-foto.jpg")).thenReturn(recurso);
+
+        Resource resultado = service.baixarImagem(1);
+
+        assertNotNull(resultado);
+        verify(armazenamento).carregar("imagens/uuid-foto.jpg");
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao baixar imagem de item sem imagem")
+    void deveLancarExcecaoAoBaixarImagemDeItemSemImagem() {
+        Item item = item(1, "Amplificador", true);
+
+        when(repository.findById(1)).thenReturn(Optional.of(item));
+
+        assertThrows(ArquivoInvalidoException.class, () -> service.baixarImagem(1));
+    }
+
+    @Test
+    @DisplayName("Deve deletar imagem com sucesso")
+    void deveDeletarImagemComSucesso() {
+        Item item = item(1, "Amplificador", true);
+        item.setUriImagem("imagens/uuid-foto.jpg");
+
+        when(repository.findById(1)).thenReturn(Optional.of(item));
+        doNothing().when(armazenamento).deletar("imagens/uuid-foto.jpg");
+        when(repository.save(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.deletarImagem(1);
+
+        verify(repository).save(item);
+        verify(armazenamento).deletar("imagens/uuid-foto.jpg");
+        assertNull(item.getUriImagem());
+        assertNull(item.getNomeImagem());
+        assertNull(item.getMimeTypeImagem());
+        assertNull(item.getTamanhoImagem());
+    }
+
+    @Test
+    @DisplayName("Deve deletar imagem do banco mesmo se S3 falhar")
+    void deveDeletarImagemDoBancoMesmoSeS3Falhar() {
+        Item item = item(1, "Amplificador", true);
+        item.setUriImagem("imagens/uuid-foto.jpg");
+
+        when(repository.findById(1)).thenReturn(Optional.of(item));
+        doNothing().when(armazenamento).deletar("imagens/uuid-foto.jpg");
+        when(repository.save(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.deletarImagem(1);
+
+        verify(repository).save(item);
+        assertNull(item.getUriImagem());
     }
 }
