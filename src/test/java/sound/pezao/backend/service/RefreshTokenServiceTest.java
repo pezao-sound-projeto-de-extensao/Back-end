@@ -191,14 +191,12 @@ class RefreshTokenServiceTest {
     @DisplayName("Não deve falhar ao revogar token com formato inválido")
     void naoDeveFalharAoRevogarTokenComFormatoInvalido() {
         service.revogar("token-sem-ponto");
-        // Não deve lançar exceção
     }
 
     @Test
     @DisplayName("Não deve falhar ao revogar token com ID inválido")
     void naoDeveFalharAoRevogarTokenComIdInvalido() {
         service.revogar("abc.segredo");
-        // Não deve lançar exceção
     }
 
     @Test
@@ -208,7 +206,6 @@ class RefreshTokenServiceTest {
                 .thenReturn(Optional.empty());
 
         service.revogar("1.segredo");
-        // Não deve lançar exceção
     }
 
     @Test
