@@ -1,17 +1,62 @@
-version: '3.8'
-
 services:
-  mysql-db:
-    image: mysql:8.0
-    container_name: mysql-stockflow
-    restart: always
+  floci:
+    image: floci/floci:latest
+    container_name: floci
     ports:
-      - "3307:3306"
+      - "4566:4566"
     environment:
-      MYSQL_ROOT_PASSWORD: root
-      MYSQL_DATABASE: stockflow
+      - DEBUG=1
     volumes:
-      - mysql-stockflow-data:/var/lib/mysql
+      - floci-data:/app/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  mysql:
+    image: mysql:8.0
+    container_name: mysql-dev
+    ports:
+      - "3308:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: stockflow
+      MYSQL_DATABASE: stockflow
+      MYSQL_USER: stockflow
+      MYSQL_PASSWORD: stockflow
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-prootpassword"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+  init-s3:
+    image: amazon/aws-cli:latest
+    container_name: init-s3
+    depends_on:
+      floci:
+        condition: service_healthy
+    environment:
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - AWS_DEFAULT_REGION=us-east-1
+    entrypoint: ["sh", "-c"]
+    command:
+      - |
+        echo "Aguardando Floci..."
+        until aws --endpoint-url http://floci:4566 s3 ls > /dev/null 2>&1; do
+          echo "Floci não disponível..."
+          sleep 2
+        done
+        echo "Criando bucket..."
+        aws --endpoint-url http://floci:4566 s3 mb s3://stockflow-dev || true
+        echo "Bucket pronto!"
 
 volumes:
-  mysql-stockflow-data:
+  floci-data:
+  mysql-data:

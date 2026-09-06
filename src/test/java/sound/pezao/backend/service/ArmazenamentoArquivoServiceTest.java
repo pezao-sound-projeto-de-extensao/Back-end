@@ -1,92 +1,71 @@
 package sound.pezao.backend.service;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.Resource;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 import sound.pezao.backend.exception.ArquivoInvalidoException;
+import sound.pezao.backend.service.storage.ArmazenamentoArquivoStrategy;
 
-import java.io.IOException;
-import java.nio.file.Path;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
+@ExtendWith(MockitoExtension.class)
+@DisplayName("Testes para ArmazenamentoArquivoService")
 class ArmazenamentoArquivoServiceTest {
 
-    @TempDir
-    Path tempDir;
+    @Mock
+    private ArmazenamentoArquivoStrategy strategy;
 
+    @InjectMocks
     private ArmazenamentoArquivoService service;
 
-    @BeforeEach
-    void setUp() {
-        service = new ArmazenamentoArquivoService(tempDir.toString());
-    }
-
     @Test
-    @DisplayName("Deve salvar o arquivo e retornar a chave relativa dentro da subpasta")
-    void deveSalvarArquivoERetornarChave() {
+    @DisplayName("Deve delegar o salvamento para a strategy")
+    void deveDelegarSalvamentoParaStrategy() {
         MultipartFile arquivo = new MockMultipartFile(
-                "arquivo", "foto.jpg", "image/jpeg", "conteudo".getBytes());
+                "arquivo",
+                "foto.jpg",
+                "image/jpeg",
+                "conteudo".getBytes()
+        );
 
-        String caminho = service.salvar(arquivo, "imagens-produto");
+        when(strategy.salvar(arquivo, "imagens"))
+                .thenReturn("imagens/uuid.jpg");
 
-        assertTrue(caminho.startsWith("imagens-produto/"));
-        assertTrue(caminho.endsWith(".jpg"));
+        String resultado = service.salvar(arquivo, "imagens");
+
+        assertEquals("imagens/uuid.jpg", resultado);
+        verify(strategy).salvar(arquivo, "imagens");
     }
 
     @Test
-    @DisplayName("Deve lançar ArquivoInvalidoException ao salvar arquivo vazio")
-    void deveLancarExcecaoAoSalvarArquivoVazio() {
-        MultipartFile vazio = new MockMultipartFile(
-                "arquivo", "vazio.jpg", "image/jpeg", new byte[0]);
+    @DisplayName("Deve delegar o carregamento para a strategy")
+    void deveDelegarCarregamentoParaStrategy() {
+        Resource recurso = mock(Resource.class);
 
-        assertThrows(ArquivoInvalidoException.class,
-                () -> service.salvar(vazio, "imagens-produto"));
+        when(strategy.carregar("imagens/uuid.jpg"))
+                .thenReturn(recurso);
+
+        Resource resultado = service.carregar("imagens/uuid.jpg");
+
+        assertSame(recurso, resultado);
+        verify(strategy).carregar("imagens/uuid.jpg");
     }
 
     @Test
-    @DisplayName("Deve carregar o arquivo salvo com o mesmo conteúdo")
-    void deveCarregarArquivoSalvo() throws IOException {
-        byte[] conteudo = "imagem-binaria".getBytes();
-        MultipartFile arquivo = new MockMultipartFile(
-                "arquivo", "foto.png", "image/png", conteudo);
-        String caminho = service.salvar(arquivo, "imagens-produto");
+    @DisplayName("Deve delegar a exclusão para a strategy")
+    void deveDelegarExclusaoParaStrategy() {
+        service.deletar("imagens/uuid.jpg");
 
-        Resource recurso = service.carregar(caminho);
-
-        assertTrue(recurso.exists());
-        assertArrayEquals(conteudo, recurso.getInputStream().readAllBytes());
-    }
-
-    @Test
-    @DisplayName("Deve lançar ArquivoInvalidoException ao carregar arquivo inexistente")
-    void deveLancarExcecaoAoCarregarArquivoInexistente() {
-        assertThrows(ArquivoInvalidoException.class,
-                () -> service.carregar("imagens-produto/nao-existe.jpg"));
-    }
-
-    @Test
-    @DisplayName("Deve bloquear tentativa de path traversal")
-    void deveBloquearPathTraversal() {
-        assertThrows(ArquivoInvalidoException.class,
-                () -> service.carregar("../../etc/passwd"));
-    }
-
-    @Test
-    @DisplayName("Deve remover o arquivo salvo do storage")
-    void deveRemoverArquivo() {
-        MultipartFile arquivo = new MockMultipartFile(
-                "arquivo", "foto.jpg", "image/jpeg", "x".getBytes());
-        String caminho = service.salvar(arquivo, "imagens-produto");
-
-        service.deletar(caminho);
-
-        assertThrows(ArquivoInvalidoException.class, () -> service.carregar(caminho));
+        verify(strategy).deletar("imagens/uuid.jpg");
     }
 }
