@@ -1,9 +1,0 @@
-{
-  "permissions": {
-    "allow": [
-      "PowerShell(.\\\\mvnw.cmd clean verify -q 2>&1)",
-      "Bash(JAVA_HOME='C:\\\\Users\\\\Zaqueu Duraes\\\\.jdks\\\\ms-21.0.11' ./mvnw.cmd clean verify -q)",
-      "Bash(JAVA_HOME='C:\\\\Users\\\\Zaqueu Duraes\\\\.jdks\\\\ms-21.0.11' ./mvnw.cmd verify)"
-    ]
-  }
-}
