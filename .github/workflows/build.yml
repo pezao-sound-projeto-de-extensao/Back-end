@@ -42,3 +42,5 @@ jobs:
           file: Dockerfile
           push: true
           tags: ${{ steps.meta.outputs.tags }}
+          build-args: |
+            SPRING_PROFILE=prod
