@@ -26,15 +26,18 @@ public class OrcamentoService {
     private final ItemRepository itemRepository;
     private final ClienteService clienteService;
     private final UsuarioAutenticadoService usuarioAutenticadoService;
+    private final EncomendaService encomendaService;
 
     public OrcamentoService(OrcamentoRepository repository,
                             ItemRepository itemRepository,
                             ClienteService clienteService,
-                            UsuarioAutenticadoService usuarioAutenticadoService) {
+                            UsuarioAutenticadoService usuarioAutenticadoService,
+                            EncomendaService encomendaService) {
         this.repository = repository;
         this.itemRepository = itemRepository;
         this.clienteService = clienteService;
         this.usuarioAutenticadoService = usuarioAutenticadoService;
+        this.encomendaService = encomendaService;
     }
 
     public Page<OrcamentoResponse> listar(String search, String status, Pageable pageable) {
@@ -76,9 +79,16 @@ public class OrcamentoService {
         return OrcamentoMapper.toResponse(repository.save(orcamento));
     }
 
+    /**
+     * Aceitar um orçamento gera, na mesma transação, uma encomenda por item:
+     * ou o orçamento vira ACEITO com as encomendas criadas, ou nada acontece.
+     */
     @Transactional
     public OrcamentoResponse aceitar(Integer id) {
-        return OrcamentoMapper.toResponse(alterarStatus(id, StatusOrcamento.ACEITO));
+        Orcamento orcamento = alterarStatus(id, StatusOrcamento.ACEITO);
+        encomendaService.gerarParaOrcamento(orcamento);
+
+        return OrcamentoMapper.toResponse(orcamento);
     }
 
     @Transactional

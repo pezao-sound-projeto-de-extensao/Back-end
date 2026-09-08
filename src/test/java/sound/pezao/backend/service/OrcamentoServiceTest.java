@@ -60,6 +60,9 @@ class OrcamentoServiceTest {
     @Mock
     private UsuarioAutenticadoService usuarioAutenticadoService;
 
+    @Mock
+    private EncomendaService encomendaService;
+
     @InjectMocks
     private OrcamentoService service;
 
@@ -237,13 +240,27 @@ class OrcamentoServiceTest {
         }
 
         @Test
-        @DisplayName("Deve aceitar um orçamento pendente")
+        @DisplayName("Deve aceitar um orçamento pendente e gerar as encomendas")
         void deveAceitarPendente() {
             Orcamento orcamento = orcamentoPendente();
             when(repository.findById(5)).thenReturn(Optional.of(orcamento));
             when(repository.save(orcamento)).thenReturn(orcamento);
 
             assertEquals(StatusOrcamento.ACEITO, service.aceitar(5).status());
+
+            verify(encomendaService).gerarParaOrcamento(orcamento);
+        }
+
+        @Test
+        @DisplayName("Não deve gerar encomendas ao rejeitar")
+        void naoDeveGerarEncomendasAoRejeitar() {
+            Orcamento orcamento = orcamentoPendente();
+            when(repository.findById(5)).thenReturn(Optional.of(orcamento));
+            when(repository.save(orcamento)).thenReturn(orcamento);
+
+            service.rejeitar(5);
+
+            verifyNoInteractions(encomendaService);
         }
 
         @Test

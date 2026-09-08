@@ -27,7 +27,8 @@ INSERT INTO permissoes VALUES
                            (6,'REGISTRAR_ENTRADA','Permite registrar entradas de estoque'),
                            (7,'REGISTRAR_SAIDA','Permite registrar saidas de estoque'),
                            (8,'VER_RELATORIOS','Permite visualizar relatorios do sistema'),
-                           (9,'GERENCIAR_ORCAMENTOS','Permite gerenciar clientes e orcamentos');
+                           (9,'GERENCIAR_ORCAMENTOS','Permite gerenciar clientes e orcamentos'),
+                           (10,'GERENCIAR_ENCOMENDAS','Permite gerenciar encomendas');
 
 CREATE TABLE cargo_permissoes (
                                   cargo_id int NOT NULL,
@@ -39,7 +40,7 @@ CREATE TABLE cargo_permissoes (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 INSERT INTO cargo_permissoes VALUES
-                                 (1,1),(1,2),(1,3),(1,4),(1,5),(1,6),(1,7),(1,8),(1,9);
+                                 (1,1),(1,2),(1,3),(1,4),(1,5),(1,6),(1,7),(1,8),(1,9),(1,10);
 
 CREATE TABLE unidades (
                           id int NOT NULL AUTO_INCREMENT,
@@ -239,4 +240,25 @@ CREATE TABLE orcamento_itens (
                                  CONSTRAINT fk_orcamento_itens_orcamento FOREIGN KEY (orcamento_id) REFERENCES orcamentos (id),
                                  CONSTRAINT fk_orcamento_itens_item FOREIGN KEY (item_id) REFERENCES itens (id),
                                  CONSTRAINT chk_orcamento_itens_quantidade CHECK ((quantidade > 0))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE encomendas (
+                            id int NOT NULL AUTO_INCREMENT,
+                            orcamento_id int NOT NULL,
+                            orcamento_item_id int NOT NULL,
+                            item_id int DEFAULT NULL COMMENT 'Nulo enquanto o produto nao estiver no catalogo',
+                            descricao varchar(255) NOT NULL,
+                            quantidade int NOT NULL,
+                            status varchar(20) NOT NULL DEFAULT 'PENDENTE',
+                            criado_em datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                            recebida_em datetime DEFAULT NULL,
+                            concluida_em datetime DEFAULT NULL,
+                            PRIMARY KEY (id),
+                            KEY fk_encomendas_orcamento (orcamento_id),
+                            KEY fk_encomendas_orcamento_item (orcamento_item_id),
+                            KEY fk_encomendas_item (item_id),
+                            CONSTRAINT fk_encomendas_orcamento FOREIGN KEY (orcamento_id) REFERENCES orcamentos (id),
+                            CONSTRAINT fk_encomendas_orcamento_item FOREIGN KEY (orcamento_item_id) REFERENCES orcamento_itens (id),
+                            CONSTRAINT fk_encomendas_item FOREIGN KEY (item_id) REFERENCES itens (id),
+                            CONSTRAINT chk_encomendas_status CHECK ((status in ('PENDENTE','RECEBIDA','CONCLUIDA')))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
