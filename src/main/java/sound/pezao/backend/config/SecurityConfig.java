@@ -31,7 +31,7 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     public final String [] ENDPOINTS_PUBLICOS = {
-      "/api/auth/login", "/api/auth/trocar-senha", "/api/health", "/api/no-health", "/api/auth/refresh", "/api/auth/logout"
+            "/api/auth/login", "/api/auth/trocar-senha", "/api/health", "/api/auth/refresh", "/api/auth/logout"
     };
     public final String [] ENDPOINTS_AUTENTICADO = {
             "/api/alertas",
@@ -84,7 +84,7 @@ public class SecurityConfig {
     SecurityFilterChain filterChain(HttpSecurity httpSecurity) throws Exception {
         return httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
-                .cors(AbstractHttpConfigurer::disable)
+                .cors(Customizer.withDefaults())
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(ENDPOINTS_PUBLICOS).permitAll()
                         .requestMatchers(ENDPOINTS_AUTENTICADO).authenticated()

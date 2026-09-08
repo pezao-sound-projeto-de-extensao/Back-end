@@ -1,21 +1,37 @@
 package sound.pezao.backend.dto.movimentacaoDTO;
 
-import sound.pezao.backend.dto.notaEntradaDTO.NotaEntradaResponse;
-
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
 
 public record MovimentacaoResponse(
+        @Schema(description = "ID da movimentação")
         Integer id,
+
+        @Schema(description = "Dados do item")
         ItemResumoResponse item,
+
+        @Schema(description = "Tipo: entrada ou saida")
         String tipo,
+
+        @Schema(description = "Quantidade movimentada")
         Integer quantidade,
+
+        @Schema(description = "Estoque antes da movimentação")
         Integer estoqueAntes,
+
+        @Schema(description = "Estoque depois da movimentação")
         Integer estoqueDepois,
+
+        @Schema(description = "Data da movimentação")
         LocalDate data,
+
+        @Schema(description = "Observação")
         String observacao,
+
+        @Schema(description = "Data de criação")
         LocalDateTime criadoEm,
-        List<NotaEntradaResponse> notas
-) {
-}
+
+        @Schema(description = "Dados da nota fiscal")
+        NotaInfo nota
+) {}

@@ -3,37 +3,46 @@ package sound.pezao.backend.service;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.web.multipart.MultipartFile;
 import sound.pezao.backend.dto.itemDTO.ItemRequest;
 import sound.pezao.backend.dto.itemDTO.ItemResponse;
 import sound.pezao.backend.entities.Categoria;
 import sound.pezao.backend.entities.Item;
+import sound.pezao.backend.entities.Movimentacao;
+import sound.pezao.backend.entities.StatusEstoque;
+import sound.pezao.backend.entities.TipoMovimentacao;
 import sound.pezao.backend.entities.Unidade;
+import sound.pezao.backend.entities.Usuario;
+import sound.pezao.backend.exception.ArquivoInvalidoException;
 import sound.pezao.backend.exception.EntityInativaException;
 import sound.pezao.backend.exception.EntityNomeJaExisteException;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.repository.CategoriaRepository;
-import sound.pezao.backend.repository.ImagemProdutoRepository;
 import sound.pezao.backend.repository.ItemRepository;
 import sound.pezao.backend.repository.UnidadeRepository;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -51,13 +60,23 @@ class ItemServiceTest {
     private UnidadeRepository unidadeRepository;
 
     @Mock
-    private ImagemProdutoRepository imagemProdutoRepository;
+    private ArmazenamentoArquivoService armazenamento;
+
+    @Mock
+    private MovimentacaoService movimentacaoService;
+
+    @Mock
+    private UsuarioAutenticadoService usuarioAutenticadoService;
 
     @InjectMocks
     private ItemService service;
 
     private ItemRequest request(String nome) {
         return new ItemRequest(nome, 1, 1, 5, 3, 180.0, 320.0);
+    }
+
+    private ItemRequest request(String nome, Integer quantidadeAtual) {
+        return new ItemRequest(nome, 1, 1, quantidadeAtual, 3, 180.0, 320.0);
     }
 
     private Item item(Integer id, String nome, boolean ativo) {
@@ -90,11 +109,58 @@ class ItemServiceTest {
         when(categoriaRepository.findById(1)).thenReturn(Optional.of(categoria()));
         when(unidadeRepository.findById(1)).thenReturn(Optional.of(unidade()));
         when(repository.save(any(Item.class))).thenReturn(item(1, "Amplificador", true));
+        when(usuarioAutenticadoService.obter()).thenReturn(new Usuario());
 
         ItemResponse resposta = service.create(request);
 
         assertNotNull(resposta);
         assertEquals("Amplificador", resposta.nome());
+    }
+
+    @Test
+    @DisplayName("Deve registrar movimentação de entrada com o estoque inicial ao criar item")
+    void deveRegistrarMovimentacaoDeEstoqueInicialAoCriar() {
+        Usuario usuarioLogado = new Usuario();
+        Item salvo = item(1, "Amplificador", true);
+        salvo.setQuantidadeAtual(5);
+
+        when(repository.existsByNomeIgnoreCase("Amplificador")).thenReturn(false);
+        when(categoriaRepository.findById(1)).thenReturn(Optional.of(categoria()));
+        when(unidadeRepository.findById(1)).thenReturn(Optional.of(unidade()));
+        when(repository.save(any(Item.class))).thenReturn(salvo);
+        when(usuarioAutenticadoService.obter()).thenReturn(usuarioLogado);
+
+        service.create(request("Amplificador", 5));
+
+        ArgumentCaptor<Movimentacao> captor = ArgumentCaptor.forClass(Movimentacao.class);
+        verify(movimentacaoService).salvar(captor.capture());
+
+        Movimentacao movimentacao = captor.getValue();
+        assertEquals(TipoMovimentacao.ENTRADA.getValor(), movimentacao.getTipo());
+        assertEquals(5, movimentacao.getQuantidade());
+        assertEquals(0, movimentacao.getEstoqueAntes());
+        assertEquals(5, movimentacao.getEstoqueDepois());
+        assertEquals(salvo, movimentacao.getItem());
+        assertEquals(usuarioLogado, movimentacao.getUsuario());
+        assertEquals(LocalDate.now(), movimentacao.getData());
+        assertNotNull(movimentacao.getObservacao());
+    }
+
+    @Test
+    @DisplayName("Não deve gerar movimentação ao criar item com estoque zerado")
+    void naoDeveGerarMovimentacaoQuandoEstoqueInicialZero() {
+        Item salvo = item(1, "Amplificador", true);
+        salvo.setQuantidadeAtual(0);
+
+        when(repository.existsByNomeIgnoreCase("Amplificador")).thenReturn(false);
+        when(categoriaRepository.findById(1)).thenReturn(Optional.of(categoria()));
+        when(unidadeRepository.findById(1)).thenReturn(Optional.of(unidade()));
+        when(repository.save(any(Item.class))).thenReturn(salvo);
+
+        service.create(request("Amplificador", 0));
+
+        verify(movimentacaoService, never()).salvar(any());
+        verify(usuarioAutenticadoService, never()).obter();
     }
 
     @Test
@@ -125,34 +191,86 @@ class ItemServiceTest {
     }
 
     @Test
-    @DisplayName("Deve listar itens paginados com suas imagens")
+    @DisplayName("Deve listar itens paginados")
     void deveListarItensPaginados() {
         Pageable pageable = PageRequest.of(0, 10);
         Page<Item> pagina = new PageImpl<>(List.of(item(1, "Amplificador", true)));
-        when(repository.findAllFiltered(null, null, pageable)).thenReturn(pagina);
-        when(imagemProdutoRepository.findByItem_IdIn(anyList())).thenReturn(List.of());
+        when(repository.findAllFiltered(null, null, null, null, pageable)).thenReturn(pagina);
 
-        Page<ItemResponse> resultado = service.findAll(null, null, pageable);
+        Page<ItemResponse> resultado = service.findAll(null, null, null, null, pageable);
 
         assertEquals(1, resultado.getTotalElements());
+    }
+
+    @Test
+    @DisplayName("Deve repassar os filtros de categoria e alerta para o repositório")
+    void deveRepassarFiltrosDeCategoriaEAlerta() {
+        Pageable pageable = PageRequest.of(0, 10);
+        when(repository.findAllFiltered(true, "amp", 2, true, pageable))
+                .thenReturn(Page.empty(pageable));
+
+        service.findAll(true, "amp", 2, true, pageable);
+
+        verify(repository).findAllFiltered(true, "amp", 2, true, pageable);
     }
 
     @Test
     @DisplayName("Deve retornar página vazia quando não há itens")
     void deveRetornarPaginaVaziaQuandoNaoHaItens() {
         Pageable pageable = PageRequest.of(0, 10);
-        when(repository.findAllFiltered(null, null, pageable)).thenReturn(Page.empty(pageable));
+        when(repository.findAllFiltered(null, null, null, null, pageable)).thenReturn(Page.empty(pageable));
 
-        Page<ItemResponse> resultado = service.findAll(null, null, pageable);
+        Page<ItemResponse> resultado = service.findAll(null, null, null, null, pageable);
 
         assertTrue(resultado.isEmpty());
+    }
+
+    @Test
+    @DisplayName("Deve calcular o status do estoque em cada item da listagem")
+    void deveCalcularStatusNaListagem() {
+        Item zerado = item(1, "Strobo", true);
+        zerado.setQuantidadeAtual(0);
+        zerado.setQuantidadeMinima(2);
+
+        Item baixo = item(2, "Bateria", true);
+        baixo.setQuantidadeAtual(2);
+        baixo.setQuantidadeMinima(3);
+
+        Item ok = item(3, "Cabo", true);
+        ok.setQuantidadeAtual(15);
+        ok.setQuantidadeMinima(5);
+
+        Pageable pageable = PageRequest.of(0, 10);
+        when(repository.findAllFiltered(null, null, null, null, pageable))
+                .thenReturn(new PageImpl<>(List.of(zerado, baixo, ok)));
+
+        List<ItemResponse> itens = service.findAll(null, null, null, null, pageable).getContent();
+
+        assertEquals(StatusEstoque.ZERADO, itens.get(0).status());
+        assertEquals(StatusEstoque.BAIXO, itens.get(1).status());
+        assertEquals(StatusEstoque.OK, itens.get(2).status());
+    }
+
+    @Test
+    @DisplayName("Deve montar respostas de uma lista")
+    void deveMontarRespostasDeUmaLista() {
+        List<Item> itens = List.of(item(1, "Amplificador", true), item(2, "Bateria", true));
+
+        List<ItemResponse> respostas = service.montarRespostas(itens);
+
+        assertEquals(2, respostas.size());
+    }
+
+    @Test
+    @DisplayName("Deve montar lista vazia")
+    void deveMontarListaVaziaSemConsultarImagens() {
+        assertTrue(service.montarRespostas(List.of()).isEmpty());
     }
 
     @Test
     @DisplayName("Deve buscar item por id com sucesso")
     void deveBuscarItemPorId() {
         when(repository.findById(1)).thenReturn(Optional.of(item(1, "Amplificador", true)));
-        when(imagemProdutoRepository.findByItem_Id(1)).thenReturn(List.of());
 
         ItemResponse resposta = service.findById(1);
 
@@ -174,11 +292,28 @@ class ItemServiceTest {
         when(categoriaRepository.findById(1)).thenReturn(Optional.of(categoria()));
         when(unidadeRepository.findById(1)).thenReturn(Optional.of(unidade()));
         when(repository.save(any(Item.class))).thenReturn(item(1, "Amplificador Novo", true));
-        when(imagemProdutoRepository.findByItem_Id(1)).thenReturn(List.of());
 
         ItemResponse resposta = service.update(1, request("Amplificador Novo"));
 
         assertEquals("Amplificador Novo", resposta.nome());
+    }
+
+    @Test
+    @DisplayName("Não deve alterar o saldo em estoque na atualização do item")
+    void naoDeveAlterarQuantidadeAtualNaAtualizacao() {
+        Item existente = item(1, "Amplificador", true);
+        existente.setQuantidadeAtual(7);
+
+        when(repository.findById(1)).thenReturn(Optional.of(existente));
+        when(categoriaRepository.findById(1)).thenReturn(Optional.of(categoria()));
+        when(unidadeRepository.findById(1)).thenReturn(Optional.of(unidade()));
+        when(repository.save(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ItemResponse resposta = service.update(1, request("Amplificador", 99));
+
+        assertEquals(7, resposta.quantidadeAtual());
+        assertEquals(7, existente.getQuantidadeAtual());
+        verify(movimentacaoService, never()).salvar(any());
     }
 
     @Test
@@ -244,5 +379,136 @@ class ItemServiceTest {
         when(repository.findById(99)).thenReturn(Optional.empty());
 
         assertThrows(EntityNotFoundException.class, () -> service.reativar(99));
+    }
+
+    @Test
+    @DisplayName("Deve fazer upload de imagem com sucesso")
+    void deveFazerUploadImagemComSucesso() throws Exception {
+        Item item = item(1, "Amplificador", true);
+        MultipartFile arquivo = new MockMultipartFile(
+                "arquivo",
+                "foto.jpg",
+                "image/jpeg",
+                "conteudo".getBytes()
+        );
+
+        when(repository.findById(1)).thenReturn(Optional.of(item));
+        when(armazenamento.salvar(arquivo, "imagens")).thenReturn("imagens/uuid-foto.jpg");
+        when(repository.save(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        ItemResponse resposta = service.uploadImagem(1, arquivo);
+
+        assertNotNull(resposta);
+        assertEquals("Amplificador", resposta.nome());
+        assertNotNull(resposta.imagem());
+        assertEquals("/itens/1/imagem/download", resposta.imagem().url());
+        verify(repository).save(item);
+        verify(armazenamento).salvar(arquivo, "imagens");
+    }
+
+    @Test
+    @DisplayName("Deve deletar imagem antiga ao fazer upload de nova imagem")
+    void deveDeletarImagemAntigaAoFazerUpload() throws Exception {
+        Item item = item(1, "Amplificador", true);
+        item.setUriImagem("imagens/uuid-antiga.jpg");
+        MultipartFile arquivo = new MockMultipartFile(
+                "arquivo",
+                "foto.jpg",
+                "image/jpeg",
+                "conteudo".getBytes()
+        );
+
+        when(repository.findById(1)).thenReturn(Optional.of(item));
+        when(armazenamento.salvar(arquivo, "imagens")).thenReturn("imagens/uuid-nova.jpg");
+        doNothing().when(armazenamento).deletar("imagens/uuid-antiga.jpg");
+        when(repository.save(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.uploadImagem(1, arquivo);
+
+        verify(armazenamento).deletar("imagens/uuid-antiga.jpg");
+        assertEquals("imagens/uuid-nova.jpg", item.getUriImagem());
+    }
+
+    @Test
+    @DisplayName("Deve reverter upload se salvar no banco falhar")
+    void deveReverterUploadSeSalvarFalhar() throws Exception {
+        Item item = item(1, "Amplificador", true);
+        MultipartFile arquivo = new MockMultipartFile(
+                "arquivo",
+                "foto.jpg",
+                "image/jpeg",
+                "conteudo".getBytes()
+        );
+
+        when(repository.findById(1)).thenReturn(Optional.of(item));
+        when(armazenamento.salvar(arquivo, "imagens")).thenReturn("imagens/uuid-foto.jpg");
+        doNothing().when(armazenamento).deletar("imagens/uuid-foto.jpg");
+        when(repository.save(any(Item.class))).thenThrow(new RuntimeException("Erro no banco"));
+
+        assertThrows(RuntimeException.class, () -> service.uploadImagem(1, arquivo));
+
+        verify(armazenamento).deletar("imagens/uuid-foto.jpg");
+    }
+
+    @Test
+    @DisplayName("Deve baixar imagem com sucesso")
+    void deveBaixarImagemComSucesso() {
+        Item item = item(1, "Amplificador", true);
+        item.setUriImagem("imagens/uuid-foto.jpg");
+        Resource recurso = new MockMultipartFile("arquivo", "foto.jpg", "image/jpeg", "conteudo".getBytes()).getResource();
+
+        when(repository.findById(1)).thenReturn(Optional.of(item));
+        when(armazenamento.carregar("imagens/uuid-foto.jpg")).thenReturn(recurso);
+
+        Resource resultado = service.baixarImagem(1);
+
+        assertNotNull(resultado);
+        verify(armazenamento).carregar("imagens/uuid-foto.jpg");
+    }
+
+    @Test
+    @DisplayName("Deve lançar exceção ao baixar imagem de item sem imagem")
+    void deveLancarExcecaoAoBaixarImagemDeItemSemImagem() {
+        Item item = item(1, "Amplificador", true);
+
+        when(repository.findById(1)).thenReturn(Optional.of(item));
+
+        assertThrows(ArquivoInvalidoException.class, () -> service.baixarImagem(1));
+    }
+
+    @Test
+    @DisplayName("Deve deletar imagem com sucesso")
+    void deveDeletarImagemComSucesso() {
+        Item item = item(1, "Amplificador", true);
+        item.setUriImagem("imagens/uuid-foto.jpg");
+
+        when(repository.findById(1)).thenReturn(Optional.of(item));
+        doNothing().when(armazenamento).deletar("imagens/uuid-foto.jpg");
+        when(repository.save(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.deletarImagem(1);
+
+        verify(repository).save(item);
+        verify(armazenamento).deletar("imagens/uuid-foto.jpg");
+        assertNull(item.getUriImagem());
+        assertNull(item.getNomeImagem());
+        assertNull(item.getMimeTypeImagem());
+        assertNull(item.getTamanhoImagem());
+    }
+
+    @Test
+    @DisplayName("Deve deletar imagem do banco mesmo se S3 falhar")
+    void deveDeletarImagemDoBancoMesmoSeS3Falhar() {
+        Item item = item(1, "Amplificador", true);
+        item.setUriImagem("imagens/uuid-foto.jpg");
+
+        when(repository.findById(1)).thenReturn(Optional.of(item));
+        doNothing().when(armazenamento).deletar("imagens/uuid-foto.jpg");
+        when(repository.save(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        service.deletarImagem(1);
+
+        verify(repository).save(item);
+        assertNull(item.getUriImagem());
     }
 }
