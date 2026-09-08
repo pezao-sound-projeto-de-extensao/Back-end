@@ -51,12 +51,20 @@ class DashboardServiceTest {
 
     private ItemResponse resposta(Item item) {
         return new ItemResponse(
-                item.getId(), item.getNome(),
-                1, "Baterias", 1, "Unidade", "un",
-                item.getQuantidadeAtual(), item.getQuantidadeMinima(),
-                10.0, 20.0,
+                item.getId(),
+                item.getNome(),
+                1,
+                "Baterias",
+                1,
+                "Unidade",
+                "un",
+                item.getQuantidadeAtual(),
+                item.getQuantidadeMinima(),
+                10.0,
+                20.0,
                 StatusEstoque.calcular(item.getQuantidadeAtual(), item.getQuantidadeMinima()),
-                true, List.of()
+                true,
+                null
         );
     }
 
@@ -114,8 +122,7 @@ class DashboardServiceTest {
     @Test
     @DisplayName("Deve zerar os KPIs quando não há itens cadastrados")
     void deveZerarKpisQuandoNaoHaItens() {
-        // as agregações do banco voltam nulas com a tabela vazia
-        when(itemRepository.buscarKpis()).thenReturn(new RelatorioKpiDTO(0L, null, null, null));
+        when(itemRepository.buscarKpis()).thenReturn(new RelatorioKpiDTO(0L, 0L, 0L, 0L));
         when(itemRepository.buscarItensParaAtencao()).thenReturn(List.of());
         when(itemService.montarRespostas(List.of())).thenReturn(List.of());
 

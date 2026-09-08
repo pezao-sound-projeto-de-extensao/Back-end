@@ -1,7 +1,6 @@
 package sound.pezao.backend.dto.itemDTO;
 
 import io.swagger.v3.oas.annotations.media.Schema;
-import sound.pezao.backend.dto.imagemProdutoDTO.ImagemProdutoResponse;
 import sound.pezao.backend.entities.StatusEstoque;
 
 import java.util.List;
@@ -49,7 +48,6 @@ public record ItemResponse(
         @Schema(description = "Item ativo ou inativo", example = "true")
         Boolean ativo,
 
-        @Schema(description = "Imagens do item")
-        List<ImagemProdutoResponse> imagens
-
+        @Schema(description = "Dados da imagem do item")
+        ImagemInfo imagem
 ) {}

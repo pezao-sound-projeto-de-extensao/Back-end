@@ -1,12 +1,14 @@
 package sound.pezao.backend.facade;
 
 import jakarta.transaction.Transactional;
+import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.multipart.MultipartFile;
 import sound.pezao.backend.dto.movimentacaoDTO.MovimentacaoMapper;
 import sound.pezao.backend.dto.movimentacaoDTO.MovimentacaoRequest;
 import sound.pezao.backend.dto.movimentacaoDTO.MovimentacaoResponse;
@@ -30,11 +32,13 @@ public class MovimentacaoFacade {
     private final ItemRepository itemRepository;
     private final UsuarioAutenticadoService usuarioAutenticadoService;
 
-    public MovimentacaoFacade(MovimentacaoService movimentacaoService,
-                              EstoqueService estoqueService,
-                              MovimentacaoMapper mapper,
-                              ItemRepository itemRepository,
-                              UsuarioAutenticadoService usuarioAutenticadoService) {
+    public MovimentacaoFacade(
+            MovimentacaoService movimentacaoService,
+            EstoqueService estoqueService,
+            MovimentacaoMapper mapper,
+            ItemRepository itemRepository,
+            UsuarioAutenticadoService usuarioAutenticadoService
+    ) {
         this.movimentacaoService = movimentacaoService;
         this.estoqueService = estoqueService;
         this.mapper = mapper;
@@ -60,7 +64,9 @@ public class MovimentacaoFacade {
     }
 
     public MovimentacaoResponse buscarPorId(Integer id) {
-        return mapper.toResponse(movimentacaoService.buscarPorId(id));
+        return mapper.toResponse(
+                movimentacaoService.buscarPorId(id)
+        );
     }
 
     @Transactional
@@ -69,16 +75,24 @@ public class MovimentacaoFacade {
         exigirPermissaoPara(tipo);
 
         Item item = itemRepository.findByIdParaMovimentacao(request.itemId())
-                .orElseThrow(() -> new EntityNotFoundException("Item", request.itemId()));
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Item", request.itemId())
+                );
 
-        int estoqueAntes = estoqueService.aplicarMovimentacao(item, tipo, request.quantidade());
+        int estoqueAntes = estoqueService.aplicarMovimentacao(
+                item,
+                tipo,
+                request.quantidade()
+        );
 
         Movimentacao movimentacao = mapper.toEntity(request, item);
         movimentacao.setUsuario(usuarioAutenticadoService.obter());
         movimentacao.setEstoqueAntes(estoqueAntes);
         movimentacao.setEstoqueDepois(item.getQuantidadeAtual());
 
-        return mapper.toResponse(movimentacaoService.salvar(movimentacao));
+        return mapper.toResponse(
+                movimentacaoService.salvar(movimentacao)
+        );
     }
 
     @Transactional
@@ -88,12 +102,41 @@ public class MovimentacaoFacade {
         TipoMovimentacao tipo = TipoMovimentacao.fromValor(movimentacao.getTipo());
         exigirPermissaoPara(tipo);
 
-        Item item = itemRepository.findByIdParaMovimentacao(movimentacao.getItem().getId())
-                .orElseThrow(() -> new EntityNotFoundException("Item", movimentacao.getItem().getId()));
+        Item item = itemRepository.findByIdParaMovimentacao(
+                        movimentacao.getItem().getId()
+                )
+                .orElseThrow(() ->
+                        new EntityNotFoundException(
+                                "Item",
+                                movimentacao.getItem().getId()
+                        )
+                );
 
         estoqueService.reverterMovimentacao(item, tipo, movimentacao.getQuantidade());
 
         movimentacaoService.deletar(movimentacao);
+    }
+
+    @Transactional
+    public MovimentacaoResponse uploadNota(
+            Integer movimentacaoId,
+            MultipartFile arquivo
+    ) {
+        return mapper.toResponse(
+                movimentacaoService.uploadNota(
+                        movimentacaoId,
+                        arquivo
+                )
+        );
+    }
+
+    public Resource baixarNota(Integer movimentacaoId) {
+        return movimentacaoService.baixarNota(movimentacaoId);
+    }
+
+    @Transactional
+    public void deletarNota(Integer movimentacaoId) {
+        movimentacaoService.deletarNota(movimentacaoId);
     }
 
     /**
