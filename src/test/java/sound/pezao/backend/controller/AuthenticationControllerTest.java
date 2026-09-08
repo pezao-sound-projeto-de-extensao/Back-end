@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import sound.pezao.backend.dto.authDTO.AuthRequest;
 import sound.pezao.backend.dto.authDTO.AuthResponse;
 import sound.pezao.backend.dto.authDTO.AuthTrocarSenhaRequest;
+import sound.pezao.backend.dto.authDTO.RefreshTokenRequest;
 import sound.pezao.backend.service.AuthenticationService;
 
 import static org.mockito.Mockito.doNothing;
@@ -48,10 +49,10 @@ class AuthenticationControllerTest {
     class LoginTest {
 
         @Test
-        @DisplayName("Deve retornar 200 quando login realizado com sucesso")
-        void loginDeveRetornar200QuandoLoginRealizadoComSucesso() throws Exception {
+        @DisplayName("Deve retornar 200 e chamar serviço de autenticação quando login realizado com sucesso")
+        void loginDeveRetornar200EChamarServicoQuandoLoginRealizadoComSucesso() throws Exception {
             AuthRequest request = new AuthRequest("teste@email.com", "1234567");
-            AuthResponse response = new AuthResponse("token","refresh",  "teste@email.com", null);
+            AuthResponse response = new AuthResponse("access-token", "refresh-token", "teste@email.com", null);
 
             when(authenticationService.authenticate(request)).thenReturn(response);
 
@@ -61,6 +62,47 @@ class AuthenticationControllerTest {
                     .andExpect(status().isOk());
 
             verify(authenticationService).authenticate(request);
+        }
+    }
+
+    @Nested
+    @DisplayName("Teste da rota de refresh")
+    class RefreshTest {
+
+        @Test
+        @DisplayName("Deve retornar 200 e chamar serviço de refresh quando realizado com sucesso")
+        void refreshDeveRetornar200EChamarServicoQuandoRefreshRealizadoComSucesso() throws Exception {
+            RefreshTokenRequest request = new RefreshTokenRequest("valid-refresh-token");
+            AuthResponse response = new AuthResponse("new-access-token", "new-refresh-token", "teste@email.com", null);
+
+            when(authenticationService.refreshToken(request.refreshToken())).thenReturn(response);
+
+            mockMvc.perform(post("/auth/refresh")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isOk());
+
+            verify(authenticationService).refreshToken(request.refreshToken());
+        }
+    }
+
+    @Nested
+    @DisplayName("Teste da rota de logout")
+    class LogoutTest {
+
+        @Test
+        @DisplayName("Deve retornar 204 e chamar serviço de logout quando realizado com sucesso")
+        void logoutDeveRetornar204EChamarServicoQuandoLogoutRealizadoComSucesso() throws Exception {
+            RefreshTokenRequest request = new RefreshTokenRequest("valid-refresh-token");
+
+            doNothing().when(authenticationService).logout(request.refreshToken());
+
+            mockMvc.perform(post("/auth/logout")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(request)))
+                    .andExpect(status().isNoContent());
+
+            verify(authenticationService).logout(request.refreshToken());
         }
     }
 
