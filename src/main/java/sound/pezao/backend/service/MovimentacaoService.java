@@ -1,12 +1,13 @@
 package sound.pezao.backend.service;
 
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import sound.pezao.backend.entities.Movimentacao;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.repository.MovimentacaoRepository;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import java.time.LocalDate;
 
 @Service
 public class MovimentacaoService {
@@ -26,11 +27,14 @@ public class MovimentacaoService {
                 .orElseThrow(() -> new EntityNotFoundException("Movimentação", id));
     }
 
-    public List<Movimentacao> listarComFiltros(Integer itemId, String tipo,
+    public Page<Movimentacao> listarComFiltros(Integer itemId, String tipo,
                                                Integer usuarioId,
-                                               LocalDateTime dataInicio,
-                                               LocalDateTime dataFim) {
-        return movimentacaoRepository.findWithFilters(itemId, tipo, usuarioId, dataInicio, dataFim);
+                                               String search,
+                                               LocalDate dataInicio,
+                                               LocalDate dataFim,
+                                               Pageable pageable) {
+        return movimentacaoRepository.findWithFilters(
+                itemId, tipo, usuarioId, search, dataInicio, dataFim, pageable);
     }
 
     public void deletar(Movimentacao movimentacao) {
