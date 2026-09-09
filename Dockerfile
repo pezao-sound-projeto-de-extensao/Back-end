@@ -1,39 +1,22 @@
-# ============================================================
-# Stage 1: compilar Spring Boot como GraalVM Native Image
-# ============================================================
-FROM ghcr.io/graalvm/native-image-community:21 AS build
-
+FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
 
-# A imagem do GraalVM não necessariamente possui Maven
-RUN microdnf install -y maven \
-    && microdnf clean all
+ARG SPRING_PROFILE=prod
 
-# Copia primeiro o pom para aproveitar o cache das dependências
 COPY pom.xml .
+RUN mvn dependency:go-offline
 
-RUN mvn dependency:go-offline -B
-
-# Copia o código da aplicação
 COPY src ./src
 
-# Compila o executável nativo
-RUN mvn clean native:compile \
-    -Pnative \
-    -DskipTests \
-    -B
+RUN mvn clean package -P${SPRING_PROFILE} -DskipTests
 
-# ============================================================
-# Stage 2: imagem mínima de execução
-# ============================================================
-FROM gcr.io/distroless/base-debian12:nonroot
-
+FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
 
-COPY --from=build /app/target/app /app/app
+COPY --from=build /app/target/app.jar app.jar
 
-ENV SPRING_PROFILES_ACTIVE=prod
+ENV SPRING_PROFILES_ACTIVE=${SPRING_PROFILE}
 
 EXPOSE 8080
 
-ENTRYPOINT ["/app/app"]
+ENTRYPOINT ["java", "-jar", "app.jar"]
