@@ -4,8 +4,12 @@ import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.validation.Valid;
 import sound.pezao.backend.dto.movimentacaoDTO.MovimentacaoRequest;
 import sound.pezao.backend.dto.movimentacaoDTO.MovimentacaoResponse;
 import sound.pezao.backend.facade.MovimentacaoFacade;
@@ -23,15 +27,9 @@ public class MovimentacaoController {
         this.facade = facade;
     }
 
-    @PostMapping
-    public ResponseEntity<MovimentacaoResponse> registrar(
-            @RequestBody MovimentacaoRequest request
-    ) {
-        return ResponseEntity.status(201)
-                .body(facade.registrar(request));
-    }
-
     @GetMapping
+    @Operation(summary = "Lista o histórico completo de movimentações com filtros opcionais")
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
     public ResponseEntity<List<MovimentacaoResponse>> listar(
             @RequestParam(required = false) Integer itemId,
             @RequestParam(required = false) String tipo,
@@ -51,24 +49,20 @@ public class MovimentacaoController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<MovimentacaoResponse> buscarPorId(
-            @PathVariable Integer id
-    ) {
-        return ResponseEntity.ok(
-                facade.buscarPorId(id)
-        );
+    @Operation(summary = "Busca uma movimentação pelo ID")
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
+    public ResponseEntity<MovimentacaoResponse> buscarPorId(@PathVariable Integer id) {
+        return ResponseEntity.ok(facade.buscarPorId(id));
     }
 
-    @PostMapping(
-            value = "/{id}/nota",
-            consumes = MediaType.MULTIPART_FORM_DATA_VALUE
-    )
-    public ResponseEntity<MovimentacaoResponse> uploadNota(
-            @PathVariable Integer id,
-            @RequestParam("arquivo") MultipartFile arquivo
+    @PostMapping
+    @Operation(summary = "Registra uma entrada ou saída de estoque")
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
+    public ResponseEntity<MovimentacaoResponse> registrar(
+            @RequestBody @Valid MovimentacaoRequest request
     ) {
         return ResponseEntity.status(201)
-                .body(facade.uploadNota(id, arquivo));
+                .body(facade.registrar(request));
     }
 
     @GetMapping("/{id}/nota/download")
@@ -108,9 +102,9 @@ public class MovimentacaoController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(
-            @PathVariable Integer id
-    ) {
+    @Operation(summary = "Exclui uma movimentação e reverte o estoque automaticamente")
+    @PreAuthorize("hasAuthority('REGISTRAR_ENTRADA_SAIDA')")
+    public ResponseEntity<Void> deletar(@PathVariable Integer id) {
         facade.deletar(id);
         return ResponseEntity.noContent().build();
     }
