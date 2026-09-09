@@ -43,14 +43,6 @@ public class AuthenticationService {
         Usuario usuario = usuarioRepository.findByEmail(authRequest.email())
                 .orElseThrow(LoginInvalidoException::new);
 
-        boolean senhaInicial = passwordEncoder.matches(
-                UsuarioService.senhaPadrao,
-                usuario.getSenhaHash()
-        );
-
-        if (senhaInicial){
-            throw new PrimeiroAcessoException("Altere a senha padrão antes de efetuar o login");
-        }
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         authRequest.email(),
@@ -69,14 +61,6 @@ public class AuthenticationService {
         Usuario usuario = usuarioRepository.findByEmail(authTrocarSenhaRequest.email())
                 .orElseThrow(LoginInvalidoException::new);
 
-        boolean senhaInicial = passwordEncoder.matches(
-                UsuarioService.senhaPadrao,
-                usuario.getSenhaHash()
-        );
-
-        if (!senhaInicial){
-            throw new PrimeiroAcessoException("A senha já foi alterada uma vez");
-        }
         boolean senhaCorreta = passwordEncoder.matches(
                 authTrocarSenhaRequest.senhaAtual(),
                 usuario.getSenhaHash()
@@ -88,9 +72,6 @@ public class AuthenticationService {
 
         usuario.setSenhaHash(passwordEncoder.encode(authTrocarSenhaRequest.senhaNova()));
         usuarioRepository.save(usuario);
-
-        System.out.println(passwordEncoder.matches(authTrocarSenhaRequest.senhaNova(), usuario.getSenhaHash()));
-
     }
 
     @PreAuthorize("hasAuthority('GERENCIAR_USUARIOS')")
@@ -98,8 +79,13 @@ public class AuthenticationService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário", id));
 
-        usuario.setSenhaHash(passwordEncoder.encode(UsuarioService.senhaPadrao));
+        String senhaPadrao = gerarSenhaPadraoDoUsuario(usuario.getId());
+        usuario.setSenhaHash(passwordEncoder.encode(senhaPadrao));
         usuarioRepository.save(usuario);
+    }
+
+    private String gerarSenhaPadraoDoUsuario(Integer usuarioId) {
+        return "Pezao_" + String.format("%04d", usuarioId);
     }
 
     public AuthResponse refreshToken(String token) {

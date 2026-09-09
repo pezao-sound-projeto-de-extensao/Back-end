@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import sound.pezao.backend.dto.usuarioDTO.UsuarioRequest;
 import sound.pezao.backend.dto.usuarioDTO.UsuarioResponse;
+import sound.pezao.backend.dto.usuarioDTO.UsuarioCadastroResponse;
 import sound.pezao.backend.service.UsuarioService;
 
 import org.springframework.data.domain.Pageable;
@@ -41,10 +42,10 @@ public class UsuarioController {
 
     @Operation(summary = "Cadastro de novo usuário")
     @PostMapping
-    public ResponseEntity<UsuarioResponse> cadastrar(
+    public ResponseEntity<UsuarioCadastroResponse> cadastrar(
             @Valid @RequestBody UsuarioRequest usuarioRequest
             ){
-        UsuarioResponse usuarioResponse = usuarioService.cadastrar(usuarioRequest);
+        UsuarioCadastroResponse usuarioResponse = usuarioService.cadastrar(usuarioRequest);
         return ResponseEntity.status(201).body(usuarioResponse);
     }
 
