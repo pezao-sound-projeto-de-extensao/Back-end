@@ -170,8 +170,8 @@ class UsuarioRepositoryTest {
     class PersistenciaUsuarioTest {
 
         @Test
-        @DisplayName("Deve definir criadoEm e ativo no prePersist")
-        void deveDefinirCriadoEmEAtivoNoPrePersist() {
+        @DisplayName("Deve definir criadoEm no prePersist e preservar o status informado")
+        void deveDefinirCriadoEmNoPrePersist() {
             Cargo cargo = criarCargoComPermissao();
 
             Usuario usuario = new Usuario();
@@ -179,11 +179,14 @@ class UsuarioRepositoryTest {
             usuario.setEmail("prepersist@email.com");
             usuario.setSenhaHash("hash");
             usuario.setCargo(cargo);
+            usuario.setAtivo(true);
 
             entityManager.persist(usuario);
             entityManager.flush();
 
             assertNotNull(usuario.getCriadoEm());
+            // o prePersist nao sobrescreve mais o status, senao o cadastro de um
+            // usuario inativo seria ignorado na hora de persistir
             assertTrue(usuario.isAtivo());
         }
     }

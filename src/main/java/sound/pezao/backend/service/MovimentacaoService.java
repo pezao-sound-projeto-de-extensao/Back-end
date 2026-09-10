@@ -1,6 +1,8 @@
 package sound.pezao.backend.service;
 
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import sound.pezao.backend.entities.Movimentacao;
@@ -8,8 +10,7 @@ import sound.pezao.backend.exception.ArquivoInvalidoException;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.repository.MovimentacaoRepository;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import java.time.LocalDate;
 
 @Service
 public class MovimentacaoService {
@@ -39,20 +40,14 @@ public class MovimentacaoService {
                 );
     }
 
-    public List<Movimentacao> listarComFiltros(
-            Integer itemId,
-            String tipo,
-            Integer usuarioId,
-            LocalDateTime dataInicio,
-            LocalDateTime dataFim
-    ) {
+    public Page<Movimentacao> listarComFiltros(Integer itemId, String tipo,
+                                               Integer usuarioId,
+                                               String search,
+                                               LocalDate dataInicio,
+                                               LocalDate dataFim,
+                                               Pageable pageable) {
         return movimentacaoRepository.findWithFilters(
-                itemId,
-                tipo,
-                usuarioId,
-                dataInicio,
-                dataFim
-        );
+                itemId, tipo, usuarioId, search, dataInicio, dataFim, pageable);
     }
 
     public Movimentacao uploadNota(

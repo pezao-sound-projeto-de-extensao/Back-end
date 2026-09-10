@@ -32,9 +32,11 @@ public class UsuarioService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public Page<UsuarioResponse> listar(Pageable pageable){
-        Page<Usuario> usuarios = usuarioRepository.findAll(pageable);
-        return usuarios.map(UsuarioMapper::toResponse);
+    public Page<UsuarioResponse> listar(String search, Integer cargoId, Pageable pageable){
+        String busca = search != null && !search.isBlank() ? search.trim() : null;
+
+        return usuarioRepository.findAllFiltered(busca, cargoId, pageable)
+                .map(UsuarioMapper::toResponse);
     }
 
     public UsuarioResponse listar(int id){
@@ -53,6 +55,25 @@ public class UsuarioService {
 
         Usuario usuario = UsuarioMapper.toEntity(usuarioRequest);
         usuario.setCargo(cargo);
+        usuario.setAtivo(usuarioRequest.ativo() == null || usuarioRequest.ativo());
+
+        // Com senha informada pelo administrador, ela vale e nada é devolvido no
+        // response: quem cadastrou já a conhece.
+        if (usuarioRequest.temSenha()) {
+            usuario.setSenhaHash(passwordEncoder.encode(usuarioRequest.senha()));
+            Usuario salvo = usuarioRepository.save(usuario);
+
+            return new UsuarioCadastroResponse(
+                    salvo.getId(),
+                    salvo.getNome(),
+                    salvo.getEmail(),
+                    null,
+                    salvo.getCriadoEm()
+            );
+        }
+
+        // Sem senha informada, o usuário recebe a senha padrão derivada do id, que
+        // é devolvida uma única vez para ser compartilhada com ele.
         Usuario usuarioSalvo = usuarioRepository.save(usuario);
 
         String senhaPadrao = gerarSenhaPadraoDoUsuario(usuarioSalvo.getId());
@@ -89,6 +110,17 @@ public class UsuarioService {
         usuario.setNome(usuarioRequest.nome());
         usuario.setEmail(usuarioRequest.email());
         usuario.setCargo(cargo);
+
+        if (usuarioRequest.ativo() != null) {
+            usuario.setAtivo(usuarioRequest.ativo());
+        }
+
+        // A senha só é tocada quando vem preenchida: editar nome ou cargo não pode
+        // trocar a senha de ninguém.
+        if (usuarioRequest.temSenha()) {
+            usuario.setSenhaHash(passwordEncoder.encode(usuarioRequest.senha()));
+        }
+
         return UsuarioMapper.toResponse(usuarioRepository.save(usuario));
     }
 

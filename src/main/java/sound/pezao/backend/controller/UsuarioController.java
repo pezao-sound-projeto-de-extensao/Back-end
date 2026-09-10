@@ -30,14 +30,17 @@ public class UsuarioController {
         this.usuarioService = usuarioService;
     }
 
-    @Operation(summary = "Busca paginada de todos os usuários")
+    @Operation(summary = "Busca paginada de usuários",
+            description = "O campo search filtra por nome ou e-mail; cargoId restringe a um cargo.")
     @GetMapping
     public ResponseEntity<Page<UsuarioResponse>> listar(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Integer cargoId,
             @ParameterObject
             @PageableDefault(page = 0, size = 10, sort = "nome", direction = Sort.Direction.ASC)
             Pageable pageable
             ){
-        return ResponseEntity.ok(usuarioService.listar(pageable));
+        return ResponseEntity.ok(usuarioService.listar(search, cargoId, pageable));
     }
 
     @Operation(summary = "Cadastro de novo usuário")
