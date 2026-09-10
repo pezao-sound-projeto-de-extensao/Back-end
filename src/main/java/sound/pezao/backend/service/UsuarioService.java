@@ -32,9 +32,11 @@ public class UsuarioService {
         this.passwordEncoder = passwordEncoder;
     }
 
-    public Page<UsuarioResponse> listar(Pageable pageable){
-        Page<Usuario> usuarios = usuarioRepository.findAll(pageable);
-        return usuarios.map(UsuarioMapper::toResponse);
+    public Page<UsuarioResponse> listar(String search, Integer cargoId, Pageable pageable){
+        String busca = search != null && !search.isBlank() ? search.trim() : null;
+
+        return usuarioRepository.findAllFiltered(busca, cargoId, pageable)
+                .map(UsuarioMapper::toResponse);
     }
 
     public UsuarioResponse listar(int id){
@@ -53,7 +55,14 @@ public class UsuarioService {
 
         Usuario usuario = UsuarioMapper.toEntity(usuarioRequest);
         usuario.setCargo(cargo);
-        usuario.setSenhaHash(passwordEncoder.encode(senhaPadrao));
+        usuario.setAtivo(usuarioRequest.ativo() == null || usuarioRequest.ativo());
+
+        // Sem senha informada, o usuário nasce com a senha padrão e o login fica
+        // bloqueado até a troca no primeiro acesso. Com senha, ele já entra direto:
+        // o AuthenticationService só barra quem ainda tem o hash da senha padrão.
+        usuario.setSenhaHash(passwordEncoder.encode(
+                usuarioRequest.temSenha() ? usuarioRequest.senha() : senhaPadrao));
+
         return UsuarioMapper.toResponse(usuarioRepository.save(usuario));
     }
 
@@ -74,6 +83,17 @@ public class UsuarioService {
         usuario.setNome(usuarioRequest.nome());
         usuario.setEmail(usuarioRequest.email());
         usuario.setCargo(cargo);
+
+        if (usuarioRequest.ativo() != null) {
+            usuario.setAtivo(usuarioRequest.ativo());
+        }
+
+        // A senha só é tocada quando vem preenchida: editar nome ou cargo não pode
+        // trocar a senha de ninguém.
+        if (usuarioRequest.temSenha()) {
+            usuario.setSenhaHash(passwordEncoder.encode(usuarioRequest.senha()));
+        }
+
         return UsuarioMapper.toResponse(usuarioRepository.save(usuario));
     }
 

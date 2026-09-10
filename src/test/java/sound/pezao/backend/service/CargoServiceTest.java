@@ -12,9 +12,12 @@ import sound.pezao.backend.dto.cargoDTO.CargoRequest;
 import sound.pezao.backend.dto.cargoDTO.CargoResponse;
 import sound.pezao.backend.entities.Cargo;
 import sound.pezao.backend.entities.Permissao;
+import sound.pezao.backend.exception.EntityEmUsoException;
 import sound.pezao.backend.exception.EntityNomeJaExisteException;
+import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.repository.CargoRepository;
 import sound.pezao.backend.repository.PermissaoRepository;
+import sound.pezao.backend.repository.UsuarioRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -37,6 +41,9 @@ class CargoServiceTest {
 
   @Mock
   private PermissaoRepository permissaoRepository;
+
+  @Mock
+  private UsuarioRepository usuarioRepository;
 
   @InjectMocks
   private CargoService service;
@@ -118,11 +125,11 @@ class CargoServiceTest {
   }
 
   @Test
-  @DisplayName("Deve lançar RuntimeException quando cargo não encontrado pelo id")
+  @DisplayName("Deve lançar EntityNotFoundException quando cargo não encontrado pelo id")
   void deveLancarExcecaoQuandoCargoNaoEncontradoPorId() {
     when(cargoRepository.findById(99)).thenReturn(Optional.empty());
 
-    assertThrows(RuntimeException.class, () -> service.findById(99));
+    assertThrows(EntityNotFoundException.class, () -> service.findById(99));
     verify(cargoRepository).findById(99);
   }
 
@@ -236,8 +243,32 @@ class CargoServiceTest {
   @Test
   @DisplayName("Deve deletar cargo com sucesso")
   void deveDeletarCargo() {
+    when(cargoRepository.existsById(1)).thenReturn(true);
+    when(usuarioRepository.existsByCargo_Id(1)).thenReturn(false);
+
     service.delete(1);
 
     verify(cargoRepository).deleteById(1);
+  }
+
+  @Test
+  @DisplayName("Deve lançar EntityEmUsoException ao deletar cargo com usuários vinculados")
+  void deveRecusarDeleteDeCargoEmUso() {
+    when(cargoRepository.existsById(1)).thenReturn(true);
+    when(usuarioRepository.existsByCargo_Id(1)).thenReturn(true);
+
+    assertThrows(EntityEmUsoException.class, () -> service.delete(1));
+
+    verify(cargoRepository, never()).deleteById(any());
+  }
+
+  @Test
+  @DisplayName("Deve lançar EntityNotFoundException ao deletar cargo inexistente")
+  void deveRecusarDeleteDeCargoInexistente() {
+    when(cargoRepository.existsById(99)).thenReturn(false);
+
+    assertThrows(EntityNotFoundException.class, () -> service.delete(99));
+
+    verify(cargoRepository, never()).deleteById(any());
   }
 }
