@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import sound.pezao.backend.dto.usuarioDTO.UsuarioMapper;
 import sound.pezao.backend.dto.usuarioDTO.UsuarioRequest;
 import sound.pezao.backend.dto.usuarioDTO.UsuarioResponse;
+import sound.pezao.backend.dto.usuarioDTO.UsuarioCadastroResponse;
 import sound.pezao.backend.entities.Cargo;
 import sound.pezao.backend.entities.Usuario;
 import sound.pezao.backend.exception.EntityNomeJaExisteException;
@@ -25,7 +26,6 @@ public class UsuarioService {
     final CargoRepository cargoRepository;
     final PasswordEncoder passwordEncoder;
 
-    final static String senhaPadrao = ("PezaoSenha");
     public UsuarioService(UsuarioRepository usuarioRepository, CargoRepository cargoRepository, PasswordEncoder passwordEncoder) {
         this.usuarioRepository = usuarioRepository;
         this.cargoRepository = cargoRepository;
@@ -45,7 +45,7 @@ public class UsuarioService {
         return UsuarioMapper.toResponse(usuario);
     }
 
-    public UsuarioResponse cadastrar(UsuarioRequest usuarioRequest){
+    public UsuarioCadastroResponse cadastrar(UsuarioRequest usuarioRequest){
 
         if (usuarioRepository.existsByEmailIgnoreCase(usuarioRequest.email())){
             throw new EntityNomeJaExisteException("Usuario", usuarioRequest.email());
@@ -57,13 +57,40 @@ public class UsuarioService {
         usuario.setCargo(cargo);
         usuario.setAtivo(usuarioRequest.ativo() == null || usuarioRequest.ativo());
 
-        // Sem senha informada, o usuário nasce com a senha padrão e o login fica
-        // bloqueado até a troca no primeiro acesso. Com senha, ele já entra direto:
-        // o AuthenticationService só barra quem ainda tem o hash da senha padrão.
-        usuario.setSenhaHash(passwordEncoder.encode(
-                usuarioRequest.temSenha() ? usuarioRequest.senha() : senhaPadrao));
+        // Com senha informada pelo administrador, ela vale e nada é devolvido no
+        // response: quem cadastrou já a conhece.
+        if (usuarioRequest.temSenha()) {
+            usuario.setSenhaHash(passwordEncoder.encode(usuarioRequest.senha()));
+            Usuario salvo = usuarioRepository.save(usuario);
 
-        return UsuarioMapper.toResponse(usuarioRepository.save(usuario));
+            return new UsuarioCadastroResponse(
+                    salvo.getId(),
+                    salvo.getNome(),
+                    salvo.getEmail(),
+                    null,
+                    salvo.getCriadoEm()
+            );
+        }
+
+        // Sem senha informada, o usuário recebe a senha padrão derivada do id, que
+        // é devolvida uma única vez para ser compartilhada com ele.
+        Usuario usuarioSalvo = usuarioRepository.save(usuario);
+
+        String senhaPadrao = gerarSenhaPadraoDoUsuario(usuarioSalvo.getId());
+        usuarioSalvo.setSenhaHash(passwordEncoder.encode(senhaPadrao));
+        usuarioRepository.save(usuarioSalvo);
+
+        return new UsuarioCadastroResponse(
+            usuarioSalvo.getId(),
+            usuarioSalvo.getNome(),
+            usuarioSalvo.getEmail(),
+            senhaPadrao,
+            usuarioSalvo.getCriadoEm()
+        );
+    }
+
+    private String gerarSenhaPadraoDoUsuario(Integer usuarioId) {
+        return "Pezao_" + String.format("%04d", usuarioId);
     }
 
     public UsuarioResponse atualizar(

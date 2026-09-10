@@ -29,7 +29,6 @@ import sound.pezao.backend.entities.Permissao;
 import sound.pezao.backend.entities.Usuario;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.exception.LoginInvalidoException;
-import sound.pezao.backend.exception.PrimeiroAcessoException;
 import sound.pezao.backend.repository.UsuarioRepository;
 import sound.pezao.backend.security.JwtService;
 import sound.pezao.backend.security.UserAuthenticated;
@@ -116,45 +115,6 @@ class AuthenticationServiceTest {
         }
 
         @Test
-        @DisplayName("Deve lançar PrimeiroAcessoException quando senha padrão")
-        void deveLancarPrimeiroAcessoQuandoSenhaPadrao() {
-            AuthRequest request =
-                    new AuthRequest("teste@email.com", "123");
-
-            when(usuarioRepository.findByEmail("teste@email.com"))
-                    .thenReturn(Optional.of(usuario));
-
-            when(passwordEncoder.matches(
-                    UsuarioService.senhaPadrao,
-                    usuario.getSenhaHash()
-            )).thenReturn(true);
-
-            PrimeiroAcessoException exception =
-                    assertThrows(
-                            PrimeiroAcessoException.class,
-                            () -> authenticationService.authenticate(request)
-                    );
-
-            assertEquals(
-                    "Altere a senha padrão antes de efetuar o login",
-                    exception.getMessage()
-            );
-
-            verify(passwordEncoder).matches(
-                    UsuarioService.senhaPadrao,
-                    usuario.getSenhaHash()
-            );
-            verify(authenticationManager, never())
-                    .authenticate(any());
-            verify(usuarioRepository, never())
-                    .save(any());
-            verify(jwtService, never())
-                    .generateToken(any());
-            verify(refreshTokenService, never())
-                    .criar(any());
-        }
-
-        @Test
         @DisplayName("Deve retornar AuthResponse quando credenciais válidas")
         void deveRetornarAuthResponseQuandoCredenciaisValidas() {
             AuthRequest request =
@@ -165,11 +125,6 @@ class AuthenticationServiceTest {
 
             when(usuarioRepository.findByEmail("teste@email.com"))
                     .thenReturn(Optional.of(usuario));
-
-            when(passwordEncoder.matches(
-                    UsuarioService.senhaPadrao,
-                    usuario.getSenhaHash()
-            )).thenReturn(false);
 
             when(authenticationManager.authenticate(
                     any(UsernamePasswordAuthenticationToken.class)
@@ -197,10 +152,6 @@ class AuthenticationServiceTest {
             assertNotNull(response.usuario());
             assertNotNull(usuario.getUltimoAcesso());
 
-            verify(passwordEncoder).matches(
-                    UsuarioService.senhaPadrao,
-                    usuario.getSenhaHash()
-            );
             verify(authenticationManager)
                     .authenticate(any(UsernamePasswordAuthenticationToken.class));
             verify(usuarioRepository).save(usuario);
@@ -235,38 +186,6 @@ class AuthenticationServiceTest {
         }
 
         @Test
-        @DisplayName("Deve lançar PrimeiroAcessoException quando senha já foi alterada")
-        void deveLancarPrimeiroAcessoQuandoSenhaJaFoiAlterada() {
-            AuthTrocarSenhaRequest request =
-                    new AuthTrocarSenhaRequest(
-                            "teste@email.com",
-                            "atual",
-                            "nova"
-                    );
-
-            when(usuarioRepository.findByEmail("teste@email.com"))
-                    .thenReturn(Optional.of(usuario));
-
-            when(passwordEncoder.matches(
-                    UsuarioService.senhaPadrao,
-                    usuario.getSenhaHash()
-            )).thenReturn(false);
-
-            PrimeiroAcessoException exception =
-                    assertThrows(
-                            PrimeiroAcessoException.class,
-                            () -> authenticationService.trocarSenha(request)
-                    );
-
-            assertEquals(
-                    "A senha já foi alterada uma vez",
-                    exception.getMessage()
-            );
-
-            verify(usuarioRepository, never()).save(any());
-        }
-
-        @Test
         @DisplayName("Deve lançar LoginInvalidoException quando senha atual incorreta")
         void deveLancarLoginInvalidoQuandoSenhaAtualIncorreta() {
             AuthTrocarSenhaRequest request =
@@ -278,11 +197,6 @@ class AuthenticationServiceTest {
 
             when(usuarioRepository.findByEmail("teste@email.com"))
                     .thenReturn(Optional.of(usuario));
-
-            when(passwordEncoder.matches(
-                    UsuarioService.senhaPadrao,
-                    usuario.getSenhaHash()
-            )).thenReturn(true);
 
             when(passwordEncoder.matches(
                     "atual",
@@ -310,11 +224,6 @@ class AuthenticationServiceTest {
 
             when(usuarioRepository.findByEmail("teste@email.com"))
                     .thenReturn(Optional.of(usuario));
-
-            when(passwordEncoder.matches(
-                    UsuarioService.senhaPadrao,
-                    usuario.getSenhaHash()
-            )).thenReturn(true);
 
             when(passwordEncoder.matches(
                     "atual",
@@ -357,14 +266,14 @@ class AuthenticationServiceTest {
             when(usuarioRepository.findById(1))
                     .thenReturn(Optional.of(usuario));
 
-            when(passwordEncoder.encode(UsuarioService.senhaPadrao))
+            when(passwordEncoder.encode("Pezao_0001"))
                     .thenReturn("hash-padrao");
 
             authenticationService.resetarSenha(1);
 
             assertEquals("hash-padrao", usuario.getSenhaHash());
             verify(passwordEncoder)
-                    .encode(UsuarioService.senhaPadrao);
+                    .encode("Pezao_0001");
             verify(usuarioRepository).save(usuario);
         }
     }
@@ -495,11 +404,12 @@ class AuthenticationServiceSecurityTest {
     @DisplayName("Deve permitir resetar senha quando tem permissão")
     void devePermitirResetarSenhaQuandoTemPermissao() {
         Usuario usuario = new Usuario();
+        usuario.setId(1);
 
         when(usuarioRepository.findById(1))
                 .thenReturn(Optional.of(usuario));
 
-        when(passwordEncoder.encode(UsuarioService.senhaPadrao))
+        when(passwordEncoder.encode("Pezao_0001"))
                 .thenReturn("hash-padrao");
 
         assertDoesNotThrow(
@@ -508,7 +418,7 @@ class AuthenticationServiceSecurityTest {
 
         verify(usuarioRepository).findById(1);
         verify(passwordEncoder)
-                .encode(UsuarioService.senhaPadrao);
+                .encode("Pezao_0001");
         verify(usuarioRepository).save(usuario);
     }
 

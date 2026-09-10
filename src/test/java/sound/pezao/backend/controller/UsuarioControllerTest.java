@@ -17,6 +17,7 @@ import org.springframework.data.web.PageableHandlerMethodArgumentResolver;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import sound.pezao.backend.dto.usuarioDTO.UsuarioCadastroResponse;
 import sound.pezao.backend.dto.usuarioDTO.UsuarioRequest;
 import sound.pezao.backend.dto.usuarioDTO.UsuarioResponse;
 import sound.pezao.backend.service.UsuarioService;
@@ -106,13 +107,11 @@ class UsuarioControllerTest {
                     null
             );
 
-            UsuarioResponse response = new UsuarioResponse(
+            UsuarioCadastroResponse response = new UsuarioCadastroResponse(
                     1,
                     "Usuário Teste",
                     "teste@email.com",
-                    true,
-                    null,
-                    null,
+                    "Pezao_0001",
                     null
             );
 
