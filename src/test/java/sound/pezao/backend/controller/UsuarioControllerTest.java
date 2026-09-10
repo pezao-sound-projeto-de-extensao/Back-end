@@ -25,6 +25,7 @@ import sound.pezao.backend.service.UsuarioService;
 import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -79,7 +80,7 @@ class UsuarioControllerTest {
                     1
             );
 
-            when(usuarioService.listar(any(Pageable.class))).thenReturn(page);
+            when(usuarioService.listar(isNull(), isNull(), any(Pageable.class))).thenReturn(page);
 
             mockMvc.perform(get("/usuarios")
                             .param("page", "0")
@@ -87,7 +88,7 @@ class UsuarioControllerTest {
                             .param("sort", "nome,asc"))
                     .andExpect(status().isOk());
 
-            verify(usuarioService).listar(any(Pageable.class));
+            verify(usuarioService).listar(isNull(), isNull(), any(Pageable.class));
         }
     }
 
@@ -101,7 +102,9 @@ class UsuarioControllerTest {
             UsuarioRequest request = new UsuarioRequest(
                     "Usuário Teste",
                     "teste@email.com",
-                    1
+                    1,
+                    null,
+                    null
             );
 
             UsuarioCadastroResponse response = new UsuarioCadastroResponse(
@@ -159,7 +162,9 @@ class UsuarioControllerTest {
             UsuarioRequest request = new UsuarioRequest(
                     "Usuário Atualizado",
                     "teste@email.com",
-                    1
+                    1,
+                    null,
+                    null
             );
 
             UsuarioResponse response = new UsuarioResponse(

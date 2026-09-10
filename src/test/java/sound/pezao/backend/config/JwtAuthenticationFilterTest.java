@@ -19,13 +19,24 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.mockito.Spy;
+import org.springframework.http.HttpStatus;
+import org.springframework.mock.web.MockFilterChain;
+import org.springframework.mock.web.MockHttpServletRequest;
+import org.springframework.mock.web.MockHttpServletResponse;
 import sound.pezao.backend.security.JwtService;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.json.JsonMapper;
+
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.MalformedJwtException;
 
 import java.io.IOException;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -47,6 +58,10 @@ class JwtAuthenticationFilterTest {
 
     @Mock
     private FilterChain filterChain;
+
+    // mesmo tipo de mapper que a aplicação injeta: o Boot 4 usa Jackson 3
+    @Spy
+    private ObjectMapper objectMapper = JsonMapper.builder().build();
 
     @InjectMocks
     private JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -200,6 +215,46 @@ class JwtAuthenticationFilterTest {
 
             verify(filterChain).doFilter(request, response);
             assertEquals("existing@email.com", SecurityContextHolder.getContext().getAuthentication().getName());
+        }
+    }
+
+    @Nested
+    @DisplayName("Resposta de erro quando o token não presta")
+    class RespostaDeErroTest {
+
+        private final MockHttpServletRequest requestReal = new MockHttpServletRequest();
+        private final MockHttpServletResponse responseReal = new MockHttpServletResponse();
+        private final MockFilterChain chainReal = new MockFilterChain();
+
+        @Test
+        @DisplayName("Deve responder 401 com problem+json quando o token está expirado")
+        void deveResponder401QuandoExpirado() throws Exception {
+            requestReal.addHeader("Authorization", "Bearer token-expirado");
+            when(jwtService.extractUsername("token-expirado"))
+                    .thenThrow(new ExpiredJwtException(null, null, "expirado"));
+
+            jwtAuthenticationFilter.doFilterInternal(requestReal, responseReal, chainReal);
+
+            assertEquals(HttpStatus.UNAUTHORIZED.value(), responseReal.getStatus());
+            assertTrue(responseReal.getContentType().contains("application/problem+json"));
+            assertTrue(responseReal.getContentAsString().contains("refresh token"));
+            assertNull(SecurityContextHolder.getContext().getAuthentication());
+            // a requisição não pode seguir para o controller
+            assertNull(chainReal.getRequest());
+        }
+
+        @Test
+        @DisplayName("Deve responder 401 quando o token é inválido")
+        void deveResponder401QuandoInvalido() throws Exception {
+            requestReal.addHeader("Authorization", "Bearer token-quebrado");
+            when(jwtService.extractUsername("token-quebrado"))
+                    .thenThrow(new MalformedJwtException("token quebrado"));
+
+            jwtAuthenticationFilter.doFilterInternal(requestReal, responseReal, chainReal);
+
+            assertEquals(HttpStatus.UNAUTHORIZED.value(), responseReal.getStatus());
+            assertTrue(responseReal.getContentAsString().contains("inválido"));
+            assertNull(chainReal.getRequest());
         }
     }
 }
