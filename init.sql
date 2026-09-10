@@ -65,7 +65,10 @@ INSERT INTO categorias VALUES
                            (1,'Som Automotivo','2026-06-08 00:17:33'),
                            (2,'Baterias','2026-06-08 00:17:33'),
                            (3,'Cabos e Conectores','2026-06-08 00:17:33'),
-                           (4,'Iluminacao','2026-06-08 00:17:33');
+                           (4,'Iluminacao','2026-06-08 00:17:33'),
+                           (5,'Materiais de capa','2026-06-08 00:17:33'),
+                           (6,'Acessorios eletricos','2026-06-08 00:17:33'),
+                           (7,'Outros','2026-06-08 00:17:33');
 
 CREATE TABLE usuarios (
                           id INT NOT NULL AUTO_INCREMENT,
