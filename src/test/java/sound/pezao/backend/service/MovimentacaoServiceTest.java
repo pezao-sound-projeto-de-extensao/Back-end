@@ -7,6 +7,10 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 import sound.pezao.backend.entities.Movimentacao;
@@ -14,7 +18,7 @@ import sound.pezao.backend.exception.ArquivoInvalidoException;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.repository.MovimentacaoRepository;
 
-import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -80,14 +84,15 @@ class MovimentacaoServiceTest {
     @Test
     @DisplayName("Deve listar movimentações com filtros")
     void deveListarComFiltros() {
-        LocalDateTime inicio = LocalDateTime.now().minusDays(7);
-        LocalDateTime fim = LocalDateTime.now();
-        when(movimentacaoRepository.findWithFilters(1, "entrada", 2, inicio, fim))
-                .thenReturn(List.of(movimentacao(1)));
+        LocalDate inicio = LocalDate.now().minusDays(7);
+        LocalDate fim = LocalDate.now();
+        Pageable pageable = PageRequest.of(0, 20);
+        when(movimentacaoRepository.findWithFilters(1, "entrada", 2, "cabo", inicio, fim, pageable))
+                .thenReturn(new PageImpl<>(List.of(movimentacao(1))));
 
-        List<Movimentacao> resultado = service.listarComFiltros(1, "entrada", 2, inicio, fim);
+        Page<Movimentacao> resultado = service.listarComFiltros(1, "entrada", 2, "cabo", inicio, fim, pageable);
 
-        assertEquals(1, resultado.size());
+        assertEquals(1, resultado.getTotalElements());
     }
 
     @Test

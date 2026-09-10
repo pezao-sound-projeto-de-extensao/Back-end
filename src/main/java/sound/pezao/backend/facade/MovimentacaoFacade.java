@@ -2,6 +2,11 @@ package sound.pezao.backend.facade;
 
 import jakarta.transaction.Transactional;
 import org.springframework.core.io.Resource;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 import sound.pezao.backend.dto.movimentacaoDTO.MovimentacaoMapper;
@@ -16,8 +21,7 @@ import sound.pezao.backend.service.EstoqueService;
 import sound.pezao.backend.service.MovimentacaoService;
 import sound.pezao.backend.service.UsuarioAutenticadoService;
 
-import java.time.LocalDateTime;
-import java.util.List;
+import java.time.LocalDate;
 
 @Component
 public class MovimentacaoFacade {
@@ -42,21 +46,20 @@ public class MovimentacaoFacade {
         this.usuarioAutenticadoService = usuarioAutenticadoService;
     }
 
-    public List<MovimentacaoResponse> listar(
-            Integer itemId,
-            String tipo,
-            Integer usuarioId,
-            LocalDateTime dataInicio,
-            LocalDateTime dataFim
-    ) {
-        return mapper.toResponseList(
+    public Page<MovimentacaoResponse> listar(Integer itemId, String tipo,
+                                             Integer usuarioId,
+                                             String search,
+                                             LocalDate dataInicio,
+                                             LocalDate dataFim,
+                                             Pageable pageable) {
+        // normaliza o tipo para o valor gravado, para "Entrada" filtrar como "entrada"
+        String tipoFiltro = tipo != null && !tipo.isBlank()
+                ? TipoMovimentacao.fromValor(tipo).getValor()
+                : null;
+
+        return mapper.toResponsePage(
                 movimentacaoService.listarComFiltros(
-                        itemId,
-                        tipo,
-                        usuarioId,
-                        dataInicio,
-                        dataFim
-                )
+                        itemId, tipoFiltro, usuarioId, search, dataInicio, dataFim, pageable)
         );
     }
 
@@ -69,6 +72,7 @@ public class MovimentacaoFacade {
     @Transactional
     public MovimentacaoResponse registrar(MovimentacaoRequest request) {
         TipoMovimentacao tipo = TipoMovimentacao.fromValor(request.tipo());
+        exigirPermissaoPara(tipo);
 
         Item item = itemRepository.findByIdParaMovimentacao(request.itemId())
                 .orElseThrow(() ->
@@ -95,6 +99,9 @@ public class MovimentacaoFacade {
     public void deletar(Integer id) {
         Movimentacao movimentacao = movimentacaoService.buscarPorId(id);
 
+        TipoMovimentacao tipo = TipoMovimentacao.fromValor(movimentacao.getTipo());
+        exigirPermissaoPara(tipo);
+
         Item item = itemRepository.findByIdParaMovimentacao(
                         movimentacao.getItem().getId()
                 )
@@ -105,11 +112,7 @@ public class MovimentacaoFacade {
                         )
                 );
 
-        estoqueService.reverterMovimentacao(
-                item,
-                TipoMovimentacao.fromValor(movimentacao.getTipo()),
-                movimentacao.getQuantidade()
-        );
+        estoqueService.reverterMovimentacao(item, tipo, movimentacao.getQuantidade());
 
         movimentacaoService.deletar(movimentacao);
     }
@@ -134,5 +137,22 @@ public class MovimentacaoFacade {
     @Transactional
     public void deletarNota(Integer movimentacaoId) {
         movimentacaoService.deletarNota(movimentacaoId);
+    }
+
+    /**
+     * Entrada e saída são permissões separadas no banco, então a checagem depende
+     * do tipo da movimentação e não cabe em uma anotação estática no método.
+     */
+    private void exigirPermissaoPara(TipoMovimentacao tipo) {
+        String permissao = tipo == TipoMovimentacao.ENTRADA ? "REGISTRAR_ENTRADA" : "REGISTRAR_SAIDA";
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        boolean autorizado = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(autoridade -> permissao.equals(autoridade.getAuthority()));
+
+        if (!autorizado) {
+            throw new AccessDeniedException(
+                    "Usuário não tem a permissão " + permissao + " para movimentar o estoque.");
+        }
     }
 }

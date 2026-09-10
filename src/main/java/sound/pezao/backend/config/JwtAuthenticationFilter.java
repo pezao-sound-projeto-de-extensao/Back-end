@@ -1,20 +1,29 @@
 package sound.pezao.backend.config;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.JwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.ProblemDetail;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import sound.pezao.backend.security.JwtService;
+import tools.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.net.URI;
+import java.time.Instant;
 import java.util.Arrays;
 
 @Component
@@ -22,10 +31,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
+    private final ObjectMapper objectMapper;
 
-    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService) {
+    public JwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService,
+                                   ObjectMapper objectMapper) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -46,19 +58,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String username = jwtService.extractUsername(jwt);
+        try {
+            String username = jwtService.extractUsername(jwt);
 
-        if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-            UserDetails userDetails = userDetailsService.loadUserByUsername(username);
+            if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
+                UserDetails userDetails = userDetailsService.loadUserByUsername(username);
 
-            if (jwtService.isTokenValid(jwt, userDetails)) {
-                UsernamePasswordAuthenticationToken authenticationToken = new
-                        UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
+                if (jwtService.isTokenValid(jwt, userDetails)) {
+                    UsernamePasswordAuthenticationToken authenticationToken = new
+                            UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());
 
-                authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
+                    authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
 
-                SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                    SecurityContextHolder.getContext().setAuthentication(authenticationToken);
+                }
             }
+        } catch (ExpiredJwtException e) {
+            responderNaoAutorizado(response, "Token expirado. Utilize o refresh token para obter um novo acesso.");
+            return;
+        } catch (JwtException | UsernameNotFoundException | IllegalArgumentException e) {
+            responderNaoAutorizado(response, "Token inválido.");
+            return;
         }
 
         filterChain.doFilter(request, response);
@@ -72,5 +92,26 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 .map(Cookie::getValue)
                 .findFirst()
                 .orElse(null);
+    }
+
+    /**
+     * Exceção lançada dentro de um filtro não passa pelo GlobalExceptionHandler,
+     * que só alcança o que acontece a partir do controller. Sem esta resposta, um
+     * token expirado — situação rotineira com access token de 15 minutos — chega
+     * ao cliente como 500 em vez de 401, e o front não sabe que basta renovar.
+     */
+    private void responderNaoAutorizado(HttpServletResponse response, String mensagem) throws IOException {
+        SecurityContextHolder.clearContext();
+
+        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, mensagem);
+        problemDetail.setType(URI.create("about:blank"));
+        // texto em vez de Instant: esta resposta não pode depender de o ObjectMapper
+        // ter o módulo de datas registrado, sob pena de falhar ao relatar a falha
+        problemDetail.setProperty("TimeStamp", Instant.now().toString());
+
+        response.setStatus(HttpStatus.UNAUTHORIZED.value());
+        response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+        objectMapper.writeValue(response.getWriter(), problemDetail);
     }
 }

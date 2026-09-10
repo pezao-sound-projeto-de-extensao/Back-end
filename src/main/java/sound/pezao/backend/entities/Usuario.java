@@ -37,6 +37,5 @@ public class Usuario {
     @PrePersist
     public void prePersist () {
         this.criadoEm = LocalDateTime.now();
-        this.ativo = true;
     }
 }
