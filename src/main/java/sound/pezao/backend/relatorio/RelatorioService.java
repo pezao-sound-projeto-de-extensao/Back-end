@@ -1,8 +1,8 @@
 package sound.pezao.backend.relatorio;
 
-import org.hibernate.type.internal.ParameterizedTypeImpl;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import sound.pezao.backend.relatorio.dto.*;
 import sound.pezao.backend.repository.ItemRepository;
@@ -12,6 +12,7 @@ import org.springframework.data.domain.Pageable;
 import java.time.LocalDate;
 import java.util.List;
 
+@PreAuthorize("hasAuthority('VER_RELATORIOS')")
 @Service
 public class RelatorioService {
     private final ItemRepository itemRepository;
