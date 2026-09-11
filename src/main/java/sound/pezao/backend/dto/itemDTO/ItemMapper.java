@@ -1,20 +1,24 @@
 package sound.pezao.backend.dto.itemDTO;
 
-import sound.pezao.backend.dto.imagemProdutoDTO.ImagemProdutoMapper;
 import sound.pezao.backend.entities.Categoria;
-import sound.pezao.backend.entities.ImagemProduto;
 import sound.pezao.backend.entities.Item;
+import sound.pezao.backend.entities.StatusEstoque;
 import sound.pezao.backend.entities.Unidade;
-
-import java.util.List;
 
 public class ItemMapper {
 
     public static ItemResponse toResponse(Item item) {
-        return toResponse(item, List.of());
-    }
+        ImagemInfo imagemInfo = null;
 
-    public static ItemResponse toResponse(Item item, List<ImagemProduto> imagens) {
+        if (item.getUriImagem() != null) {
+            imagemInfo = new ImagemInfo(
+                    "/itens/" + item.getId() + "/imagem/download",
+                    item.getNomeImagem(),
+                    item.getMimeTypeImagem(),
+                    item.getTamanhoImagem()
+            );
+        }
+
         return new ItemResponse(
                 item.getId(),
                 item.getNome(),
@@ -27,8 +31,9 @@ public class ItemMapper {
                 item.getQuantidadeMinima(),
                 item.getPrecoCusto(),
                 item.getPrecoVenda(),
+                StatusEstoque.calcular(item.getQuantidadeAtual(), item.getQuantidadeMinima()),
                 item.getAtivo(),
-                ImagemProdutoMapper.toResponseList(imagens)
+                imagemInfo
         );
     }
 

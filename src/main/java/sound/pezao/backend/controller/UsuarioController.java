@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import sound.pezao.backend.dto.usuarioDTO.UsuarioRequest;
 import sound.pezao.backend.dto.usuarioDTO.UsuarioResponse;
+import sound.pezao.backend.dto.usuarioDTO.UsuarioCadastroResponse;
 import sound.pezao.backend.service.UsuarioService;
 
 import org.springframework.data.domain.Pageable;
@@ -29,22 +30,25 @@ public class UsuarioController {
         this.usuarioService = usuarioService;
     }
 
-    @Operation(summary = "Busca paginada de todos os usuários")
+    @Operation(summary = "Busca paginada de usuários",
+            description = "O campo search filtra por nome ou e-mail; cargoId restringe a um cargo.")
     @GetMapping
     public ResponseEntity<Page<UsuarioResponse>> listar(
+            @RequestParam(required = false) String search,
+            @RequestParam(required = false) Integer cargoId,
             @ParameterObject
             @PageableDefault(page = 0, size = 10, sort = "nome", direction = Sort.Direction.ASC)
             Pageable pageable
             ){
-        return ResponseEntity.ok(usuarioService.listar(pageable));
+        return ResponseEntity.ok(usuarioService.listar(search, cargoId, pageable));
     }
 
     @Operation(summary = "Cadastro de novo usuário")
     @PostMapping
-    public ResponseEntity<UsuarioResponse> cadastrar(
+    public ResponseEntity<UsuarioCadastroResponse> cadastrar(
             @Valid @RequestBody UsuarioRequest usuarioRequest
             ){
-        UsuarioResponse usuarioResponse = usuarioService.cadastrar(usuarioRequest);
+        UsuarioCadastroResponse usuarioResponse = usuarioService.cadastrar(usuarioRequest);
         return ResponseEntity.status(201).body(usuarioResponse);
     }
 
