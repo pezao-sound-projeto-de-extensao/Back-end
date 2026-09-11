@@ -20,7 +20,9 @@ public record ItemRequest(
         @NotNull(message = "Unidade é obrigatória")
         Integer unidadeId,
 
-        @Schema(description = "Quantidade atual em estoque", example = "5")
+        @Schema(description = "Quantidade inicial em estoque. Considerada apenas no cadastro, "
+                + "onde gera uma movimentação de entrada automática. Na edição o valor é "
+                + "ignorado: o saldo só muda por movimentação.", example = "5")
         @NotNull(message = "Quantidade atual é obrigatória")
         @Min(value = 0, message = "Quantidade atual não pode ser negativa")
         Integer quantidadeAtual,

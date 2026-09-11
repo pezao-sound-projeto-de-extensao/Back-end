@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -22,6 +23,7 @@ import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import sound.pezao.backend.dto.usuarioDTO.UsuarioCadastroResponse;
 import sound.pezao.backend.dto.usuarioDTO.UsuarioRequest;
 import sound.pezao.backend.dto.usuarioDTO.UsuarioResponse;
 import sound.pezao.backend.entities.Cargo;
@@ -36,6 +38,8 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.isNull;
+import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -76,7 +80,9 @@ class UsuarioServiceTest {
         usuarioRequest = new UsuarioRequest(
                 "Usuário Teste",
                 "teste@email.com",
-                1
+                1,
+                null,
+                null
         );
     }
 
@@ -90,15 +96,39 @@ class UsuarioServiceTest {
             Pageable pageable = PageRequest.of(0, 10);
             Page<Usuario> page = new PageImpl<>(List.of(usuario), pageable, 1);
 
-            when(usuarioRepository.findAll(pageable)).thenReturn(page);
+            when(usuarioRepository.findAllFiltered(null, null, pageable)).thenReturn(page);
 
-            Page<UsuarioResponse> resultado = usuarioService.listar(pageable);
+            Page<UsuarioResponse> resultado = usuarioService.listar(null, null, pageable);
 
             assertNotNull(resultado);
             assertEquals(1, resultado.getTotalElements());
             assertEquals("teste@email.com", resultado.getContent().get(0).email());
 
-            verify(usuarioRepository).findAll(pageable);
+            verify(usuarioRepository).findAllFiltered(null, null, pageable);
+        }
+
+        @Test
+        @DisplayName("Deve repassar a busca e o filtro de cargo para o repositório")
+        void listarDeveRepassarFiltros() {
+            Pageable pageable = PageRequest.of(0, 10);
+            when(usuarioRepository.findAllFiltered("joão", 2, pageable))
+                    .thenReturn(new PageImpl<>(List.of(usuario), pageable, 1));
+
+            usuarioService.listar("joão", 2, pageable);
+
+            verify(usuarioRepository).findAllFiltered("joão", 2, pageable);
+        }
+
+        @Test
+        @DisplayName("Deve tratar busca em branco como ausência de filtro")
+        void listarDeveTratarBuscaEmBranco() {
+            Pageable pageable = PageRequest.of(0, 10);
+            when(usuarioRepository.findAllFiltered(null, null, pageable))
+                    .thenReturn(new PageImpl<>(List.of(), pageable, 0));
+
+            usuarioService.listar("   ", null, pageable);
+
+            verify(usuarioRepository).findAllFiltered(null, null, pageable);
         }
     }
 
@@ -139,22 +169,22 @@ class UsuarioServiceTest {
         void cadastrarDeveCadastrarUsuarioQuandoDadosValidos() {
             when(usuarioRepository.existsByEmailIgnoreCase(usuarioRequest.email())).thenReturn(false);
             when(cargoRepository.findById(usuarioRequest.cargo_id())).thenReturn(Optional.of(cargo));
-            when(passwordEncoder.encode(UsuarioService.senhaPadrao)).thenReturn("hash-padrao");
+            when(passwordEncoder.encode("Pezao_0001")).thenReturn("hash-padrao");
             when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocation -> {
                 Usuario u = invocation.getArgument(0);
                 u.setId(1);
                 return u;
             });
 
-            UsuarioResponse resultado = usuarioService.cadastrar(usuarioRequest);
+            UsuarioCadastroResponse resultado = usuarioService.cadastrar(usuarioRequest);
 
             assertNotNull(resultado);
             assertEquals(usuarioRequest.email(), resultado.email());
 
             verify(usuarioRepository).existsByEmailIgnoreCase(usuarioRequest.email());
             verify(cargoRepository).findById(usuarioRequest.cargo_id());
-            verify(passwordEncoder).encode(UsuarioService.senhaPadrao);
-            verify(usuarioRepository).save(any(Usuario.class));
+            verify(passwordEncoder).encode("Pezao_0001");
+            verify(usuarioRepository, times(2)).save(any(Usuario.class));
         }
 
         @Test
@@ -185,6 +215,77 @@ class UsuarioServiceTest {
             verify(passwordEncoder, never()).encode(any());
             verify(usuarioRepository, never()).save(any());
         }
+
+        @Test
+        @DisplayName("Deve usar a senha informada em vez da senha padrão")
+        void cadastrarDeveUsarSenhaInformada() {
+            UsuarioRequest comSenha = new UsuarioRequest(
+                    "Usuário Teste", "teste@email.com", 1, "SenhaSegura123", null);
+
+            when(usuarioRepository.existsByEmailIgnoreCase(comSenha.email())).thenReturn(false);
+            when(cargoRepository.findById(comSenha.cargo_id())).thenReturn(Optional.of(cargo));
+            when(passwordEncoder.encode("SenhaSegura123")).thenReturn("hash-escolhido");
+            when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            UsuarioCadastroResponse resposta = usuarioService.cadastrar(comSenha);
+
+            ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+            verify(usuarioRepository).save(captor.capture());
+
+            assertEquals("hash-escolhido", captor.getValue().getSenhaHash());
+            // nao gera senha padrao nem a devolve: quem cadastrou ja conhece a senha
+            verify(passwordEncoder, never()).encode(startsWith("Pezao_"));
+            assertNull(resposta.senhaPadraoTemporaria());
+        }
+
+        @Test
+        @DisplayName("Deve devolver a senha padrão gerada quando nenhuma é informada")
+        void cadastrarDeveDevolverSenhaGerada() {
+            when(usuarioRepository.existsByEmailIgnoreCase(usuarioRequest.email())).thenReturn(false);
+            when(cargoRepository.findById(usuarioRequest.cargo_id())).thenReturn(Optional.of(cargo));
+            when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> {
+                Usuario u = inv.getArgument(0);
+                u.setId(7);
+                return u;
+            });
+
+            UsuarioCadastroResponse resposta = usuarioService.cadastrar(usuarioRequest);
+
+            assertEquals("Pezao_0007", resposta.senhaPadraoTemporaria());
+        }
+
+        @Test
+        @DisplayName("Deve criar usuário ativo por padrão quando o status não é informado")
+        void cadastrarDeveCriarAtivoPorPadrao() {
+            when(usuarioRepository.existsByEmailIgnoreCase(usuarioRequest.email())).thenReturn(false);
+            when(cargoRepository.findById(usuarioRequest.cargo_id())).thenReturn(Optional.of(cargo));
+            when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            usuarioService.cadastrar(usuarioRequest);
+
+            ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+            verify(usuarioRepository, atLeastOnce()).save(captor.capture());
+
+            assertTrue(captor.getValue().isAtivo());
+        }
+
+        @Test
+        @DisplayName("Deve respeitar o status inativo informado no cadastro")
+        void cadastrarDeveRespeitarStatusInativo() {
+            UsuarioRequest inativo = new UsuarioRequest(
+                    "Usuário Teste", "teste@email.com", 1, null, false);
+
+            when(usuarioRepository.existsByEmailIgnoreCase(inativo.email())).thenReturn(false);
+            when(cargoRepository.findById(inativo.cargo_id())).thenReturn(Optional.of(cargo));
+            when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            usuarioService.cadastrar(inativo);
+
+            ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+            verify(usuarioRepository, atLeastOnce()).save(captor.capture());
+
+            assertFalse(captor.getValue().isAtivo());
+        }
     }
 
     @Nested
@@ -194,7 +295,7 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Deve atualizar usuário quando dados válidos")
         void atualizarDeveAtualizarUsuarioQuandoDadosValidos() {
-            when(usuarioRepository.existsById(1)).thenReturn(true);
+            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(usuarioRepository.existsByEmailIgnoreCaseAndIdNot(usuarioRequest.email(), 1)).thenReturn(false);
             when(cargoRepository.findById(usuarioRequest.cargo_id())).thenReturn(Optional.of(cargo));
             when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -204,21 +305,83 @@ class UsuarioServiceTest {
             assertNotNull(resultado);
             assertEquals(usuarioRequest.email(), resultado.email());
 
-            verify(usuarioRepository).existsById(1);
+            verify(usuarioRepository).findById(1);
             verify(usuarioRepository).existsByEmailIgnoreCaseAndIdNot(usuarioRequest.email(), 1);
             verify(cargoRepository).findById(usuarioRequest.cargo_id());
             verify(usuarioRepository).save(any(Usuario.class));
         }
 
         @Test
+        @DisplayName("Deve preservar senha, status e data de criação ao atualizar")
+        void atualizarDevePreservarDadosNaoEditaveis() {
+            usuario.setSenhaHash("hash-original");
+            usuario.setAtivo(true);
+
+            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
+            when(usuarioRepository.existsByEmailIgnoreCaseAndIdNot(usuarioRequest.email(), 1)).thenReturn(false);
+            when(cargoRepository.findById(usuarioRequest.cargo_id())).thenReturn(Optional.of(cargo));
+            when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            usuarioService.atualizar(1, new UsuarioRequest("Nome Novo", "teste@email.com", 1, null, null));
+
+            ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+            verify(usuarioRepository).save(captor.capture());
+
+            Usuario salvo = captor.getValue();
+            assertEquals("hash-original", salvo.getSenhaHash());
+            assertTrue(salvo.isAtivo());
+            assertEquals("Nome Novo", salvo.getNome());
+            assertEquals(1, salvo.getId());
+        }
+
+        @Test
+        @DisplayName("Deve trocar a senha quando ela vem preenchida na edição")
+        void atualizarDeveTrocarSenhaQuandoInformada() {
+            usuario.setSenhaHash("hash-original");
+
+            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
+            when(usuarioRepository.existsByEmailIgnoreCaseAndIdNot("teste@email.com", 1)).thenReturn(false);
+            when(cargoRepository.findById(1)).thenReturn(Optional.of(cargo));
+            when(passwordEncoder.encode("NovaSenha123")).thenReturn("hash-novo");
+            when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            usuarioService.atualizar(1, new UsuarioRequest(
+                    "Nome Novo", "teste@email.com", 1, "NovaSenha123", null));
+
+            ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+            verify(usuarioRepository).save(captor.capture());
+
+            assertEquals("hash-novo", captor.getValue().getSenhaHash());
+        }
+
+        @Test
+        @DisplayName("Deve alterar o status quando ele vem informado na edição")
+        void atualizarDeveAlterarStatus() {
+            usuario.setAtivo(true);
+
+            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
+            when(usuarioRepository.existsByEmailIgnoreCaseAndIdNot("teste@email.com", 1)).thenReturn(false);
+            when(cargoRepository.findById(1)).thenReturn(Optional.of(cargo));
+            when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            usuarioService.atualizar(1, new UsuarioRequest(
+                    "Nome Novo", "teste@email.com", 1, null, false));
+
+            ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+            verify(usuarioRepository).save(captor.capture());
+
+            assertFalse(captor.getValue().isAtivo());
+        }
+
+        @Test
         @DisplayName("Deve lançar EntityNotFoundException quando usuário não existe")
         void atualizarDeveLancarEntityNotFoundExceptionQuandoUsuarioNaoExiste() {
-            when(usuarioRepository.existsById(1)).thenReturn(false);
+            when(usuarioRepository.findById(1)).thenReturn(Optional.empty());
 
             assertThrows(EntityNotFoundException.class,
                     () -> usuarioService.atualizar(1, usuarioRequest));
 
-            verify(usuarioRepository).existsById(1);
+            verify(usuarioRepository).findById(1);
             verify(usuarioRepository, never()).existsByEmailIgnoreCaseAndIdNot(anyString(), anyInt());
             verify(cargoRepository, never()).findById(anyInt());
             verify(usuarioRepository, never()).save(any());
@@ -227,13 +390,13 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Deve lançar EntityNomeJaExisteException quando email já existe em outro usuário")
         void atualizarDeveLancarEntityNomeJaExisteExceptionQuandoEmailJaExisteEmOutroUsuario() {
-            when(usuarioRepository.existsById(1)).thenReturn(true);
+            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(usuarioRepository.existsByEmailIgnoreCaseAndIdNot(usuarioRequest.email(), 1)).thenReturn(true);
 
             assertThrows(EntityNomeJaExisteException.class,
                     () -> usuarioService.atualizar(1, usuarioRequest));
 
-            verify(usuarioRepository).existsById(1);
+            verify(usuarioRepository).findById(1);
             verify(usuarioRepository).existsByEmailIgnoreCaseAndIdNot(usuarioRequest.email(), 1);
             verify(cargoRepository, never()).findById(anyInt());
             verify(usuarioRepository, never()).save(any());
@@ -242,14 +405,14 @@ class UsuarioServiceTest {
         @Test
         @DisplayName("Deve lançar EntityNotFoundException quando cargo não existe")
         void atualizarDeveLancarEntityNotFoundExceptionQuandoCargoNaoExiste() {
-            when(usuarioRepository.existsById(1)).thenReturn(true);
+            when(usuarioRepository.findById(1)).thenReturn(Optional.of(usuario));
             when(usuarioRepository.existsByEmailIgnoreCaseAndIdNot(usuarioRequest.email(), 1)).thenReturn(false);
             when(cargoRepository.findById(usuarioRequest.cargo_id())).thenReturn(Optional.empty());
 
             assertThrows(EntityNotFoundException.class,
                     () -> usuarioService.atualizar(1, usuarioRequest));
 
-            verify(usuarioRepository).existsById(1);
+            verify(usuarioRepository).findById(1);
             verify(usuarioRepository).existsByEmailIgnoreCaseAndIdNot(usuarioRequest.email(), 1);
             verify(cargoRepository).findById(usuarioRequest.cargo_id());
             verify(usuarioRepository, never()).save(any());
@@ -357,12 +520,12 @@ class UsuarioServiceSecurityTest {
             usuario.setAtivo(true);
             usuario.setCargo(cargo);
 
-            when(usuarioRepository.findAll(any(Pageable.class)))
+            when(usuarioRepository.findAllFiltered(isNull(), isNull(), any(Pageable.class)))
                     .thenReturn(new PageImpl<>(List.of(usuario)));
 
-            assertDoesNotThrow(() -> usuarioService.listar(Pageable.unpaged()));
+            assertDoesNotThrow(() -> usuarioService.listar(null, null, Pageable.unpaged()));
 
-            verify(usuarioRepository).findAll(any(Pageable.class));
+            verify(usuarioRepository).findAllFiltered(isNull(), isNull(), any(Pageable.class));
         }
 
         @Test
@@ -370,9 +533,9 @@ class UsuarioServiceSecurityTest {
         @DisplayName("Deve negar quando não tem permissão")
         void deveNegarQuandoNaoTemPermissao() {
             assertThrows(AccessDeniedException.class,
-                    () -> usuarioService.listar(Pageable.unpaged()));
+                    () -> usuarioService.listar(null, null, Pageable.unpaged()));
 
-            verify(usuarioRepository, never()).findAll(any(Pageable.class));
+            verify(usuarioRepository, never()).findAllFiltered(any(), any(), any(Pageable.class));
         }
 
         @Test
@@ -380,9 +543,9 @@ class UsuarioServiceSecurityTest {
         @DisplayName("Deve negar quando anônimo")
         void deveNegarQuandoAnonimo() {
             assertThrows(AccessDeniedException.class,
-                    () -> usuarioService.listar(Pageable.unpaged()));
+                    () -> usuarioService.listar(null, null, Pageable.unpaged()));
 
-            verify(usuarioRepository, never()).findAll(any(Pageable.class));
+            verify(usuarioRepository, never()).findAllFiltered(any(), any(), any(Pageable.class));
         }
     }
 }

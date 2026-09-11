@@ -1,5 +1,6 @@
 package sound.pezao.backend.service;
 
+import jakarta.validation.constraints.NotBlank;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,27 +28,21 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final RefreshTokenService refreshTokenService;
 
     public AuthenticationService(JwtService jwtService, AuthenticationManager authenticationManager,
-                                 UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
+                                 UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, RefreshTokenService refreshTokenService) {
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
+        this.refreshTokenService = refreshTokenService;
     }
 
     public AuthResponse authenticate(AuthRequest authRequest){
         Usuario usuario = usuarioRepository.findByEmail(authRequest.email())
                 .orElseThrow(LoginInvalidoException::new);
 
-        boolean senhaInicial = passwordEncoder.matches(
-                UsuarioService.senhaPadrao,
-                usuario.getSenhaHash()
-        );
-
-        if (senhaInicial){
-            throw new PrimeiroAcessoException("Altere a senha padrão antes de efetuar o login");
-        }
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         authRequest.email(),
@@ -56,23 +51,16 @@ public class AuthenticationService {
         );
         usuario.setUltimoAcesso(LocalDateTime.now());
         usuarioRepository.save(usuario);
-        String token = jwtService.generateToken(authentication);
+        String accessToken = jwtService.generateToken(authentication);
+        String refreshToken = refreshTokenService.criar(usuario);
         UserAuthenticated userDetails = (UserAuthenticated) authentication.getPrincipal();
-        return new AuthResponse(token, userDetails.getUsername(), UsuarioMapper.toResponse(usuario));
+        return new AuthResponse(accessToken, refreshToken, userDetails.getUsername(), UsuarioMapper.toResponse(usuario));
     }
 
     public void trocarSenha(AuthTrocarSenhaRequest authTrocarSenhaRequest){
         Usuario usuario = usuarioRepository.findByEmail(authTrocarSenhaRequest.email())
                 .orElseThrow(LoginInvalidoException::new);
 
-        boolean senhaInicial = passwordEncoder.matches(
-                UsuarioService.senhaPadrao,
-                usuario.getSenhaHash()
-        );
-
-        if (!senhaInicial){
-            throw new PrimeiroAcessoException("A senha já foi alterada uma vez");
-        }
         boolean senhaCorreta = passwordEncoder.matches(
                 authTrocarSenhaRequest.senhaAtual(),
                 usuario.getSenhaHash()
@@ -84,9 +72,6 @@ public class AuthenticationService {
 
         usuario.setSenhaHash(passwordEncoder.encode(authTrocarSenhaRequest.senhaNova()));
         usuarioRepository.save(usuario);
-
-        System.out.println(passwordEncoder.matches(authTrocarSenhaRequest.senhaNova(), usuario.getSenhaHash()));
-
     }
 
     @PreAuthorize("hasAuthority('GERENCIAR_USUARIOS')")
@@ -94,8 +79,34 @@ public class AuthenticationService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário", id));
 
-        usuario.setSenhaHash(passwordEncoder.encode(UsuarioService.senhaPadrao));
+        String senhaPadrao = gerarSenhaPadraoDoUsuario(usuario.getId());
+        usuario.setSenhaHash(passwordEncoder.encode(senhaPadrao));
         usuarioRepository.save(usuario);
     }
 
+    private String gerarSenhaPadraoDoUsuario(Integer usuarioId) {
+        return "Pezao_" + String.format("%04d", usuarioId);
+    }
+
+    public AuthResponse refreshToken(String token) {
+        Usuario usuario = refreshTokenService.validar(token);
+
+        UserAuthenticated userDetails = new UserAuthenticated(usuario);
+
+        Authentication authentication = new UsernamePasswordAuthenticationToken(
+                userDetails,
+                null,
+                userDetails.getAuthorities()
+        );
+
+        String accessToken = jwtService.generateToken(authentication);
+        String refreshToken = refreshTokenService.criar(usuario);
+
+        return new AuthResponse(accessToken, refreshToken, userDetails.getUsername(), UsuarioMapper.toResponse(usuario));
+
+    }
+
+    public void logout(String token){
+        refreshTokenService.revogar(token);
+    }
 }
