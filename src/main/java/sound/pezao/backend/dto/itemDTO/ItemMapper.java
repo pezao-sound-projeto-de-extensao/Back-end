@@ -1,21 +1,29 @@
 package sound.pezao.backend.dto.itemDTO;
 
+import sound.pezao.backend.entities.Arquivo;
 import sound.pezao.backend.entities.Categoria;
 import sound.pezao.backend.entities.Item;
 import sound.pezao.backend.entities.StatusEstoque;
 import sound.pezao.backend.entities.Unidade;
+import sound.pezao.backend.repository.ArquivoRepository;
+
+import java.util.Optional;
 
 public class ItemMapper {
 
-    public static ItemResponse toResponse(Item item) {
+    public static ItemResponse toResponse(Item item, ArquivoRepository arquivoRepository) {
         ImagemInfo imagemInfo = null;
 
-        if (item.getUriImagem() != null) {
+        Optional<Arquivo> arqOpt = arquivoRepository
+                .findByTabelaOrigemAndRegistroIdAndTipoArquivo("item", item.getId(), "imagem");
+
+        if (arqOpt.isPresent()) {
+            Arquivo arq = arqOpt.get();
             imagemInfo = new ImagemInfo(
                     "/itens/" + item.getId() + "/imagem/download",
-                    item.getNomeImagem(),
-                    item.getMimeTypeImagem(),
-                    item.getTamanhoImagem()
+                    arq.getNome(),
+                    arq.getMimeType(),
+                    arq.getTamanho()
             );
         }
 
