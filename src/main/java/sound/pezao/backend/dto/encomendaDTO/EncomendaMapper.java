@@ -1,11 +1,20 @@
 package sound.pezao.backend.dto.encomendaDTO;
 
+import org.springframework.stereotype.Component;
 import sound.pezao.backend.entities.Encomenda;
 import sound.pezao.backend.entities.Item;
+import sound.pezao.backend.repository.ArquivoRepository;
 
+@Component
 public class EncomendaMapper {
 
-    public static EncomendaResponse toResponse(Encomenda encomenda) {
+    private final ArquivoRepository arquivoRepository;
+
+    public EncomendaMapper(ArquivoRepository arquivoRepository) {
+        this.arquivoRepository = arquivoRepository;
+    }
+
+    public EncomendaResponse toResponse(Encomenda encomenda) {
         Item item = encomenda.getItem();
 
         return new EncomendaResponse(
@@ -23,10 +32,21 @@ public class EncomendaMapper {
         );
     }
 
-    private static String fotoUrl(Item item) {
-        if (item == null || item.getUriImagem() == null) {
+    private String fotoUrl(Item item) {
+        if (item == null) {
             return null;
         }
-        return "/itens/" + item.getId() + "/imagem/download";
+
+        boolean possuiImagem = arquivoRepository
+                .findByTabelaOrigemAndRegistroIdAndTipoArquivo(
+                        "item",
+                        item.getId(),
+                        "imagem"
+                )
+                .isPresent();
+
+        return possuiImagem
+                ? "/itens/" + item.getId() + "/imagem/download"
+                : null;
     }
 }
