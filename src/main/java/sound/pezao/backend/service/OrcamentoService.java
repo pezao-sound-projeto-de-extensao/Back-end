@@ -27,34 +27,51 @@ public class OrcamentoService {
     private final ClienteService clienteService;
     private final UsuarioAutenticadoService usuarioAutenticadoService;
     private final EncomendaService encomendaService;
+    private final OrcamentoMapper mapper;
 
-    public OrcamentoService(OrcamentoRepository repository,
-                            ItemRepository itemRepository,
-                            ClienteService clienteService,
-                            UsuarioAutenticadoService usuarioAutenticadoService,
-                            EncomendaService encomendaService) {
+    public OrcamentoService(
+            OrcamentoRepository repository,
+            ItemRepository itemRepository,
+            ClienteService clienteService,
+            UsuarioAutenticadoService usuarioAutenticadoService,
+            EncomendaService encomendaService,
+            OrcamentoMapper mapper
+    ) {
         this.repository = repository;
         this.itemRepository = itemRepository;
         this.clienteService = clienteService;
         this.usuarioAutenticadoService = usuarioAutenticadoService;
         this.encomendaService = encomendaService;
+        this.mapper = mapper;
     }
 
-    public Page<OrcamentoResponse> listar(String search, String status, Pageable pageable) {
-        String busca = search != null && !search.isBlank() ? search.trim() : null;
+    public Page<OrcamentoResponse> listar(
+            String search,
+            String status,
+            Pageable pageable
+    ) {
+        String busca = search != null && !search.isBlank()
+                ? search.trim()
+                : null;
 
         return repository
-                .findAllFiltered(busca, extrairNumero(busca), StatusOrcamento.fromValor(status), pageable)
-                .map(OrcamentoMapper::toResponse);
+                .findAllFiltered(
+                        busca,
+                        extrairNumero(busca),
+                        StatusOrcamento.fromValor(status),
+                        pageable
+                )
+                .map(mapper::toResponse);
     }
 
     public OrcamentoResponse buscarPorId(Integer id) {
-        return OrcamentoMapper.toResponse(buscarEntidade(id));
+        return mapper.toResponse(buscarEntidade(id));
     }
 
     @Transactional
     public OrcamentoResponse criar(OrcamentoRequest request) {
         Orcamento orcamento = new Orcamento();
+
         orcamento.setCliente(resolverCliente(request));
         orcamento.setUsuario(usuarioAutenticadoService.obter());
         orcamento.setStatus(StatusOrcamento.PENDENTE);
@@ -62,11 +79,14 @@ public class OrcamentoService {
 
         preencherItens(orcamento, request);
 
-        return OrcamentoMapper.toResponse(repository.save(orcamento));
+        return mapper.toResponse(repository.save(orcamento));
     }
 
     @Transactional
-    public OrcamentoResponse atualizar(Integer id, OrcamentoRequest request) {
+    public OrcamentoResponse atualizar(
+            Integer id,
+            OrcamentoRequest request
+    ) {
         Orcamento orcamento = buscarEntidade(id);
         exigirEdicaoPermitida(orcamento);
 
@@ -76,24 +96,23 @@ public class OrcamentoService {
         orcamento.limparItens();
         preencherItens(orcamento, request);
 
-        return OrcamentoMapper.toResponse(repository.save(orcamento));
+        return mapper.toResponse(repository.save(orcamento));
     }
 
-    /**
-     * Aceitar um orçamento gera, na mesma transação, uma encomenda por item:
-     * ou o orçamento vira ACEITO com as encomendas criadas, ou nada acontece.
-     */
     @Transactional
     public OrcamentoResponse aceitar(Integer id) {
         Orcamento orcamento = alterarStatus(id, StatusOrcamento.ACEITO);
+
         encomendaService.gerarParaOrcamento(orcamento);
 
-        return OrcamentoMapper.toResponse(orcamento);
+        return mapper.toResponse(orcamento);
     }
 
     @Transactional
     public OrcamentoResponse rejeitar(Integer id) {
-        return OrcamentoMapper.toResponse(alterarStatus(id, StatusOrcamento.REJEITADO));
+        return mapper.toResponse(
+                alterarStatus(id, StatusOrcamento.REJEITADO)
+        );
     }
 
     public Orcamento buscarEntidade(Integer id) {
@@ -101,27 +120,34 @@ public class OrcamentoService {
                 .orElseThrow(() -> new EntityNotFoundException("Orçamento", id));
     }
 
-    private Orcamento alterarStatus(Integer id, StatusOrcamento novoStatus) {
+    private Orcamento alterarStatus(
+            Integer id,
+            StatusOrcamento novoStatus
+    ) {
         Orcamento orcamento = buscarEntidade(id);
 
         if (orcamento.getStatus() != StatusOrcamento.PENDENTE) {
+            String acao = novoStatus == StatusOrcamento.ACEITO
+                    ? "aceitar"
+                    : "rejeitar";
+
             throw new IllegalArgumentException(
-                    "Só é possível " + (novoStatus == StatusOrcamento.ACEITO ? "aceitar" : "rejeitar")
-                            + " um orçamento pendente. Este está como " + orcamento.getStatus() + ".");
+                    "Só é possível " + acao
+                            + " um orçamento pendente. Este está como "
+                            + orcamento.getStatus() + "."
+            );
         }
 
         orcamento.setStatus(novoStatus);
+
         return repository.save(orcamento);
     }
 
-    /**
-     * Cliente existente e cliente novo são mutuamente exclusivos: a tela oferece
-     * as duas opções e não pode enviar as duas ao mesmo tempo.
-     */
     private Cliente resolverCliente(OrcamentoRequest request) {
         if (request.temClienteExistente() && request.temClienteNovo()) {
             throw new IllegalArgumentException(
-                    "Informe um cliente existente ou os dados de um cliente novo, não os dois.");
+                    "Informe um cliente existente ou os dados de um cliente novo, não os dois."
+            );
         }
 
         if (request.temClienteExistente()) {
@@ -133,39 +159,55 @@ public class OrcamentoService {
         }
 
         throw new IllegalArgumentException(
-                "Informe o cliente do orçamento: um cliente existente ou os dados de um novo.");
+                "Informe o cliente do orçamento: um cliente existente ou os dados de um novo."
+        );
     }
 
-    private void preencherItens(Orcamento orcamento, OrcamentoRequest request) {
-        request.itens().forEach(itemRequest -> orcamento.adicionarItem(montarItem(itemRequest)));
+    private void preencherItens(
+            Orcamento orcamento,
+            OrcamentoRequest request
+    ) {
+        request.itens().forEach(itemRequest ->
+                orcamento.adicionarItem(montarItem(itemRequest))
+        );
+
         orcamento.recalcularTotal();
     }
 
     private OrcamentoItem montarItem(OrcamentoItemRequest request) {
         if (request.temProdutoDoCatalogo() && request.temDescricao()) {
             throw new IllegalArgumentException(
-                    "Informe o produto do catálogo ou a descrição de um produto novo, não os dois.");
+                    "Informe o produto do catálogo ou a descrição de um produto novo, não os dois."
+            );
         }
 
         OrcamentoItem item = new OrcamentoItem();
+
         item.setQuantidade(request.quantidade());
         item.setPrecoUnitario(request.precoUnitario());
 
         if (request.temProdutoDoCatalogo()) {
             Item produto = itemRepository.findById(request.itemId())
-                    .orElseThrow(() -> new EntityNotFoundException("Item", request.itemId()));
+                    .orElseThrow(() ->
+                            new EntityNotFoundException("Item", request.itemId())
+                    );
+
             item.setItem(produto);
-            // guarda o nome do momento do orçamento, que não muda se o produto for renomeado
+
+            // Mantém o nome existente no momento de criação do orçamento.
             item.setDescricao(produto.getNome());
+
             return item;
         }
 
         if (!request.temDescricao()) {
             throw new IllegalArgumentException(
-                    "Item sem produto do catálogo precisa de uma descrição.");
+                    "Item sem produto do catálogo precisa de uma descrição."
+            );
         }
 
         item.setDescricao(request.descricao().trim());
+
         return item;
     }
 
@@ -173,15 +215,16 @@ public class OrcamentoService {
         if (!orcamento.getStatus().permiteEdicao()) {
             throw new IllegalArgumentException(
                     "Só é possível editar um orçamento pendente. Este está como "
-                            + orcamento.getStatus() + ".");
+                            + orcamento.getStatus() + "."
+            );
         }
     }
 
-    // a busca aceita nome do cliente ou número do orçamento no mesmo campo
     private Integer extrairNumero(String search) {
         if (search == null) {
             return null;
         }
+
         try {
             return Integer.valueOf(search);
         } catch (NumberFormatException e) {
