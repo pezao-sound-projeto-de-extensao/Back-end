@@ -23,26 +23,19 @@ public class Item {
     @JoinColumn(name = "unidade_id", nullable = false)
     private Unidade unidade;
 
+    @Column(nullable = false)
     String nome;
+
+    @Column(nullable = false)
     Integer quantidadeAtual;
+
+    @Column(nullable = false)
     Integer quantidadeMinima;
     Double precoCusto;
     Double precoVenda;
     Boolean ativo;
     LocalDateTime criadoEm;
     LocalDateTime atualizadoEm;
-
-    @Column(name = "uri_imagem", length = 500)
-    private String uriImagem;
-
-    @Column(name = "nome_imagem", length = 255)
-    private String nomeImagem;
-
-    @Column(name = "mime_type_imagem", length = 100)
-    private String mimeTypeImagem;
-
-    @Column(name = "tamanho_imagem")
-    private Integer tamanhoImagem;
 
     @PrePersist
     public void prePersist() {
