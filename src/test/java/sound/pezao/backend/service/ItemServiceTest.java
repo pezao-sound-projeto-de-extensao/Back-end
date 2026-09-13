@@ -172,7 +172,8 @@ class ItemServiceTest {
         verify(movimentacaoService).salvar(captor.capture());
 
         Movimentacao movimentacao = captor.getValue();
-        assertEquals(TipoMovimentacao.ENTRADA.getValor(), movimentacao.getTipo());
+
+        assertEquals(TipoMovimentacao.ENTRADA, movimentacao.getTipo());
         assertEquals(5, movimentacao.getQuantidade());
         assertEquals(0, movimentacao.getEstoqueAntes());
         assertEquals(5, movimentacao.getEstoqueDepois());

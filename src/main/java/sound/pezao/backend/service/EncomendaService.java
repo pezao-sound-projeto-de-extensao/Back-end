@@ -220,7 +220,7 @@ public class EncomendaService {
         Movimentacao movimentacao = new Movimentacao();
         movimentacao.setItem(itemComLock);
         movimentacao.setUsuario(usuarioAutenticadoService.obter());
-        movimentacao.setTipo(tipo.getValor());
+        movimentacao.setTipo(tipo);
         movimentacao.setQuantidade(encomenda.getQuantidade());
         movimentacao.setEstoqueAntes(estoqueAntes);
         movimentacao.setEstoqueDepois(itemComLock.getQuantidadeAtual());

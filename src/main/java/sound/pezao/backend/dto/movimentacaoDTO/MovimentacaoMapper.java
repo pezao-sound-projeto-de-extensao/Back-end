@@ -26,7 +26,7 @@ public class MovimentacaoMapper {
         return new MovimentacaoResponse(
                 movimentacao.getId(),
                 montarItem(movimentacao.getItem()),
-                movimentacao.getTipo(),
+                movimentacao.getTipo().getValor(),
                 movimentacao.getQuantidade(),
                 movimentacao.getEstoqueAntes(),
                 movimentacao.getEstoqueDepois(),
@@ -56,7 +56,7 @@ public class MovimentacaoMapper {
 
         movimentacao.setItem(item);
         movimentacao.setTipo(
-                TipoMovimentacao.fromValor(request.tipo()).getValor()
+                TipoMovimentacao.fromValor(request.tipo())
         );
         movimentacao.setQuantidade(request.quantidade());
         movimentacao.setData(

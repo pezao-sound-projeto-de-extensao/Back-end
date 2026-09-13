@@ -91,7 +91,7 @@ public class ItemService {
         Movimentacao movimentacao = new Movimentacao();
         movimentacao.setItem(item);
         movimentacao.setUsuario(usuarioAutenticadoService.obter());
-        movimentacao.setTipo(TipoMovimentacao.ENTRADA.getValor());
+        movimentacao.setTipo(TipoMovimentacao.ENTRADA);
         movimentacao.setQuantidade(quantidade);
         movimentacao.setEstoqueAntes(0);
         movimentacao.setEstoqueDepois(quantidade);
