@@ -20,6 +20,7 @@ import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.junit.jupiter.SpringJUnitConfig;
+import sound.pezao.backend.entities.TipoMovimentacao;
 import sound.pezao.backend.relatorio.dto.ItemCriticoDTO;
 import sound.pezao.backend.relatorio.dto.ItemMaisMovimentadoDTO;
 import sound.pezao.backend.relatorio.dto.MovimentacaoHistoricoDTO;
@@ -66,7 +67,7 @@ class RelatorioServiceTest {
                 .thenReturn(new PageImpl<>(List.of(new ItemMaisMovimentadoDTO("Cabo RCA 5m", 12L))));
         when(movimentacaoRepository.buscarHistorico(inicio, fim, null, pageable))
                 .thenReturn(new PageImpl<>(List.of(new MovimentacaoHistoricoDTO(
-                        inicio, "Cabo RCA 5m", "Cabos e Conectores", "entrada", 5, 10, 15, "NF 1042"))));
+                        inicio, "Cabo RCA 5m", "Cabos e Conectores", TipoMovimentacao.ENTRADA, 5, 10, 15, "NF 1042"))));
 
         RelatorioResponseDTO resposta = service.buscar(inicio, fim, null, pageable);
 

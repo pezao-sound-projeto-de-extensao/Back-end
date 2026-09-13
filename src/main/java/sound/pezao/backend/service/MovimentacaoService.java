@@ -7,6 +7,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import sound.pezao.backend.entities.Arquivo;
 import sound.pezao.backend.entities.Movimentacao;
+import sound.pezao.backend.entities.TipoMovimentacao;
 import sound.pezao.backend.exception.ArquivoInvalidoException;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.repository.ArquivoRepository;
@@ -46,9 +47,9 @@ public class MovimentacaoService {
                 );
     }
 
-    public Page listarComFiltros(
+    public Page<Movimentacao> listarComFiltros(
             Integer itemId,
-            String tipo,
+            TipoMovimentacao tipo,
             Integer usuarioId,
             String search,
             LocalDate dataInicio,

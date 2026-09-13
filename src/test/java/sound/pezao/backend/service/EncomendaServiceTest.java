@@ -24,6 +24,7 @@ import sound.pezao.backend.entities.OrcamentoItem;
 import sound.pezao.backend.entities.StatusEncomenda;
 import sound.pezao.backend.entities.StatusOrcamento;
 import sound.pezao.backend.entities.TipoMovimentacao;
+import sound.pezao.backend.entities.TipoMovimentacao;
 import sound.pezao.backend.entities.Usuario;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.exception.EstoqueInsuficienteException;
@@ -240,7 +241,7 @@ class EncomendaServiceTest {
 
             Movimentacao movimentacao = captor.getValue();
 
-            assertEquals("entrada", movimentacao.getTipo());
+            assertEquals(TipoMovimentacao.ENTRADA, movimentacao.getTipo());
             assertEquals(2, movimentacao.getQuantidade());
             assertEquals(8, movimentacao.getEstoqueAntes());
             assertEquals(10, movimentacao.getEstoqueDepois());
@@ -388,7 +389,7 @@ class EncomendaServiceTest {
 
             verify(movimentacaoService).salvar(captor.capture());
 
-            assertEquals("saida", captor.getValue().getTipo());
+            assertEquals(TipoMovimentacao.SAIDA, captor.getValue().getTipo());
         }
 
         @Test

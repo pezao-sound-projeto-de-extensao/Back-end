@@ -15,6 +15,7 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.web.multipart.MultipartFile;
 import sound.pezao.backend.entities.Arquivo;
 import sound.pezao.backend.entities.Movimentacao;
+import sound.pezao.backend.entities.TipoMovimentacao;
 import sound.pezao.backend.exception.ArquivoInvalidoException;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.repository.ArquivoRepository;
@@ -57,7 +58,7 @@ class MovimentacaoServiceTest {
     private Movimentacao movimentacao(Integer id) {
         Movimentacao movimentacao = new Movimentacao();
         movimentacao.setId(id);
-        movimentacao.setTipo("entrada");
+        movimentacao.setTipo(TipoMovimentacao.ENTRADA);
         movimentacao.setQuantidade(5);
         return movimentacao;
     }
@@ -125,7 +126,7 @@ class MovimentacaoServiceTest {
 
         when(movimentacaoRepository.findWithFilters(
                 1,
-                "entrada",
+                TipoMovimentacao.ENTRADA,
                 2,
                 "cabo",
                 inicio,
@@ -135,7 +136,7 @@ class MovimentacaoServiceTest {
 
         Page<Movimentacao> resultado = service.listarComFiltros(
                 1,
-                "entrada",
+                TipoMovimentacao.ENTRADA,
                 2,
                 "cabo",
                 inicio,
