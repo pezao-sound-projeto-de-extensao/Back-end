@@ -8,7 +8,14 @@ import org.springframework.stereotype.Service;
 import sound.pezao.backend.dto.encomendaDTO.EncomendaKpisResponse;
 import sound.pezao.backend.dto.encomendaDTO.EncomendaMapper;
 import sound.pezao.backend.dto.encomendaDTO.EncomendaResponse;
-import sound.pezao.backend.entities.*;
+import sound.pezao.backend.entities.Encomenda;
+import sound.pezao.backend.entities.Item;
+import sound.pezao.backend.entities.Movimentacao;
+import sound.pezao.backend.entities.Orcamento;
+import sound.pezao.backend.entities.OrcamentoItem;
+import sound.pezao.backend.entities.StatusEncomenda;
+import sound.pezao.backend.entities.StatusOrcamento;
+import sound.pezao.backend.entities.TipoMovimentacao;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.repository.EncomendaRepository;
 import sound.pezao.backend.repository.ItemRepository;
@@ -29,34 +36,52 @@ public class EncomendaService {
     private final EstoqueService estoqueService;
     private final MovimentacaoService movimentacaoService;
     private final UsuarioAutenticadoService usuarioAutenticadoService;
+    private final EncomendaMapper mapper;
 
-    public EncomendaService(EncomendaRepository repository,
-                            OrcamentoRepository orcamentoRepository,
-                            ItemRepository itemRepository,
-                            EstoqueService estoqueService,
-                            MovimentacaoService movimentacaoService,
-                            UsuarioAutenticadoService usuarioAutenticadoService) {
+    public EncomendaService(
+            EncomendaRepository repository,
+            OrcamentoRepository orcamentoRepository,
+            ItemRepository itemRepository,
+            EstoqueService estoqueService,
+            MovimentacaoService movimentacaoService,
+            UsuarioAutenticadoService usuarioAutenticadoService,
+            EncomendaMapper mapper
+    ) {
         this.repository = repository;
         this.orcamentoRepository = orcamentoRepository;
         this.itemRepository = itemRepository;
         this.estoqueService = estoqueService;
         this.movimentacaoService = movimentacaoService;
         this.usuarioAutenticadoService = usuarioAutenticadoService;
+        this.mapper = mapper;
     }
 
-    public Page<EncomendaResponse> listar(String search, String status, Pageable pageable) {
-        String busca = search != null && !search.isBlank() ? search.trim() : null;
+    public Page<EncomendaResponse> listar(
+            String search,
+            String status,
+            Pageable pageable
+    ) {
+        String busca = search != null && !search.isBlank()
+                ? search.trim()
+                : null;
 
-        return repository.findAllFiltered(busca, StatusEncomenda.fromValor(status), pageable)
-                .map(EncomendaMapper::toResponse);
+        return repository.findAllFiltered(
+                        busca,
+                        StatusEncomenda.fromValor(status),
+                        pageable
+                )
+                .map(mapper::toResponse);
     }
 
     public EncomendaResponse buscarPorId(Integer id) {
-        return EncomendaMapper.toResponse(buscarEntidade(id));
+        return mapper.toResponse(buscarEntidade(id));
     }
 
     public EncomendaKpisResponse kpis() {
-        LocalDateTime inicioDoMes = LocalDate.now().withDayOfMonth(1).atStartOfDay();
+        LocalDateTime inicioDoMes = LocalDate.now()
+                .withDayOfMonth(1)
+                .atStartOfDay();
+
         LocalDateTime fimDoMes = LocalDate.now()
                 .withDayOfMonth(LocalDate.now().lengthOfMonth())
                 .atTime(LocalTime.MAX);
@@ -65,27 +90,23 @@ public class EncomendaService {
                 repository.countByStatus(StatusEncomenda.PENDENTE),
                 repository.countByStatus(StatusEncomenda.RECEBIDA),
                 repository.countByStatusAndConcluidaEmBetween(
-                        StatusEncomenda.CONCLUIDA, inicioDoMes, fimDoMes)
+                        StatusEncomenda.CONCLUIDA,
+                        inicioDoMes,
+                        fimDoMes
+                )
         );
     }
 
-    /**
-     * Gera uma encomenda por item do orçamento aceito. Chamado pelo próprio
-     * aceite, dentro da mesma transação: ou o orçamento vira ACEITO com as
-     * encomendas criadas, ou nada acontece.
-     */
     @PreAuthorize("permitAll()")
     public List<Encomenda> gerarParaOrcamento(Orcamento orcamento) {
-        List<Encomenda> encomendas = orcamento.getItens().stream()
+        List<Encomenda> encomendas = orcamento.getItens()
+                .stream()
                 .map(item -> montar(orcamento, item))
                 .toList();
 
         return repository.saveAll(encomendas);
     }
 
-    /**
-     * Etapa 2: o produto chegou do fornecedor e entra no estoque.
-     */
     @Transactional
     public EncomendaResponse receber(Integer id, Integer itemId) {
         Encomenda encomenda = buscarEntidade(id);
@@ -93,26 +114,27 @@ public class EncomendaService {
         if (encomenda.getStatus() != StatusEncomenda.PENDENTE) {
             throw new IllegalArgumentException(
                     "Só é possível receber uma encomenda pendente. Esta está como "
-                            + encomenda.getStatus() + ".");
+                            + encomenda.getStatus() + "."
+            );
         }
 
         Item item = resolverItem(encomenda, itemId);
 
-        registrarMovimentacao(encomenda, item, TipoMovimentacao.ENTRADA,
+        registrarMovimentacao(
+                encomenda,
+                item,
+                TipoMovimentacao.ENTRADA,
                 "Recebimento da encomenda #" + encomenda.getId()
-                        + " do orçamento #" + encomenda.getOrcamento().getId());
+                        + " do orçamento #" + encomenda.getOrcamento().getId()
+        );
 
         encomenda.setItem(item);
         encomenda.setStatus(StatusEncomenda.RECEBIDA);
         encomenda.setRecebidaEm(LocalDateTime.now());
 
-        return EncomendaMapper.toResponse(repository.save(encomenda));
+        return mapper.toResponse(repository.save(encomenda));
     }
 
-    /**
-     * Etapa 3: o produto é entregue ao cliente e sai do estoque. Quando todas as
-     * encomendas do orçamento chegam aqui, o orçamento vira CONCLUIDO.
-     */
     @Transactional
     public EncomendaResponse concluir(Integer id) {
         Encomenda encomenda = buscarEntidade(id);
@@ -120,12 +142,17 @@ public class EncomendaService {
         if (encomenda.getStatus() != StatusEncomenda.RECEBIDA) {
             throw new IllegalArgumentException(
                     "Só é possível concluir uma encomenda recebida. Esta está como "
-                            + encomenda.getStatus() + ".");
+                            + encomenda.getStatus() + "."
+            );
         }
 
-        registrarMovimentacao(encomenda, encomenda.getItem(), TipoMovimentacao.SAIDA,
+        registrarMovimentacao(
+                encomenda,
+                encomenda.getItem(),
+                TipoMovimentacao.SAIDA,
                 "Entrega da encomenda #" + encomenda.getId()
-                        + " do orçamento #" + encomenda.getOrcamento().getId());
+                        + " do orçamento #" + encomenda.getOrcamento().getId()
+        );
 
         encomenda.setStatus(StatusEncomenda.CONCLUIDA);
         encomenda.setConcluidaEm(LocalDateTime.now());
@@ -133,7 +160,7 @@ public class EncomendaService {
         Encomenda salva = repository.save(encomenda);
         concluirOrcamentoSeTodasEntregues(encomenda.getOrcamento());
 
-        return EncomendaMapper.toResponse(salva);
+        return mapper.toResponse(salva);
     }
 
     public Encomenda buscarEntidade(Integer id) {
@@ -141,22 +168,22 @@ public class EncomendaService {
                 .orElseThrow(() -> new EntityNotFoundException("Encomenda", id));
     }
 
-    private Encomenda montar(Orcamento orcamento, OrcamentoItem orcamentoItem) {
+    private Encomenda montar(
+            Orcamento orcamento,
+            OrcamentoItem orcamentoItem
+    ) {
         Encomenda encomenda = new Encomenda();
+
         encomenda.setOrcamento(orcamento);
         encomenda.setOrcamentoItem(orcamentoItem);
         encomenda.setItem(orcamentoItem.getItem());
         encomenda.setDescricao(orcamentoItem.getDescricao());
         encomenda.setQuantidade(orcamentoItem.getQuantidade());
         encomenda.setStatus(StatusEncomenda.PENDENTE);
+
         return encomenda;
     }
 
-    /**
-     * Encomenda de produto que não estava no catálogo só pode ser recebida
-     * depois que alguém disser qual produto cadastrado corresponde a ela, senão
-     * não existe estoque para movimentar.
-     */
     private Item resolverItem(Encomenda encomenda, Integer itemId) {
         if (itemId != null) {
             return itemRepository.findById(itemId)
@@ -165,25 +192,35 @@ public class EncomendaService {
 
         if (encomenda.getItem() == null) {
             throw new IllegalArgumentException(
-                    "A encomenda '" + encomenda.getDescricao() + "' é de um produto que não estava "
-                            + "cadastrado. Cadastre o produto e informe o itemId ao receber.");
+                    "A encomenda '" + encomenda.getDescricao()
+                            + "' é de um produto que não estava cadastrado. "
+                            + "Cadastre o produto e informe o itemId ao receber."
+            );
         }
 
         return encomenda.getItem();
     }
 
-    private void registrarMovimentacao(Encomenda encomenda, Item item,
-                                       TipoMovimentacao tipo, String observacao) {
-        Item itemComLock = itemRepository.findByIdParaMovimentacao(item.getId())
+    private void registrarMovimentacao(
+            Encomenda encomenda,
+            Item item,
+            TipoMovimentacao tipo,
+            String observacao
+    ) {
+        Item itemComLock = itemRepository
+                .findByIdParaMovimentacao(item.getId())
                 .orElseThrow(() -> new EntityNotFoundException("Item", item.getId()));
 
         int estoqueAntes = estoqueService.aplicarMovimentacao(
-                itemComLock, tipo, encomenda.getQuantidade());
+                itemComLock,
+                tipo,
+                encomenda.getQuantidade()
+        );
 
         Movimentacao movimentacao = new Movimentacao();
         movimentacao.setItem(itemComLock);
         movimentacao.setUsuario(usuarioAutenticadoService.obter());
-        movimentacao.setTipo(tipo.getValor());
+        movimentacao.setTipo(tipo);
         movimentacao.setQuantidade(encomenda.getQuantidade());
         movimentacao.setEstoqueAntes(estoqueAntes);
         movimentacao.setEstoqueDepois(itemComLock.getQuantidadeAtual());
@@ -194,8 +231,12 @@ public class EncomendaService {
     }
 
     private void concluirOrcamentoSeTodasEntregues(Orcamento orcamento) {
-        boolean todasConcluidas = repository.findByOrcamento_Id(orcamento.getId()).stream()
-                .allMatch(encomenda -> encomenda.getStatus() == StatusEncomenda.CONCLUIDA);
+        boolean todasConcluidas = repository
+                .findByOrcamento_Id(orcamento.getId())
+                .stream()
+                .allMatch(encomenda ->
+                        encomenda.getStatus() == StatusEncomenda.CONCLUIDA
+                );
 
         if (todasConcluidas) {
             orcamento.setStatus(StatusOrcamento.CONCLUIDO);

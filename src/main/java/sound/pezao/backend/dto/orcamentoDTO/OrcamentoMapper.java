@@ -1,17 +1,27 @@
 package sound.pezao.backend.dto.orcamentoDTO;
 
+import org.springframework.stereotype.Component;
 import sound.pezao.backend.dto.clienteDTO.ClienteMapper;
 import sound.pezao.backend.entities.Item;
 import sound.pezao.backend.entities.Orcamento;
 import sound.pezao.backend.entities.OrcamentoItem;
+import sound.pezao.backend.repository.ArquivoRepository;
 
 import java.util.List;
 
+@Component
 public class OrcamentoMapper {
 
-    public static OrcamentoResponse toResponse(Orcamento orcamento) {
-        List<OrcamentoItemResponse> itens = orcamento.getItens().stream()
-                .map(OrcamentoMapper::toItemResponse)
+    private final ArquivoRepository arquivoRepository;
+
+    public OrcamentoMapper(ArquivoRepository arquivoRepository) {
+        this.arquivoRepository = arquivoRepository;
+    }
+
+    public OrcamentoResponse toResponse(Orcamento orcamento) {
+        List<OrcamentoItemResponse> itens = orcamento.getItens()
+                .stream()
+                .map(this::toItemResponse)
                 .toList();
 
         return new OrcamentoResponse(
@@ -26,7 +36,7 @@ public class OrcamentoMapper {
         );
     }
 
-    public static OrcamentoItemResponse toItemResponse(OrcamentoItem item) {
+    public OrcamentoItemResponse toItemResponse(OrcamentoItem item) {
         Item produto = item.getItem();
 
         return new OrcamentoItemResponse(
@@ -41,10 +51,21 @@ public class OrcamentoMapper {
         );
     }
 
-    private static String fotoUrl(Item produto) {
-        if (produto == null || produto.getUriImagem() == null) {
+    private String fotoUrl(Item produto) {
+        if (produto == null) {
             return null;
         }
-        return "/itens/" + produto.getId() + "/imagem/download";
+
+        boolean possuiImagem = arquivoRepository
+                .findByTabelaOrigemAndRegistroIdAndTipoArquivo(
+                        "item",
+                        produto.getId(),
+                        "imagem"
+                )
+                .isPresent();
+
+        return possuiImagem
+                ? "/itens/" + produto.getId() + "/imagem/download"
+                : null;
     }
 }

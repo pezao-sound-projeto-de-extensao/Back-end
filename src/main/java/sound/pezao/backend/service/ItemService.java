@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import sound.pezao.backend.dto.itemDTO.ItemMapper;
 import sound.pezao.backend.dto.itemDTO.ItemRequest;
 import sound.pezao.backend.dto.itemDTO.ItemResponse;
+import sound.pezao.backend.entities.Arquivo;
 import sound.pezao.backend.entities.Categoria;
 import sound.pezao.backend.entities.Item;
 import sound.pezao.backend.entities.Movimentacao;
@@ -19,14 +20,14 @@ import sound.pezao.backend.exception.ArquivoInvalidoException;
 import sound.pezao.backend.exception.EntityInativaException;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.exception.EntityNomeJaExisteException;
+import sound.pezao.backend.repository.ArquivoRepository;
 import sound.pezao.backend.repository.CategoriaRepository;
 import sound.pezao.backend.repository.ItemRepository;
 import sound.pezao.backend.repository.UnidadeRepository;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.Optional;
 
 @Service
 public class ItemService {
@@ -39,6 +40,7 @@ public class ItemService {
     private final ArmazenamentoArquivoService armazenamento;
     private final MovimentacaoService movimentacaoService;
     private final UsuarioAutenticadoService usuarioAutenticadoService;
+    private final ArquivoRepository arquivoRepository;
 
     public ItemService(
             ItemRepository repository,
@@ -46,7 +48,8 @@ public class ItemService {
             UnidadeRepository unidadeRepository,
             ArmazenamentoArquivoService armazenamento,
             MovimentacaoService movimentacaoService,
-            UsuarioAutenticadoService usuarioAutenticadoService
+            UsuarioAutenticadoService usuarioAutenticadoService,
+            ArquivoRepository arquivoRepository
     ) {
         this.repository = repository;
         this.categoriaRepository = categoriaRepository;
@@ -54,6 +57,7 @@ public class ItemService {
         this.armazenamento = armazenamento;
         this.movimentacaoService = movimentacaoService;
         this.usuarioAutenticadoService = usuarioAutenticadoService;
+        this.arquivoRepository = arquivoRepository;
     }
 
     @Transactional
@@ -74,7 +78,7 @@ public class ItemService {
 
         registrarEstoqueInicial(salvo);
 
-        return ItemMapper.toResponse(salvo);
+        return ItemMapper.toResponse(salvo, arquivoRepository);
     }
 
     private void registrarEstoqueInicial(Item item) {
@@ -87,7 +91,7 @@ public class ItemService {
         Movimentacao movimentacao = new Movimentacao();
         movimentacao.setItem(item);
         movimentacao.setUsuario(usuarioAutenticadoService.obter());
-        movimentacao.setTipo(TipoMovimentacao.ENTRADA.getValor());
+        movimentacao.setTipo(TipoMovimentacao.ENTRADA);
         movimentacao.setQuantidade(quantidade);
         movimentacao.setEstoqueAntes(0);
         movimentacao.setEstoqueDepois(quantidade);
@@ -112,19 +116,19 @@ public class ItemService {
                 pageable
         );
 
-        return pagina.map(ItemMapper::toResponse);
+        return pagina.map(item -> ItemMapper.toResponse(item, arquivoRepository));
     }
 
     public List<ItemResponse> montarRespostas(List<Item> itens) {
         return itens.stream()
-                .map(ItemMapper::toResponse)
+                .map(item -> ItemMapper.toResponse(item, arquivoRepository))
                 .toList();
     }
 
     public ItemResponse findById(Integer id) {
         Item item = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Item", id));
-        return ItemMapper.toResponse(item);
+        return ItemMapper.toResponse(item, arquivoRepository);
     }
 
     @PreAuthorize("hasAuthority('EDITAR_ITENS')")
@@ -156,7 +160,7 @@ public class ItemService {
         item.setPrecoVenda(request.precoVenda());
 
         Item salvo = repository.save(item);
-        return ItemMapper.toResponse(salvo);
+        return ItemMapper.toResponse(salvo, arquivoRepository);
     }
 
     @PreAuthorize("hasAuthority('EDITAR_ITENS')")
@@ -165,26 +169,31 @@ public class ItemService {
         Item item = repository.findById(itemId)
                 .orElseThrow(() -> new EntityNotFoundException("Item", itemId));
 
-        String uriAntiga = item.getUriImagem();
+        Optional<Arquivo> arquivoExistente = arquivoRepository
+                .findByTabelaOrigemAndRegistroIdAndTipoArquivo("item", itemId, "imagem");
+
+        String uriAntiga = arquivoExistente.map(Arquivo::getUri).orElse(null);
         String uriNova = armazenamento.salvar(arquivo, "imagens");
 
         try {
-            item.setUriImagem(uriNova);
-            item.setNomeImagem(arquivo.getOriginalFilename());
-            item.setMimeTypeImagem(
-                    arquivo.getContentType() != null
-                            ? arquivo.getContentType()
-                            : "application/octet-stream"
-            );
-            item.setTamanhoImagem((int) arquivo.getSize());
+            Arquivo arq = arquivoExistente.orElse(new Arquivo());
+            arq.setTabelaOrigem("item");
+            arq.setRegistroId(itemId);
+            arq.setTipoArquivo("imagem");
+            arq.setUri(uriNova);
+            arq.setNome(arquivo.getOriginalFilename());
+            arq.setMimeType(arquivo.getContentType() != null
+                    ? arquivo.getContentType()
+                    : "application/octet-stream");
+            arq.setTamanho((int) arquivo.getSize());
 
-            Item salvo = repository.save(item);
+            arquivoRepository.save(arq);
 
             if (uriAntiga != null && !uriAntiga.equals(uriNova)) {
                 armazenamento.deletar(uriAntiga);
             }
 
-            return ItemMapper.toResponse(salvo);
+            return ItemMapper.toResponse(item, arquivoRepository);
         } catch (RuntimeException e) {
             armazenamento.deletar(uriNova);
             throw e;
@@ -192,14 +201,11 @@ public class ItemService {
     }
 
     public Resource baixarImagem(Integer itemId) {
-        Item item = repository.findById(itemId)
-                .orElseThrow(() -> new EntityNotFoundException("Item", itemId));
+        Arquivo arq = arquivoRepository
+                .findByTabelaOrigemAndRegistroIdAndTipoArquivo("item", itemId, "imagem")
+                .orElseThrow(() -> new ArquivoInvalidoException("O item não possui imagem."));
 
-        if (item.getUriImagem() == null) {
-            throw new ArquivoInvalidoException("O item não possui imagem.");
-        }
-
-        return armazenamento.carregar(item.getUriImagem());
+        return armazenamento.carregar(arq.getUri());
     }
 
     @PreAuthorize("hasAuthority('EXCLUIR_ITENS')")
@@ -221,19 +227,16 @@ public class ItemService {
     @PreAuthorize("hasAuthority('EXCLUIR_ITENS')")
     @Transactional
     public void deletarImagem(Integer itemId) {
-        Item item = repository.findById(itemId)
-                .orElseThrow(() -> new EntityNotFoundException("Item", itemId));
+        Arquivo arq = arquivoRepository
+                .findByTabelaOrigemAndRegistroIdAndTipoArquivo("item", itemId, "imagem")
+                .orElse(null);
 
-        String uri = item.getUriImagem();
-        item.setUriImagem(null);
-        item.setNomeImagem(null);
-        item.setMimeTypeImagem(null);
-        item.setTamanhoImagem(null);
-
-        repository.save(item);
-
-        if (uri != null) {
-            armazenamento.deletar(uri);
+        if (arq != null) {
+            String uri = arq.getUri();
+            arquivoRepository.delete(arq);
+            if (uri != null) {
+                armazenamento.deletar(uri);
+            }
         }
     }
 }

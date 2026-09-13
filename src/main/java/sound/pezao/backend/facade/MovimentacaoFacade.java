@@ -46,20 +46,24 @@ public class MovimentacaoFacade {
         this.usuarioAutenticadoService = usuarioAutenticadoService;
     }
 
-    public Page<MovimentacaoResponse> listar(Integer itemId, String tipo,
-                                             Integer usuarioId,
-                                             String search,
-                                             LocalDate dataInicio,
-                                             LocalDate dataFim,
-                                             Pageable pageable) {
-        // normaliza o tipo para o valor gravado, para "Entrada" filtrar como "entrada"
-        String tipoFiltro = tipo != null && !tipo.isBlank()
-                ? TipoMovimentacao.fromValor(tipo).getValor()
+    public Page<MovimentacaoResponse> listar(
+            Integer itemId,
+            String tipo,
+            Integer usuarioId,
+            String search,
+            LocalDate dataInicio,
+            LocalDate dataFim,
+            Pageable pageable
+    ) {
+        // converte a String para enum (ou null)
+        TipoMovimentacao tipoEnum = tipo != null && !tipo.isBlank()
+                ? TipoMovimentacao.fromValor(tipo)
                 : null;
 
         return mapper.toResponsePage(
                 movimentacaoService.listarComFiltros(
-                        itemId, tipoFiltro, usuarioId, search, dataInicio, dataFim, pageable)
+                        itemId, tipoEnum, usuarioId, search, dataInicio, dataFim, pageable
+                )
         );
     }
 
@@ -99,7 +103,7 @@ public class MovimentacaoFacade {
     public void deletar(Integer id) {
         Movimentacao movimentacao = movimentacaoService.buscarPorId(id);
 
-        TipoMovimentacao tipo = TipoMovimentacao.fromValor(movimentacao.getTipo());
+        TipoMovimentacao tipo = movimentacao.getTipo();
         exigirPermissaoPara(tipo);
 
         Item item = itemRepository.findByIdParaMovimentacao(
