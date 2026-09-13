@@ -2,22 +2,31 @@ package sound.pezao.backend.dto.movimentacaoDTO;
 
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Component;
+import sound.pezao.backend.entities.Arquivo;
 import sound.pezao.backend.entities.Item;
 import sound.pezao.backend.entities.Movimentacao;
 import sound.pezao.backend.entities.TipoMovimentacao;
+import sound.pezao.backend.repository.ArquivoRepository;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class MovimentacaoMapper {
+
+    private final ArquivoRepository arquivoRepository;
+
+    public MovimentacaoMapper(ArquivoRepository arquivoRepository) {
+        this.arquivoRepository = arquivoRepository;
+    }
 
     public MovimentacaoResponse toResponse(Movimentacao movimentacao) {
         return new MovimentacaoResponse(
                 movimentacao.getId(),
                 montarItem(movimentacao.getItem()),
-                movimentacao.getTipo(),
+                movimentacao.getTipo().getValor(),
                 movimentacao.getQuantidade(),
                 movimentacao.getEstoqueAntes(),
                 movimentacao.getEstoqueDepois(),
@@ -28,22 +37,31 @@ public class MovimentacaoMapper {
         );
     }
 
-    public List<MovimentacaoResponse> toResponseList(List<Movimentacao> movimentacoes) {
+    public List<MovimentacaoResponse> toResponseList(
+            List<Movimentacao> movimentacoes
+    ) {
         return movimentacoes.stream()
                 .map(this::toResponse)
                 .toList();
     }
 
-    public Page<MovimentacaoResponse> toResponsePage(Page<Movimentacao> movimentacoes) {
+    public Page<MovimentacaoResponse> toResponsePage(
+            Page<Movimentacao> movimentacoes
+    ) {
         return movimentacoes.map(this::toResponse);
     }
 
     public Movimentacao toEntity(MovimentacaoRequest request, Item item) {
         Movimentacao movimentacao = new Movimentacao();
+
         movimentacao.setItem(item);
-        movimentacao.setTipo(TipoMovimentacao.fromValor(request.tipo()).getValor());
+        movimentacao.setTipo(
+                TipoMovimentacao.fromValor(request.tipo())
+        );
         movimentacao.setQuantidade(request.quantidade());
-        movimentacao.setData(request.data() != null ? request.data() : LocalDate.now());
+        movimentacao.setData(
+                request.data() != null ? request.data() : LocalDate.now()
+        );
         movimentacao.setObservacao(request.observacao());
         movimentacao.setCriadoEm(LocalDateTime.now());
 
@@ -51,6 +69,17 @@ public class MovimentacaoMapper {
     }
 
     private ItemResumoResponse montarItem(Item item) {
+        Optional<Arquivo> arqOpt = arquivoRepository
+                .findByTabelaOrigemAndRegistroIdAndTipoArquivo(
+                        "item",
+                        item.getId(),
+                        "imagem"
+                );
+
+        String urlImagem = arqOpt.isPresent()
+                ? "/itens/" + item.getId() + "/imagem/download"
+                : null;
+
         return new ItemResumoResponse(
                 item.getId(),
                 item.getNome(),
@@ -59,23 +88,29 @@ public class MovimentacaoMapper {
                 item.getUnidade().getId(),
                 item.getUnidade().getNome(),
                 item.getUnidade().getAbreviacao(),
-                // a tabela de movimentações exibe a foto do produto
-                item.getUriImagem() != null
-                        ? "/itens/" + item.getId() + "/imagem/download"
-                        : null
+                urlImagem
         );
     }
 
     private NotaInfo montarNota(Movimentacao movimentacao) {
-        if (movimentacao.getUriNotaEntrada() == null) {
+        Optional<Arquivo> arqOpt = arquivoRepository
+                .findByTabelaOrigemAndRegistroIdAndTipoArquivo(
+                        "movimentacao",
+                        movimentacao.getId(),
+                        "nota_entrada"
+                );
+
+        if (arqOpt.isEmpty()) {
             return null;
         }
 
+        Arquivo arq = arqOpt.get();
+
         return new NotaInfo(
                 "/movimentacoes/" + movimentacao.getId() + "/nota/download",
-                movimentacao.getNomeNotaEntrada(),
-                movimentacao.getMimeTypeNotaEntrada(),
-                movimentacao.getTamanhoNotaEntrada()
+                arq.getNome(),
+                arq.getMimeType(),
+                arq.getTamanho()
         );
     }
 }

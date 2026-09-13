@@ -5,25 +5,32 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import sound.pezao.backend.entities.Arquivo;
 import sound.pezao.backend.entities.Movimentacao;
+import sound.pezao.backend.entities.TipoMovimentacao;
 import sound.pezao.backend.exception.ArquivoInvalidoException;
 import sound.pezao.backend.exception.EntityNotFoundException;
+import sound.pezao.backend.repository.ArquivoRepository;
 import sound.pezao.backend.repository.MovimentacaoRepository;
 
 import java.time.LocalDate;
+import java.util.Optional;
 
 @Service
 public class MovimentacaoService {
 
     private final MovimentacaoRepository movimentacaoRepository;
     private final ArmazenamentoArquivoService armazenamento;
+    private final ArquivoRepository arquivoRepository;
 
     public MovimentacaoService(
             MovimentacaoRepository movimentacaoRepository,
-            ArmazenamentoArquivoService armazenamento
+            ArmazenamentoArquivoService armazenamento,
+            ArquivoRepository arquivoRepository
     ) {
         this.movimentacaoRepository = movimentacaoRepository;
         this.armazenamento = armazenamento;
+        this.arquivoRepository = arquivoRepository;
     }
 
     public Movimentacao salvar(Movimentacao movimentacao) {
@@ -40,47 +47,48 @@ public class MovimentacaoService {
                 );
     }
 
-    public Page<Movimentacao> listarComFiltros(Integer itemId, String tipo,
-                                               Integer usuarioId,
-                                               String search,
-                                               LocalDate dataInicio,
-                                               LocalDate dataFim,
-                                               Pageable pageable) {
+    public Page<Movimentacao> listarComFiltros(
+            Integer itemId,
+            TipoMovimentacao tipo,
+            Integer usuarioId,
+            String search,
+            LocalDate dataInicio,
+            LocalDate dataFim,
+            Pageable pageable
+    ) {
         return movimentacaoRepository.findWithFilters(
-                itemId, tipo, usuarioId, search, dataInicio, dataFim, pageable);
+                itemId, tipo, usuarioId, search, dataInicio, dataFim, pageable
+        );
     }
 
-    public Movimentacao uploadNota(
-            Integer movimentacaoId,
-            MultipartFile arquivo
-    ) {
+    public Movimentacao uploadNota(Integer movimentacaoId, MultipartFile arquivo) {
         Movimentacao movimentacao = buscarPorId(movimentacaoId);
 
-        String uriAntiga = movimentacao.getUriNotaEntrada();
+        Optional<Arquivo> arquivoExistente = arquivoRepository
+                .findByTabelaOrigemAndRegistroIdAndTipoArquivo("movimentacao", movimentacaoId, "nota_entrada");
+
+        String uriAntiga = arquivoExistente.map(Arquivo::getUri).orElse(null);
         String uriNova = armazenamento.salvar(arquivo, "notas");
 
         try {
-            movimentacao.setUriNotaEntrada(uriNova);
-            movimentacao.setNomeNotaEntrada(
-                    arquivo.getOriginalFilename()
-            );
-            movimentacao.setMimeTypeNotaEntrada(
-                    arquivo.getContentType() != null
-                            ? arquivo.getContentType()
-                            : "application/octet-stream"
-            );
-            movimentacao.setTamanhoNotaEntrada(
-                    Math.toIntExact(arquivo.getSize())
-            );
+            Arquivo arq = arquivoExistente.orElse(new Arquivo());
+            arq.setTabelaOrigem("movimentacao");
+            arq.setRegistroId(movimentacaoId);
+            arq.setTipoArquivo("nota_entrada");
+            arq.setUri(uriNova);
+            arq.setNome(arquivo.getOriginalFilename());
+            arq.setMimeType(arquivo.getContentType() != null
+                    ? arquivo.getContentType()
+                    : "application/octet-stream");
+            arq.setTamanho(Math.toIntExact(arquivo.getSize()));
 
-            Movimentacao salva =
-                    movimentacaoRepository.save(movimentacao);
+            arquivoRepository.save(arq);
 
             if (uriAntiga != null && !uriAntiga.equals(uriNova)) {
                 armazenamento.deletar(uriAntiga);
             }
 
-            return salva;
+            return movimentacao;
         } catch (RuntimeException e) {
             armazenamento.deletar(uriNova);
             throw e;
@@ -88,32 +96,24 @@ public class MovimentacaoService {
     }
 
     public Resource baixarNota(Integer movimentacaoId) {
-        Movimentacao movimentacao = buscarPorId(movimentacaoId);
+        Arquivo arq = arquivoRepository
+                .findByTabelaOrigemAndRegistroIdAndTipoArquivo("movimentacao", movimentacaoId, "nota_entrada")
+                .orElseThrow(() -> new ArquivoInvalidoException("A movimentação não possui nota fiscal."));
 
-        if (movimentacao.getUriNotaEntrada() == null) {
-            throw new ArquivoInvalidoException(
-                    "A movimentação não possui nota fiscal."
-            );
-        }
-
-        return armazenamento.carregar(
-                movimentacao.getUriNotaEntrada()
-        );
+        return armazenamento.carregar(arq.getUri());
     }
 
     public void deletarNota(Integer movimentacaoId) {
-        Movimentacao movimentacao = buscarPorId(movimentacaoId);
-        String uri = movimentacao.getUriNotaEntrada();
+        Arquivo arq = arquivoRepository
+                .findByTabelaOrigemAndRegistroIdAndTipoArquivo("movimentacao", movimentacaoId, "nota_entrada")
+                .orElse(null);
 
-        movimentacao.setUriNotaEntrada(null);
-        movimentacao.setNomeNotaEntrada(null);
-        movimentacao.setMimeTypeNotaEntrada(null);
-        movimentacao.setTamanhoNotaEntrada(null);
-
-        movimentacaoRepository.save(movimentacao);
-
-        if (uri != null) {
-            armazenamento.deletar(uri);
+        if (arq != null) {
+            String uri = arq.getUri();
+            arquivoRepository.delete(arq);
+            if (uri != null) {
+                armazenamento.deletar(uri);
+            }
         }
     }
 
