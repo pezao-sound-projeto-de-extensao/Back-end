@@ -33,7 +33,7 @@ public class RefreshToken {
     @JoinColumn(name = "usuario_id", nullable = false)
     private Usuario usuario;
 
-    public boolean isAtvio(){
+    public boolean isAtivo(){
         return revogadoEm == null && expiraEm.isAfter(Instant.now());
     }
 }

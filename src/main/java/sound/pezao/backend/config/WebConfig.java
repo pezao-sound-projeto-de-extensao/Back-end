@@ -19,12 +19,4 @@ public class WebConfig implements WebMvcConfigurer {
         configurer.addPathPrefix("/api", HandlerTypePredicate.forAnnotation(RestController.class));
     }
 
-    @Override
-    public void addCorsMappings(CorsRegistry registry) {
-        registry.addMapping("/**")
-                .allowedOrigins(allowedOrigin)
-                .allowedMethods("*")
-                .allowedHeaders("*")
-                .allowCredentials(true);
-    }
 }

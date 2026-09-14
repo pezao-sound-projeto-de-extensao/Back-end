@@ -14,6 +14,7 @@ import sound.pezao.backend.entities.Cargo;
 import sound.pezao.backend.entities.Categoria;
 import sound.pezao.backend.entities.Item;
 import sound.pezao.backend.entities.Movimentacao;
+import sound.pezao.backend.entities.TipoMovimentacao;
 import sound.pezao.backend.entities.Unidade;
 import sound.pezao.backend.entities.Usuario;
 
@@ -73,7 +74,7 @@ class MovimentacaoRepositoryTest {
         return entityManager.persist(usuario);
     }
 
-    private Movimentacao persistirMovimentacao(Item item, Usuario usuario, String tipo,
+    private Movimentacao persistirMovimentacao(Item item, Usuario usuario, TipoMovimentacao tipo,
                                                int quantidade, LocalDate data) {
         Movimentacao movimentacao = new Movimentacao();
         movimentacao.setItem(item);
@@ -86,7 +87,7 @@ class MovimentacaoRepositoryTest {
         return entityManager.persist(movimentacao);
     }
 
-    private Page<Movimentacao> buscar(Integer itemId, String tipo, Integer usuarioId, String search,
+    private Page<Movimentacao> buscar(Integer itemId, TipoMovimentacao tipo, Integer usuarioId, String search,
                                       LocalDate inicio, LocalDate fim) {
         return movimentacaoRepository.findWithFilters(itemId, tipo, usuarioId, search, inicio, fim, pageable);
     }
@@ -98,9 +99,9 @@ class MovimentacaoRepositoryTest {
         @Test
         @DisplayName("Deve devolver apenas as movimentações dentro do intervalo")
         void deveFiltrarPorIntervalo() {
-            persistirMovimentacao(amplificador, operador, "entrada", 5, LocalDate.of(2026, 8, 20));
-            persistirMovimentacao(amplificador, operador, "saida", 2, LocalDate.of(2026, 9, 5));
-            persistirMovimentacao(bateria, operador, "entrada", 3, LocalDate.of(2026, 9, 25));
+            persistirMovimentacao(amplificador, operador, TipoMovimentacao.ENTRADA, 5, LocalDate.of(2026, 8, 20));
+            persistirMovimentacao(amplificador, operador, TipoMovimentacao.SAIDA, 2, LocalDate.of(2026, 9, 5));
+            persistirMovimentacao(bateria, operador, TipoMovimentacao.ENTRADA, 3, LocalDate.of(2026, 9, 25));
 
             Page<Movimentacao> resultado = buscar(null, null, null, null,
                     LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 30));
@@ -111,8 +112,8 @@ class MovimentacaoRepositoryTest {
         @Test
         @DisplayName("Deve incluir as movimentações nas datas limite do intervalo")
         void deveIncluirLimitesDoIntervalo() {
-            persistirMovimentacao(amplificador, operador, "entrada", 5, LocalDate.of(2026, 9, 1));
-            persistirMovimentacao(bateria, operador, "entrada", 5, LocalDate.of(2026, 9, 30));
+            persistirMovimentacao(amplificador, operador, TipoMovimentacao.ENTRADA, 5, LocalDate.of(2026, 9, 1));
+            persistirMovimentacao(bateria, operador, TipoMovimentacao.ENTRADA, 5, LocalDate.of(2026, 9, 30));
 
             Page<Movimentacao> resultado = buscar(null, null, null, null,
                     LocalDate.of(2026, 9, 1), LocalDate.of(2026, 9, 30));
@@ -123,8 +124,8 @@ class MovimentacaoRepositoryTest {
         @Test
         @DisplayName("Deve aceitar apenas a data inicial, como no filtro de hoje")
         void deveAceitarApenasDataInicial() {
-            persistirMovimentacao(amplificador, operador, "entrada", 5, LocalDate.of(2026, 9, 8));
-            persistirMovimentacao(bateria, operador, "entrada", 5, LocalDate.of(2026, 9, 1));
+            persistirMovimentacao(amplificador, operador, TipoMovimentacao.ENTRADA, 5, LocalDate.of(2026, 9, 8));
+            persistirMovimentacao(bateria, operador, TipoMovimentacao.ENTRADA, 5, LocalDate.of(2026, 9, 1));
 
             Page<Movimentacao> resultado = buscar(null, null, null, null, LocalDate.of(2026, 9, 8), null);
 
@@ -139,8 +140,8 @@ class MovimentacaoRepositoryTest {
         @Test
         @DisplayName("Deve buscar por parte do nome do produto ignorando a caixa")
         void deveBuscarPorNomeDoProduto() {
-            persistirMovimentacao(amplificador, operador, "entrada", 5, LocalDate.of(2026, 9, 5));
-            persistirMovimentacao(bateria, operador, "entrada", 3, LocalDate.of(2026, 9, 6));
+            persistirMovimentacao(amplificador, operador, TipoMovimentacao.ENTRADA, 5, LocalDate.of(2026, 9, 5));
+            persistirMovimentacao(bateria, operador, TipoMovimentacao.ENTRADA, 3, LocalDate.of(2026, 9, 6));
 
             Page<Movimentacao> resultado = buscar(null, null, null, "bateria", null, null);
 
@@ -151,21 +152,21 @@ class MovimentacaoRepositoryTest {
         @Test
         @DisplayName("Deve filtrar por tipo, produto e usuário")
         void deveFiltrarPorTipoProdutoEUsuario() {
-            persistirMovimentacao(amplificador, operador, "entrada", 5, LocalDate.of(2026, 9, 5));
-            persistirMovimentacao(amplificador, operador, "saida", 2, LocalDate.of(2026, 9, 6));
-            persistirMovimentacao(amplificador, gerente, "saida", 1, LocalDate.of(2026, 9, 7));
-            persistirMovimentacao(bateria, operador, "saida", 1, LocalDate.of(2026, 9, 8));
+            persistirMovimentacao(amplificador, operador, TipoMovimentacao.ENTRADA, 5, LocalDate.of(2026, 9, 5));
+            persistirMovimentacao(amplificador, operador, TipoMovimentacao.SAIDA, 2, LocalDate.of(2026, 9, 6));
+            persistirMovimentacao(amplificador, gerente, TipoMovimentacao.SAIDA, 1, LocalDate.of(2026, 9, 7));
+            persistirMovimentacao(bateria, operador, TipoMovimentacao.SAIDA, 1, LocalDate.of(2026, 9, 8));
 
-            assertEquals(2, buscar(null, "saida", operador.getId(), null, null, null).getTotalElements());
-            assertEquals(1, buscar(amplificador.getId(), "saida", operador.getId(), null, null, null)
+            assertEquals(2, buscar(null, TipoMovimentacao.SAIDA, operador.getId(), null, null, null).getTotalElements());
+            assertEquals(1, buscar(amplificador.getId(), TipoMovimentacao.SAIDA, operador.getId(), null, null, null)
                     .getTotalElements());
         }
 
         @Test
         @DisplayName("Deve devolver tudo quando nenhum filtro é informado")
         void deveDevolverTudoSemFiltro() {
-            persistirMovimentacao(amplificador, operador, "entrada", 5, LocalDate.of(2026, 9, 5));
-            persistirMovimentacao(bateria, gerente, "saida", 1, LocalDate.of(2026, 9, 6));
+            persistirMovimentacao(amplificador, operador, TipoMovimentacao.ENTRADA, 5, LocalDate.of(2026, 9, 5));
+            persistirMovimentacao(bateria, gerente, TipoMovimentacao.SAIDA, 1, LocalDate.of(2026, 9, 6));
 
             assertEquals(2, buscar(null, null, null, null, null, null).getTotalElements());
         }
@@ -173,7 +174,7 @@ class MovimentacaoRepositoryTest {
         @Test
         @DisplayName("Deve devolver página vazia quando nada casa com os filtros")
         void deveDevolverPaginaVazia() {
-            persistirMovimentacao(amplificador, operador, "entrada", 5, LocalDate.of(2026, 9, 5));
+            persistirMovimentacao(amplificador, operador, TipoMovimentacao.ENTRADA, 5, LocalDate.of(2026, 9, 5));
 
             assertTrue(buscar(null, null, null, "inexistente", null, null).isEmpty());
         }
@@ -186,9 +187,9 @@ class MovimentacaoRepositoryTest {
         @Test
         @DisplayName("Deve ordenar da movimentação mais recente para a mais antiga")
         void deveOrdenarDaMaisRecente() {
-            persistirMovimentacao(amplificador, operador, "entrada", 5, LocalDate.of(2026, 9, 1));
-            persistirMovimentacao(bateria, operador, "saida", 2, LocalDate.of(2026, 9, 20));
-            persistirMovimentacao(amplificador, operador, "entrada", 3, LocalDate.of(2026, 9, 10));
+            persistirMovimentacao(amplificador, operador, TipoMovimentacao.ENTRADA, 5, LocalDate.of(2026, 9, 1));
+            persistirMovimentacao(bateria, operador, TipoMovimentacao.SAIDA, 2, LocalDate.of(2026, 9, 20));
+            persistirMovimentacao(amplificador, operador, TipoMovimentacao.ENTRADA, 3, LocalDate.of(2026, 9, 10));
 
             List<LocalDate> datas = buscar(null, null, null, null, null, null)
                     .getContent().stream().map(Movimentacao::getData).toList();
@@ -202,9 +203,9 @@ class MovimentacaoRepositoryTest {
         @Test
         @DisplayName("Deve paginar o histórico contando o total de registros")
         void devePaginarOHistorico() {
-            persistirMovimentacao(amplificador, operador, "entrada", 5, LocalDate.of(2026, 9, 1));
-            persistirMovimentacao(bateria, operador, "saida", 2, LocalDate.of(2026, 9, 2));
-            persistirMovimentacao(amplificador, operador, "entrada", 3, LocalDate.of(2026, 9, 3));
+            persistirMovimentacao(amplificador, operador, TipoMovimentacao.ENTRADA, 5, LocalDate.of(2026, 9, 1));
+            persistirMovimentacao(bateria, operador, TipoMovimentacao.SAIDA, 2, LocalDate.of(2026, 9, 2));
+            persistirMovimentacao(amplificador, operador, TipoMovimentacao.ENTRADA, 3, LocalDate.of(2026, 9, 3));
 
             Page<Movimentacao> primeira = movimentacaoRepository.findWithFilters(
                     null, null, null, null, null, null, PageRequest.of(0, 2));
