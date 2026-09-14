@@ -15,7 +15,7 @@ public class ItemMapper {
         ImagemInfo imagemInfo = null;
 
         Optional<Arquivo> arqOpt = arquivoRepository
-                .findByTabelaOrigemAndRegistroIdAndTipoArquivo("item", item.getId(), "imagem");
+                .findByItem_IdAndTipoArquivo(item.getId(), "imagem");
 
         if (arqOpt.isPresent()) {
             Arquivo arq = arqOpt.get();

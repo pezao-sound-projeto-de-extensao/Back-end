@@ -11,37 +11,44 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "itens")
 public class Item {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    Integer id;
+    private Integer id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "categoria_id", nullable = false)
     private Categoria categoria;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "unidade_id", nullable = false)
     private Unidade unidade;
 
     @Column(nullable = false)
-    String nome;
+    private String nome;
 
     @Column(nullable = false)
-    Integer quantidadeAtual;
+    private Integer quantidadeAtual;
 
     @Column(nullable = false)
-    Integer quantidadeMinima;
-    Double precoCusto;
-    Double precoVenda;
-    Boolean ativo;
-    LocalDateTime criadoEm;
-    LocalDateTime atualizadoEm;
+    private Integer quantidadeMinima;
+
+    private Double precoCusto;
+
+    private Double precoVenda;
+
+    private Boolean ativo;
+
+    private LocalDateTime criadoEm;
+
+    private LocalDateTime atualizadoEm;
 
     @PrePersist
     public void prePersist() {
         if (this.ativo == null) {
             this.ativo = true;
         }
+
         this.criadoEm = LocalDateTime.now();
         this.atualizadoEm = LocalDateTime.now();
     }

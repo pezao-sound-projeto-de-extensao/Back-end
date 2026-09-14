@@ -38,8 +38,7 @@ public class EncomendaMapper {
         }
 
         boolean possuiImagem = arquivoRepository
-                .findByTabelaOrigemAndRegistroIdAndTipoArquivo(
-                        "item",
+                .findByItem_IdAndTipoArquivo(
                         item.getId(),
                         "imagem"
                 )

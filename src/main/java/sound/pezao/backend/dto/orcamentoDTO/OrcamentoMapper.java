@@ -57,8 +57,7 @@ public class OrcamentoMapper {
         }
 
         boolean possuiImagem = arquivoRepository
-                .findByTabelaOrigemAndRegistroIdAndTipoArquivo(
-                        "item",
+                .findByItem_IdAndTipoArquivo(
                         produto.getId(),
                         "imagem"
                 )

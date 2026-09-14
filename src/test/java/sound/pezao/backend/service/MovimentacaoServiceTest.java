@@ -40,7 +40,6 @@ import static org.mockito.Mockito.when;
 @DisplayName("Testes para MovimentacaoService")
 class MovimentacaoServiceTest {
 
-    private static final String TABELA_ORIGEM_MOVIMENTACAO = "movimentacao";
     private static final String TIPO_ARQUIVO_NOTA_ENTRADA = "nota_entrada";
 
     @Mock
@@ -66,8 +65,7 @@ class MovimentacaoServiceTest {
     private Arquivo nota(Integer movimentacaoId, String uri) {
         Arquivo arquivo = new Arquivo();
         arquivo.setId(1);
-        arquivo.setTabelaOrigem(TABELA_ORIGEM_MOVIMENTACAO);
-        arquivo.setRegistroId(movimentacaoId);
+        arquivo.setMovimentacao(movimentacao(movimentacaoId));
         arquivo.setTipoArquivo(TIPO_ARQUIVO_NOTA_ENTRADA);
         arquivo.setUri(uri);
         arquivo.setNome("nota.pdf");
@@ -78,8 +76,7 @@ class MovimentacaoServiceTest {
     }
 
     private void semNota(Integer movimentacaoId) {
-        when(arquivoRepository.findByTabelaOrigemAndRegistroIdAndTipoArquivo(
-                TABELA_ORIGEM_MOVIMENTACAO,
+        when(arquivoRepository.findByMovimentacao_IdAndTipoArquivo(
                 movimentacaoId,
                 TIPO_ARQUIVO_NOTA_ENTRADA
         )).thenReturn(Optional.empty());
@@ -201,8 +198,7 @@ class MovimentacaoServiceTest {
 
         when(movimentacaoRepository.findById(1))
                 .thenReturn(Optional.of(movimentacao));
-        when(arquivoRepository.findByTabelaOrigemAndRegistroIdAndTipoArquivo(
-                TABELA_ORIGEM_MOVIMENTACAO,
+        when(arquivoRepository.findByMovimentacao_IdAndTipoArquivo(
                 1,
                 TIPO_ARQUIVO_NOTA_ENTRADA
         )).thenReturn(Optional.of(notaAntiga));
@@ -260,8 +256,7 @@ class MovimentacaoServiceTest {
                 "conteudo".getBytes()
         ).getResource();
 
-        when(arquivoRepository.findByTabelaOrigemAndRegistroIdAndTipoArquivo(
-                TABELA_ORIGEM_MOVIMENTACAO,
+        when(arquivoRepository.findByMovimentacao_IdAndTipoArquivo(
                 1,
                 TIPO_ARQUIVO_NOTA_ENTRADA
         )).thenReturn(Optional.of(nota));
@@ -290,8 +285,7 @@ class MovimentacaoServiceTest {
     void deveDeletarNotaComSucesso() {
         Arquivo nota = nota(1, "notas/uuid-nota.pdf");
 
-        when(arquivoRepository.findByTabelaOrigemAndRegistroIdAndTipoArquivo(
-                TABELA_ORIGEM_MOVIMENTACAO,
+        when(arquivoRepository.findByMovimentacao_IdAndTipoArquivo(
                 1,
                 TIPO_ARQUIVO_NOTA_ENTRADA
         )).thenReturn(Optional.of(nota));
