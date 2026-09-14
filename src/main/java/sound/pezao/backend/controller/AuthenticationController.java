@@ -71,15 +71,15 @@ public class AuthenticationController {
     private void setAuthCookies(HttpServletResponse response, String accessToken, String refreshToken) {
         ResponseCookie accessCookie = ResponseCookie.from("access_token", accessToken)
                 .httpOnly(true)
-                .secure(true)
-                .sameSite("Lax")
+                .secure(false)        // obrigatório false em HTTP
+                .sameSite("Lax")      // não pode ser "None" sem HTTPS
                 .path("/")
                 .maxAge(Duration.ofMinutes(15))
                 .build();
 
         ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
                 .httpOnly(true)
-                .secure(true)
+                .secure(false)
                 .sameSite("Lax")
                 .path("/")
                 .maxAge(Duration.ofDays(7))
@@ -91,9 +91,21 @@ public class AuthenticationController {
 
     private void clearAuthCookies(HttpServletResponse response) {
         ResponseCookie accessCookie = ResponseCookie.from("access_token", "")
-                .httpOnly(true).secure(true).sameSite("Lax").path("/").maxAge(0).build();
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(0)
+                .build();
+
         ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", "")
-                .httpOnly(true).secure(true).sameSite("Lax").path("/").maxAge(0).build();
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(0)
+                .build();
+
         response.addHeader(HttpHeaders.SET_COOKIE, accessCookie.toString());
         response.addHeader(HttpHeaders.SET_COOKIE, refreshCookie.toString());
     }
