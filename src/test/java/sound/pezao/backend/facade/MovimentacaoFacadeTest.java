@@ -163,7 +163,7 @@ class MovimentacaoFacadeTest {
         Movimentacao movimentacao = new Movimentacao();
         movimentacao.setId(7);
         movimentacao.setItem(item);
-        movimentacao.setTipo("entrada");
+        movimentacao.setTipo(TipoMovimentacao.ENTRADA);
         movimentacao.setQuantidade(4);
 
         when(movimentacaoService.buscarPorId(7)).thenReturn(movimentacao);
@@ -209,7 +209,7 @@ class MovimentacaoFacadeTest {
         Movimentacao movimentacao = new Movimentacao();
         movimentacao.setId(7);
         movimentacao.setItem(item);
-        movimentacao.setTipo("saida");
+        movimentacao.setTipo(TipoMovimentacao.SAIDA);
         movimentacao.setQuantidade(4);
 
         autenticarCom("REGISTRAR_ENTRADA");
@@ -228,12 +228,12 @@ class MovimentacaoFacadeTest {
         LocalDate inicio = LocalDate.of(2026, 9, 1);
         LocalDate fim = LocalDate.of(2026, 9, 30);
 
-        when(movimentacaoService.listarComFiltros(1, "entrada", 2, "cabo", inicio, fim, pageable))
+        when(movimentacaoService.listarComFiltros(1, TipoMovimentacao.ENTRADA, 2, "cabo", inicio, fim, pageable))
                 .thenReturn(Page.empty(pageable));
 
         facade.listar(1, "ENTRADA", 2, "cabo", inicio, fim, pageable);
 
-        verify(movimentacaoService).listarComFiltros(1, "entrada", 2, "cabo", inicio, fim, pageable);
+        verify(movimentacaoService).listarComFiltros(1, TipoMovimentacao.ENTRADA, 2, "cabo", inicio, fim, pageable);
     }
 
     @Test
@@ -266,7 +266,7 @@ class MovimentacaoFacadeTest {
         Movimentacao movimentacao = new Movimentacao();
         movimentacao.setId(7);
         movimentacao.setItem(item);
-        movimentacao.setTipo("entrada");
+        movimentacao.setTipo(TipoMovimentacao.ENTRADA);
         movimentacao.setQuantidade(50);
 
         when(movimentacaoService.buscarPorId(7)).thenReturn(movimentacao);

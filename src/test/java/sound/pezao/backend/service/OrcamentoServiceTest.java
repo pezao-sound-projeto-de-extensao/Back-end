@@ -14,12 +14,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import sound.pezao.backend.dto.clienteDTO.ClienteRequest;
 import sound.pezao.backend.dto.orcamentoDTO.OrcamentoItemRequest;
+import sound.pezao.backend.dto.orcamentoDTO.OrcamentoMapper;
 import sound.pezao.backend.dto.orcamentoDTO.OrcamentoRequest;
 import sound.pezao.backend.dto.orcamentoDTO.OrcamentoResponse;
 import sound.pezao.backend.entities.Categoria;
 import sound.pezao.backend.entities.Cliente;
 import sound.pezao.backend.entities.Item;
 import sound.pezao.backend.entities.Orcamento;
+import sound.pezao.backend.entities.OrcamentoItem;
 import sound.pezao.backend.entities.StatusOrcamento;
 import sound.pezao.backend.entities.Unidade;
 import sound.pezao.backend.entities.Usuario;
@@ -27,6 +29,7 @@ import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.repository.ItemRepository;
 import sound.pezao.backend.repository.OrcamentoRepository;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -63,6 +66,9 @@ class OrcamentoServiceTest {
     @Mock
     private EncomendaService encomendaService;
 
+    @Mock
+    private OrcamentoMapper mapper;
+
     @InjectMocks
     private OrcamentoService service;
 
@@ -77,25 +83,60 @@ class OrcamentoServiceTest {
         amplificador = new Item();
         amplificador.setId(10);
         amplificador.setNome("Módulo Amplificador 400W");
-        amplificador.setCategoria(new Categoria(1, "Som automotivo", LocalDateTime.now()));
+        amplificador.setCategoria(
+                new Categoria(1, "Som automotivo", LocalDateTime.now())
+        );
         amplificador.setUnidade(new Unidade(1, "Unidade", "UN"));
-        amplificador.setUriImagem("imagens/uuid-amplificador.jpg");
     }
 
-    private OrcamentoItemRequest itemCatalogo(Integer itemId, int quantidade, double preco) {
+    private OrcamentoItemRequest itemCatalogo(
+            Integer itemId,
+            int quantidade,
+            double preco
+    ) {
         return new OrcamentoItemRequest(itemId, null, quantidade, preco);
     }
 
-    private OrcamentoItemRequest itemNovo(String descricao, int quantidade, double preco) {
+    private OrcamentoItemRequest itemNovo(
+            String descricao,
+            int quantidade,
+            double preco
+    ) {
         return new OrcamentoItemRequest(null, descricao, quantidade, preco);
     }
 
-    private OrcamentoRequest requestComClienteExistente(OrcamentoItemRequest... itens) {
-        return new OrcamentoRequest(1, null, "Entrega na próxima semana", List.of(itens));
+    private OrcamentoRequest requestComClienteExistente(
+            OrcamentoItemRequest... itens
+    ) {
+        return new OrcamentoRequest(
+                1,
+                null,
+                "Entrega na próxima semana",
+                List.of(itens)
+        );
+    }
+
+    private OrcamentoResponse resposta(
+            Orcamento orcamento,
+            StatusOrcamento status,
+            int quantidadeItens,
+            double valorTotal
+    ) {
+        return new OrcamentoResponse(
+                orcamento.getId(),
+                null,
+                status,
+                quantidadeItens,
+                valorTotal,
+                orcamento.getObservacao(),
+                orcamento.getCriadoEm(),
+                List.of()
+        );
     }
 
     private void mockarSalvamento() {
-        when(repository.save(any(Orcamento.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(repository.save(any(Orcamento.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
         when(usuarioAutenticadoService.obter()).thenReturn(new Usuario());
     }
 
@@ -110,10 +151,49 @@ class OrcamentoServiceTest {
             when(itemRepository.findById(10)).thenReturn(Optional.of(amplificador));
             mockarSalvamento();
 
-            OrcamentoResponse resposta = service.criar(requestComClienteExistente(
-                    itemCatalogo(10, 2, 320.0),
-                    itemNovo("Kit de fiação 4mm", 3, 50.0)
-            ));
+            when(mapper.toResponse(any(Orcamento.class)))
+                    .thenAnswer(invocation -> {
+                        Orcamento orcamento = invocation.getArgument(0);
+
+                        return new OrcamentoResponse(
+                                orcamento.getId(),
+                                null,
+                                orcamento.getStatus(),
+                                orcamento.getItens().size(),
+                                orcamento.getValorTotal(),
+                                orcamento.getObservacao(),
+                                orcamento.getCriadoEm(),
+                                List.of(
+                                        new sound.pezao.backend.dto.orcamentoDTO.OrcamentoItemResponse(
+                                                null,
+                                                10,
+                                                "Módulo Amplificador 400W",
+                                                "/itens/10/imagem/download",
+                                                false,
+                                                2,
+                                                320.0,
+                                                640.0
+                                        ),
+                                        new sound.pezao.backend.dto.orcamentoDTO.OrcamentoItemResponse(
+                                                null,
+                                                null,
+                                                "Kit de fiação 4mm",
+                                                null,
+                                                true,
+                                                3,
+                                                50.0,
+                                                150.0
+                                        )
+                                )
+                        );
+                    });
+
+            OrcamentoResponse resposta = service.criar(
+                    requestComClienteExistente(
+                            itemCatalogo(10, 2, 320.0),
+                            itemNovo("Kit de fiação 4mm", 3, 50.0)
+                    )
+            );
 
             assertEquals(StatusOrcamento.PENDENTE, resposta.status());
             assertEquals(2, resposta.quantidadeItens());
@@ -125,15 +205,46 @@ class OrcamentoServiceTest {
         @Test
         @DisplayName("Deve cadastrar o cliente novo junto com o orçamento")
         void deveCadastrarClienteNovo() {
-            ClienteRequest clienteNovo = new ClienteRequest("Maria Souza", "(11) 97777-6666");
+            ClienteRequest clienteNovo = new ClienteRequest(
+                    "Maria Souza",
+                    "(11) 97777-6666"
+            );
+
             Cliente salvo = new Cliente("Maria Souza", "(11) 97777-6666");
             salvo.setId(2);
 
             when(clienteService.criarEntidade(clienteNovo)).thenReturn(salvo);
             mockarSalvamento();
 
-            OrcamentoResponse resposta = service.criar(new OrcamentoRequest(
-                    null, clienteNovo, null, List.of(itemNovo("Caixa selada", 1, 400.0))));
+            when(mapper.toResponse(any(Orcamento.class)))
+                    .thenAnswer(invocation -> {
+                        Orcamento orcamento = invocation.getArgument(0);
+
+                        return new OrcamentoResponse(
+                                orcamento.getId(),
+                                new sound.pezao.backend.dto.clienteDTO.ClienteResponse(
+                                        salvo.getId(),
+                                        salvo.getNome(),
+                                        salvo.getTelefone(),
+                                        salvo.getCriadoEm()
+                                ),
+                                orcamento.getStatus(),
+                                orcamento.getItens().size(),
+                                orcamento.getValorTotal(),
+                                orcamento.getObservacao(),
+                                orcamento.getCriadoEm(),
+                                List.of()
+                        );
+                    });
+
+            OrcamentoResponse resposta = service.criar(
+                    new OrcamentoRequest(
+                            null,
+                            clienteNovo,
+                            null,
+                            List.of(itemNovo("Caixa selada", 1, 400.0))
+                    )
+            );
 
             assertEquals("Maria Souza", resposta.cliente().nome());
             verify(clienteService).criarEntidade(clienteNovo);
@@ -147,10 +258,13 @@ class OrcamentoServiceTest {
                     1,
                     new ClienteRequest("Maria Souza", "(11) 97777-6666"),
                     null,
-                    List.of(itemNovo("Caixa selada", 1, 400.0)));
+                    List.of(itemNovo("Caixa selada", 1, 400.0))
+            );
 
-            IllegalArgumentException erro = assertThrows(IllegalArgumentException.class,
-                    () -> service.criar(request));
+            IllegalArgumentException erro = assertThrows(
+                    IllegalArgumentException.class,
+                    () -> service.criar(request)
+            );
 
             assertTrue(erro.getMessage().contains("não os dois"));
             verifyNoInteractions(repository);
@@ -160,7 +274,11 @@ class OrcamentoServiceTest {
         @DisplayName("Deve recusar orçamento sem nenhum cliente informado")
         void deveRecusarSemCliente() {
             OrcamentoRequest request = new OrcamentoRequest(
-                    null, null, null, List.of(itemNovo("Caixa selada", 1, 400.0)));
+                    null,
+                    null,
+                    null,
+                    List.of(itemNovo("Caixa selada", 1, 400.0))
+            );
 
             assertThrows(IllegalArgumentException.class, () -> service.criar(request));
 
@@ -173,8 +291,12 @@ class OrcamentoServiceTest {
             when(clienteService.buscarEntidade(1)).thenReturn(cliente);
             when(usuarioAutenticadoService.obter()).thenReturn(new Usuario());
 
-            OrcamentoRequest request = new OrcamentoRequest(1, null, null,
-                    List.of(new OrcamentoItemRequest(10, "Outro nome", 1, 100.0)));
+            OrcamentoRequest request = new OrcamentoRequest(
+                    1,
+                    null,
+                    null,
+                    List.of(new OrcamentoItemRequest(10, "Outro nome", 1, 100.0))
+            );
 
             assertThrows(IllegalArgumentException.class, () -> service.criar(request));
 
@@ -187,8 +309,12 @@ class OrcamentoServiceTest {
             when(clienteService.buscarEntidade(1)).thenReturn(cliente);
             when(usuarioAutenticadoService.obter()).thenReturn(new Usuario());
 
-            OrcamentoRequest request = new OrcamentoRequest(1, null, null,
-                    List.of(new OrcamentoItemRequest(null, "   ", 1, 100.0)));
+            OrcamentoRequest request = new OrcamentoRequest(
+                    1,
+                    null,
+                    null,
+                    List.of(new OrcamentoItemRequest(null, "   ", 1, 100.0))
+            );
 
             assertThrows(IllegalArgumentException.class, () -> service.criar(request));
 
@@ -202,8 +328,12 @@ class OrcamentoServiceTest {
             when(usuarioAutenticadoService.obter()).thenReturn(new Usuario());
             when(itemRepository.findById(99)).thenReturn(Optional.empty());
 
-            assertThrows(EntityNotFoundException.class,
-                    () -> service.criar(requestComClienteExistente(itemCatalogo(99, 1, 10.0))));
+            assertThrows(
+                    EntityNotFoundException.class,
+                    () -> service.criar(
+                            requestComClienteExistente(itemCatalogo(99, 1, 10.0))
+                    )
+            );
         }
 
         @Test
@@ -213,13 +343,55 @@ class OrcamentoServiceTest {
             when(itemRepository.findById(10)).thenReturn(Optional.of(amplificador));
             mockarSalvamento();
 
-            OrcamentoResponse resposta = service.criar(requestComClienteExistente(
-                    itemCatalogo(10, 1, 320.0),
-                    itemNovo("Kit de fiação 4mm", 1, 50.0)));
+            when(mapper.toResponse(any(Orcamento.class)))
+                    .thenReturn(new OrcamentoResponse(
+                            1,
+                            null,
+                            StatusOrcamento.PENDENTE,
+                            2,
+                            370.0,
+                            "Entrega na próxima semana",
+                            LocalDateTime.now(),
+                            List.of(
+                                    new sound.pezao.backend.dto.orcamentoDTO.OrcamentoItemResponse(
+                                            1,
+                                            10,
+                                            "Módulo Amplificador 400W",
+                                            "/itens/10/imagem/download",
+                                            false,
+                                            1,
+                                            320.0,
+                                            320.0
+                                    ),
+                                    new sound.pezao.backend.dto.orcamentoDTO.OrcamentoItemResponse(
+                                            2,
+                                            null,
+                                            "Kit de fiação 4mm",
+                                            null,
+                                            true,
+                                            1,
+                                            50.0,
+                                            50.0
+                                    )
+                            )
+                    ));
+
+            OrcamentoResponse resposta = service.criar(
+                    requestComClienteExistente(
+                            itemCatalogo(10, 1, 320.0),
+                            itemNovo("Kit de fiação 4mm", 1, 50.0)
+                    )
+            );
 
             assertFalse(resposta.itens().get(0).produtoNovo());
-            assertEquals("Módulo Amplificador 400W", resposta.itens().get(0).descricao());
-            assertEquals("/itens/10/imagem/download", resposta.itens().get(0).fotoUrl());
+            assertEquals(
+                    "Módulo Amplificador 400W",
+                    resposta.itens().get(0).descricao()
+            );
+            assertEquals(
+                    "/itens/10/imagem/download",
+                    resposta.itens().get(0).fotoUrl()
+            );
 
             assertTrue(resposta.itens().get(1).produtoNovo());
             assertNull(resposta.itens().get(1).itemId());
@@ -239,12 +411,33 @@ class OrcamentoServiceTest {
             return orcamento;
         }
 
+        private OrcamentoResponse respostaStatus(
+                Orcamento orcamento,
+                StatusOrcamento status
+        ) {
+            return new OrcamentoResponse(
+                    orcamento.getId(),
+                    null,
+                    status,
+                    orcamento.getItens().size(),
+                    orcamento.getValorTotal(),
+                    orcamento.getObservacao(),
+                    orcamento.getCriadoEm(),
+                    List.of()
+            );
+        }
+
         @Test
         @DisplayName("Deve aceitar um orçamento pendente e gerar as encomendas")
         void deveAceitarPendente() {
             Orcamento orcamento = orcamentoPendente();
+
             when(repository.findById(5)).thenReturn(Optional.of(orcamento));
             when(repository.save(orcamento)).thenReturn(orcamento);
+            when(mapper.toResponse(orcamento))
+                    .thenAnswer(invocation ->
+                            respostaStatus(orcamento, orcamento.getStatus())
+                    );
 
             assertEquals(StatusOrcamento.ACEITO, service.aceitar(5).status());
 
@@ -255,8 +448,13 @@ class OrcamentoServiceTest {
         @DisplayName("Não deve gerar encomendas ao rejeitar")
         void naoDeveGerarEncomendasAoRejeitar() {
             Orcamento orcamento = orcamentoPendente();
+
             when(repository.findById(5)).thenReturn(Optional.of(orcamento));
             when(repository.save(orcamento)).thenReturn(orcamento);
+            when(mapper.toResponse(orcamento))
+                    .thenAnswer(invocation ->
+                            respostaStatus(orcamento, orcamento.getStatus())
+                    );
 
             service.rejeitar(5);
 
@@ -267,10 +465,18 @@ class OrcamentoServiceTest {
         @DisplayName("Deve rejeitar um orçamento pendente")
         void deveRejeitarPendente() {
             Orcamento orcamento = orcamentoPendente();
+
             when(repository.findById(5)).thenReturn(Optional.of(orcamento));
             when(repository.save(orcamento)).thenReturn(orcamento);
+            when(mapper.toResponse(orcamento))
+                    .thenAnswer(invocation ->
+                            respostaStatus(orcamento, orcamento.getStatus())
+                    );
 
-            assertEquals(StatusOrcamento.REJEITADO, service.rejeitar(5).status());
+            assertEquals(
+                    StatusOrcamento.REJEITADO,
+                    service.rejeitar(5).status()
+            );
         }
 
         @Test
@@ -278,6 +484,7 @@ class OrcamentoServiceTest {
         void naoDeveAceitarRejeitado() {
             Orcamento orcamento = orcamentoPendente();
             orcamento.setStatus(StatusOrcamento.REJEITADO);
+
             when(repository.findById(5)).thenReturn(Optional.of(orcamento));
 
             assertThrows(IllegalArgumentException.class, () -> service.aceitar(5));
@@ -290,6 +497,7 @@ class OrcamentoServiceTest {
         void naoDeveRejeitarAceito() {
             Orcamento orcamento = orcamentoPendente();
             orcamento.setStatus(StatusOrcamento.ACEITO);
+
             when(repository.findById(5)).thenReturn(Optional.of(orcamento));
 
             assertThrows(IllegalArgumentException.class, () -> service.rejeitar(5));
@@ -299,12 +507,31 @@ class OrcamentoServiceTest {
         @DisplayName("Deve substituir os itens ao editar um orçamento pendente")
         void deveEditarPendente() {
             Orcamento orcamento = orcamentoPendente();
+
             when(repository.findById(5)).thenReturn(Optional.of(orcamento));
             when(clienteService.buscarEntidade(1)).thenReturn(cliente);
-            when(repository.save(any(Orcamento.class))).thenAnswer(inv -> inv.getArgument(0));
+            when(repository.save(any(Orcamento.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+            when(mapper.toResponse(any(Orcamento.class)))
+                    .thenAnswer(invocation -> {
+                        Orcamento salvo = invocation.getArgument(0);
 
-            OrcamentoResponse resposta = service.atualizar(5, requestComClienteExistente(
-                    itemNovo("Caixa selada", 2, 400.0)));
+                        return new OrcamentoResponse(
+                                salvo.getId(),
+                                null,
+                                salvo.getStatus(),
+                                salvo.getItens().size(),
+                                salvo.getValorTotal(),
+                                salvo.getObservacao(),
+                                salvo.getCriadoEm(),
+                                List.of()
+                        );
+                    });
+
+            OrcamentoResponse resposta = service.atualizar(
+                    5,
+                    requestComClienteExistente(itemNovo("Caixa selada", 2, 400.0))
+            );
 
             assertEquals(1, resposta.quantidadeItens());
             assertEquals(800.0, resposta.valorTotal());
@@ -315,10 +542,16 @@ class OrcamentoServiceTest {
         void naoDeveEditarAceito() {
             Orcamento orcamento = orcamentoPendente();
             orcamento.setStatus(StatusOrcamento.ACEITO);
+
             when(repository.findById(5)).thenReturn(Optional.of(orcamento));
 
-            assertThrows(IllegalArgumentException.class,
-                    () -> service.atualizar(5, requestComClienteExistente(itemNovo("Caixa", 1, 10.0))));
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> service.atualizar(
+                            5,
+                            requestComClienteExistente(itemNovo("Caixa", 1, 10.0))
+                    )
+            );
 
             verify(repository, never()).save(any());
         }
@@ -328,7 +561,10 @@ class OrcamentoServiceTest {
         void deveLancarExcecaoQuandoNaoExiste() {
             when(repository.findById(99)).thenReturn(Optional.empty());
 
-            assertThrows(EntityNotFoundException.class, () -> service.buscarPorId(99));
+            assertThrows(
+                    EntityNotFoundException.class,
+                    () -> service.buscarPorId(99)
+            );
         }
     }
 
@@ -343,13 +579,28 @@ class OrcamentoServiceTest {
             orcamento.setId(1);
             orcamento.setCliente(cliente);
             orcamento.setStatus(StatusOrcamento.PENDENTE);
+
             return new PageImpl<>(List.of(orcamento));
         }
 
         @Test
         @DisplayName("Deve tratar busca numérica como número do orçamento")
         void deveBuscarPorNumero() {
-            when(repository.findAllFiltered("12", 12, null, pageable)).thenReturn(pagina());
+            Page<Orcamento> pagina = pagina();
+
+            when(repository.findAllFiltered("12", 12, null, pageable))
+                    .thenReturn(pagina);
+            when(mapper.toResponse(any(Orcamento.class)))
+                    .thenAnswer(invocation -> {
+                        Orcamento orcamento = invocation.getArgument(0);
+
+                        return resposta(
+                                orcamento,
+                                orcamento.getStatus(),
+                                0,
+                                0.0
+                        );
+                    });
 
             service.listar("12", null, pageable);
 
@@ -359,8 +610,25 @@ class OrcamentoServiceTest {
         @Test
         @DisplayName("Deve tratar busca textual como nome do cliente")
         void deveBuscarPorCliente() {
-            when(repository.findAllFiltered(eq("joão"), isNull(), isNull(), eq(pageable)))
-                    .thenReturn(pagina());
+            Page<Orcamento> pagina = pagina();
+
+            when(repository.findAllFiltered(
+                    eq("joão"),
+                    isNull(),
+                    isNull(),
+                    eq(pageable)
+            )).thenReturn(pagina);
+            when(mapper.toResponse(any(Orcamento.class)))
+                    .thenAnswer(invocation -> {
+                        Orcamento orcamento = invocation.getArgument(0);
+
+                        return resposta(
+                                orcamento,
+                                orcamento.getStatus(),
+                                0,
+                                0.0
+                        );
+                    });
 
             service.listar("joão", null, pageable);
 
@@ -370,19 +638,43 @@ class OrcamentoServiceTest {
         @Test
         @DisplayName("Deve converter o status informado no filtro")
         void deveFiltrarPorStatus() {
-            when(repository.findAllFiltered(isNull(), isNull(), eq(StatusOrcamento.ACEITO), eq(pageable)))
-                    .thenReturn(pagina());
+            Page<Orcamento> pagina = pagina();
+
+            when(repository.findAllFiltered(
+                    isNull(),
+                    isNull(),
+                    eq(StatusOrcamento.ACEITO),
+                    eq(pageable)
+            )).thenReturn(pagina);
+            when(mapper.toResponse(any(Orcamento.class)))
+                    .thenAnswer(invocation -> {
+                        Orcamento orcamento = invocation.getArgument(0);
+
+                        return resposta(
+                                orcamento,
+                                orcamento.getStatus(),
+                                0,
+                                0.0
+                        );
+                    });
 
             service.listar("  ", "aceito", pageable);
 
-            verify(repository).findAllFiltered(null, null, StatusOrcamento.ACEITO, pageable);
+            verify(repository).findAllFiltered(
+                    null,
+                    null,
+                    StatusOrcamento.ACEITO,
+                    pageable
+            );
         }
 
         @Test
         @DisplayName("Deve recusar status inválido no filtro")
         void deveRecusarStatusInvalido() {
-            assertThrows(IllegalArgumentException.class,
-                    () -> service.listar(null, "arquivado", pageable));
+            assertThrows(
+                    IllegalArgumentException.class,
+                    () -> service.listar(null, "arquivado", pageable)
+            );
 
             verifyNoInteractions(repository);
         }

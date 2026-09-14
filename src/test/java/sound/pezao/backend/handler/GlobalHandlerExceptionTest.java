@@ -110,7 +110,23 @@ class GlobalExceptionHandlerTest {
         }
     }
 
-    record TestRequest(@NotBlank(message = "nome é obrigatório") String nome) {
+    static class TestRequest {
+        @NotBlank(message = "nome é obrigatório")
+        private String nome;
+
+        TestRequest() {}
+
+        TestRequest(String nome) {
+            this.nome = nome;
+        }
+
+        public String getNome() {
+            return nome;
+        }
+
+        public void setNome(String nome) {
+            this.nome = nome;
+        }
     }
 
     @Test

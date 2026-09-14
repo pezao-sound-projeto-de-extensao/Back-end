@@ -22,16 +22,22 @@ public class Usuario {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private int id;
+
+    @Column(nullable = false)
     private String nome;
+
+    @Column(nullable = false, unique = true)
     private String email;
+
     @Column(length = 2000)
     private String senhaHash;
 
     private boolean ativo;
     private LocalDateTime ultimoAcesso;
     private LocalDateTime criadoEm;
-    @ManyToOne (fetch = FetchType.LAZY)
-    @JoinColumn(name = "cargo_id")
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "cargo_id", nullable = false)
     private Cargo cargo;
 
     @PrePersist

@@ -62,7 +62,7 @@ public class RefreshTokenService {
 
         boolean segredoValido = passwordEncoder.matches(partes[1], refreshToken.getTokenHash());
 
-        if (!segredoValido || !refreshToken.isAtvio()){
+        if (!segredoValido || !refreshToken.isAtivo()){
             throw new IllegalArgumentException("Refresh token inválido ou revogado");
         }
         refreshToken.setRevogadoEm(Instant.now());
