@@ -170,15 +170,14 @@ public class ItemService {
                 .orElseThrow(() -> new EntityNotFoundException("Item", itemId));
 
         Optional<Arquivo> arquivoExistente = arquivoRepository
-                .findByTabelaOrigemAndRegistroIdAndTipoArquivo("item", itemId, "imagem");
+                .findByItem_IdAndTipoArquivo(itemId, "imagem");
 
         String uriAntiga = arquivoExistente.map(Arquivo::getUri).orElse(null);
         String uriNova = armazenamento.salvar(arquivo, "imagens");
 
         try {
             Arquivo arq = arquivoExistente.orElse(new Arquivo());
-            arq.setTabelaOrigem("item");
-            arq.setRegistroId(itemId);
+            arq.setItem(item);
             arq.setTipoArquivo("imagem");
             arq.setUri(uriNova);
             arq.setNome(arquivo.getOriginalFilename());
@@ -202,7 +201,7 @@ public class ItemService {
 
     public Resource baixarImagem(Integer itemId) {
         Arquivo arq = arquivoRepository
-                .findByTabelaOrigemAndRegistroIdAndTipoArquivo("item", itemId, "imagem")
+                .findByItem_IdAndTipoArquivo(itemId, "imagem")
                 .orElseThrow(() -> new ArquivoInvalidoException("O item não possui imagem."));
 
         return armazenamento.carregar(arq.getUri());
@@ -228,7 +227,7 @@ public class ItemService {
     @Transactional
     public void deletarImagem(Integer itemId) {
         Arquivo arq = arquivoRepository
-                .findByTabelaOrigemAndRegistroIdAndTipoArquivo("item", itemId, "imagem")
+                .findByItem_IdAndTipoArquivo(itemId, "imagem")
                 .orElse(null);
 
         if (arq != null) {
