@@ -7,12 +7,12 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-import sound.pezao.backend.dto.authDTO.AuthRequest;
-import sound.pezao.backend.dto.authDTO.AuthResponse;
-import sound.pezao.backend.dto.authDTO.AuthTrocarSenhaRequest;
-import sound.pezao.backend.dto.authDTO.RefreshTokenRequest;
+import sound.pezao.backend.dto.authDTO.*;
 import sound.pezao.backend.service.AuthenticationService;
+import sound.pezao.backend.service.UsuarioService;
 
 import java.time.Duration;
 
@@ -22,9 +22,11 @@ import java.time.Duration;
 public class AuthenticationController {
 
     final AuthenticationService authenticationService;
+    private final UsuarioService usuarioService;
 
-    public AuthenticationController(AuthenticationService authenticationService) {
+    public AuthenticationController(AuthenticationService authenticationService, UsuarioService usuarioService) {
         this.authenticationService = authenticationService;
+        this.usuarioService = usuarioService;
     }
 
     @Operation(summary = "Login e geração do accessToken e refreshToken.")
@@ -66,6 +68,17 @@ public class AuthenticationController {
     public ResponseEntity<Void> resetarSenha(@PathVariable int id) {
         authenticationService.resetarSenha(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Retorna dados do usuário autenticado")
+    @GetMapping("/me")
+    public ResponseEntity<AuthMeResponse> me(
+            @AuthenticationPrincipal
+            UserDetails userDetails
+    ) {
+        String email = userDetails.getUsername();
+        AuthMeResponse response = usuarioService.buscarMePorEmail(email);
+        return ResponseEntity.ok(response);
     }
 
     private void setAuthCookies(HttpServletResponse response, String accessToken, String refreshToken) {

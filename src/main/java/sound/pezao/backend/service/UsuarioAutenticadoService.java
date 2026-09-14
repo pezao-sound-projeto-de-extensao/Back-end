@@ -27,7 +27,7 @@ public class UsuarioAutenticadoService {
             throw new LoginInvalidoException();
         }
 
-        return usuarioRepository.findByEmail(authentication.getName())
+        return usuarioRepository.findByEmailIgnoreCase(authentication.getName())
                 .orElseThrow(LoginInvalidoException::new);
     }
 }
