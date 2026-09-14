@@ -42,5 +42,6 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     @Query("select u from Usuario u join fetch u.cargo c join fetch c.permissoes where u.email = :email")
     Optional<Usuario> findByEmailCompleto(String email);
 
-    Optional<Usuario> findByEmail(String email);
+    Optional<Usuario> findByEmailIgnoreCase(String email);
+
 }
