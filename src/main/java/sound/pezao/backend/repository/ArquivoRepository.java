@@ -9,15 +9,13 @@ import java.util.Optional;
 @Repository
 public interface ArquivoRepository extends JpaRepository<Arquivo, Integer> {
 
-    Optional<Arquivo> findByTabelaOrigemAndRegistroIdAndTipoArquivo(
-            String tabelaOrigem,
-            Integer registroId,
+    Optional<Arquivo> findByItem_IdAndTipoArquivo(
+            Integer itemId,
             String tipoArquivo
     );
 
-    void deleteByTabelaOrigemAndRegistroIdAndTipoArquivo(
-            String tabelaOrigem,
-            Integer registroId,
+    Optional<Arquivo> findByMovimentacao_IdAndTipoArquivo(
+            Integer movimentacaoId,
             String tipoArquivo
     );
 }

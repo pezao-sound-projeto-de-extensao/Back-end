@@ -16,8 +16,8 @@ public class Movimentacao {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(nullable = false)
-    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Convert(converter = TipoMovimentacaoConverter.class)
     private TipoMovimentacao tipo;
     private Integer quantidade;
     private Integer estoqueAntes;

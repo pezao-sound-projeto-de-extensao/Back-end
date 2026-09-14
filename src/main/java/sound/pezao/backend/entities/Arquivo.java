@@ -16,14 +16,16 @@ public class Arquivo {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
-    @Column(name = "tabela_origem", nullable = false, length = 50)
-    private String tabelaOrigem; // "item" ou "movimentacao"
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "item_id")
+    private Item item;
 
-    @Column(name = "registro_id", nullable = false)
-    private Integer registroId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "movimentacao_id")
+    private Movimentacao movimentacao;
 
     @Column(name = "tipo_arquivo", nullable = false, length = 20)
-    private String tipoArquivo; // "imagem" ou "nota_entrada"
+    private String tipoArquivo;
 
     @Column(name = "uri", length = 500)
     private String uri;
