@@ -124,7 +124,7 @@ class UsuarioRepositoryTest {
         void findByEmailDeveRetornarUsuarioQuandoEmailExiste() {
             criarUsuario("teste@email.com", "hash");
 
-            Optional<Usuario> resultado = usuarioRepository.findByEmail("teste@email.com");
+            Optional<Usuario> resultado = usuarioRepository.findByEmailIgnoreCase("teste@email.com");
 
             assertTrue(resultado.isPresent());
             assertEquals("teste@email.com", resultado.get().getEmail());
@@ -133,7 +133,7 @@ class UsuarioRepositoryTest {
         @Test
         @DisplayName("Deve retornar vazio quando email não existe")
         void findByEmailDeveRetornarVazioQuandoEmailNaoExiste() {
-            Optional<Usuario> resultado = usuarioRepository.findByEmail("naoexiste@email.com");
+            Optional<Usuario> resultado = usuarioRepository.findByEmailIgnoreCase("naoexiste@email.com");
 
             assertTrue(resultado.isEmpty());
         }

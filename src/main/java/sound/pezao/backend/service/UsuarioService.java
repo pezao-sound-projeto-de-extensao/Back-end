@@ -7,6 +7,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.RequestBody;
 
+import sound.pezao.backend.dto.authDTO.AuthMeResponse;
 import sound.pezao.backend.dto.usuarioDTO.UsuarioMapper;
 import sound.pezao.backend.dto.usuarioDTO.UsuarioRequest;
 import sound.pezao.backend.dto.usuarioDTO.UsuarioResponse;
@@ -131,6 +132,13 @@ public class UsuarioService {
 
         usuario.setAtivo(!usuario.isAtivo());
         usuarioRepository.save(usuario);
+    }
+
+    public AuthMeResponse buscarMePorEmail(String email) {
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email)
+                .orElseThrow(() -> new EntityNotFoundException("Usuário", 0));
+
+        return UsuarioMapper.toMeResponse(usuario);
     }
 
 }
