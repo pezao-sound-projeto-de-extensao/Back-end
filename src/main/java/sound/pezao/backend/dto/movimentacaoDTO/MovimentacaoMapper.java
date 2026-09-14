@@ -70,8 +70,7 @@ public class MovimentacaoMapper {
 
     private ItemResumoResponse montarItem(Item item) {
         Optional<Arquivo> arqOpt = arquivoRepository
-                .findByTabelaOrigemAndRegistroIdAndTipoArquivo(
-                        "item",
+                .findByItem_IdAndTipoArquivo(
                         item.getId(),
                         "imagem"
                 );
@@ -94,8 +93,7 @@ public class MovimentacaoMapper {
 
     private NotaInfo montarNota(Movimentacao movimentacao) {
         Optional<Arquivo> arqOpt = arquivoRepository
-                .findByTabelaOrigemAndRegistroIdAndTipoArquivo(
-                        "movimentacao",
+                .findByMovimentacao_IdAndTipoArquivo(
                         movimentacao.getId(),
                         "nota_entrada"
                 );

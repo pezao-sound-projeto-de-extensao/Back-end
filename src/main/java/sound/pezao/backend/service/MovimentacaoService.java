@@ -65,15 +65,14 @@ public class MovimentacaoService {
         Movimentacao movimentacao = buscarPorId(movimentacaoId);
 
         Optional<Arquivo> arquivoExistente = arquivoRepository
-                .findByTabelaOrigemAndRegistroIdAndTipoArquivo("movimentacao", movimentacaoId, "nota_entrada");
+                .findByMovimentacao_IdAndTipoArquivo(movimentacaoId, "nota_entrada");
 
         String uriAntiga = arquivoExistente.map(Arquivo::getUri).orElse(null);
         String uriNova = armazenamento.salvar(arquivo, "notas");
 
         try {
             Arquivo arq = arquivoExistente.orElse(new Arquivo());
-            arq.setTabelaOrigem("movimentacao");
-            arq.setRegistroId(movimentacaoId);
+            arq.setMovimentacao(movimentacao);
             arq.setTipoArquivo("nota_entrada");
             arq.setUri(uriNova);
             arq.setNome(arquivo.getOriginalFilename());
@@ -97,7 +96,7 @@ public class MovimentacaoService {
 
     public Resource baixarNota(Integer movimentacaoId) {
         Arquivo arq = arquivoRepository
-                .findByTabelaOrigemAndRegistroIdAndTipoArquivo("movimentacao", movimentacaoId, "nota_entrada")
+                .findByMovimentacao_IdAndTipoArquivo(movimentacaoId, "nota_entrada")
                 .orElseThrow(() -> new ArquivoInvalidoException("A movimentação não possui nota fiscal."));
 
         return armazenamento.carregar(arq.getUri());
@@ -105,7 +104,7 @@ public class MovimentacaoService {
 
     public void deletarNota(Integer movimentacaoId) {
         Arquivo arq = arquivoRepository
-                .findByTabelaOrigemAndRegistroIdAndTipoArquivo("movimentacao", movimentacaoId, "nota_entrada")
+                .findByMovimentacao_IdAndTipoArquivo(movimentacaoId, "nota_entrada")
                 .orElse(null);
 
         if (arq != null) {

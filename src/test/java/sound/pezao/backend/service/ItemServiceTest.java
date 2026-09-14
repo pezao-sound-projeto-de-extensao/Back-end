@@ -55,7 +55,6 @@ import static org.mockito.Mockito.when;
 @DisplayName("Testes para ItemService")
 class ItemServiceTest {
 
-    private static final String TABELA_ORIGEM_ITEM = "item";
     private static final String TIPO_ARQUIVO_IMAGEM = "imagem";
 
     @Mock
@@ -107,8 +106,7 @@ class ItemServiceTest {
     private Arquivo imagem(Integer itemId, String uri) {
         Arquivo arquivo = new Arquivo();
         arquivo.setId(1);
-        arquivo.setTabelaOrigem(TABELA_ORIGEM_ITEM);
-        arquivo.setRegistroId(itemId);
+        arquivo.setItem(item(itemId, "Amplificador", true));
         arquivo.setTipoArquivo(TIPO_ARQUIVO_IMAGEM);
         arquivo.setUri(uri);
         arquivo.setNome("foto.jpg");
@@ -127,8 +125,7 @@ class ItemServiceTest {
     }
 
     private void semImagem(Integer itemId) {
-        when(arquivoRepository.findByTabelaOrigemAndRegistroIdAndTipoArquivo(
-                TABELA_ORIGEM_ITEM,
+        when(arquivoRepository.findByItem_IdAndTipoArquivo(
                 itemId,
                 TIPO_ARQUIVO_IMAGEM
         )).thenReturn(Optional.empty());
@@ -499,8 +496,7 @@ class ItemServiceTest {
 
         when(repository.findById(1)).thenReturn(Optional.of(item));
 
-        when(arquivoRepository.findByTabelaOrigemAndRegistroIdAndTipoArquivo(
-                TABELA_ORIGEM_ITEM,
+        when(arquivoRepository.findByItem_IdAndTipoArquivo(
                 1,
                 TIPO_ARQUIVO_IMAGEM
         )).thenReturn(Optional.empty());
@@ -511,15 +507,13 @@ class ItemServiceTest {
         when(arquivoRepository.save(any(Arquivo.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        when(arquivoRepository.findByTabelaOrigemAndRegistroIdAndTipoArquivo(
-                TABELA_ORIGEM_ITEM,
+        when(arquivoRepository.findByItem_IdAndTipoArquivo(
                 1,
                 TIPO_ARQUIVO_IMAGEM
         )).thenAnswer(invocation -> {
             Arquivo imagem = new Arquivo();
             imagem.setId(1);
-            imagem.setTabelaOrigem(TABELA_ORIGEM_ITEM);
-            imagem.setRegistroId(1);
+            imagem.setItem(item);
             imagem.setTipoArquivo(TIPO_ARQUIVO_IMAGEM);
             imagem.setUri("imagens/uuid-foto.jpg");
             imagem.setNome("foto.jpg");
@@ -556,8 +550,7 @@ class ItemServiceTest {
         );
 
         when(repository.findById(1)).thenReturn(Optional.of(item));
-        when(arquivoRepository.findByTabelaOrigemAndRegistroIdAndTipoArquivo(
-                TABELA_ORIGEM_ITEM,
+        when(arquivoRepository.findByItem_IdAndTipoArquivo(
                 1,
                 TIPO_ARQUIVO_IMAGEM
         )).thenReturn(Optional.of(imagemAntiga));
@@ -587,8 +580,7 @@ class ItemServiceTest {
         );
 
         when(repository.findById(1)).thenReturn(Optional.of(item));
-        when(arquivoRepository.findByTabelaOrigemAndRegistroIdAndTipoArquivo(
-                TABELA_ORIGEM_ITEM,
+        when(arquivoRepository.findByItem_IdAndTipoArquivo(
                 1,
                 TIPO_ARQUIVO_IMAGEM
         )).thenReturn(Optional.empty());
@@ -617,8 +609,7 @@ class ItemServiceTest {
                 "conteudo".getBytes()
         ).getResource();
 
-        when(arquivoRepository.findByTabelaOrigemAndRegistroIdAndTipoArquivo(
-                TABELA_ORIGEM_ITEM,
+        when(arquivoRepository.findByItem_IdAndTipoArquivo(
                 1,
                 TIPO_ARQUIVO_IMAGEM
         )).thenReturn(Optional.of(imagem));
@@ -647,8 +638,7 @@ class ItemServiceTest {
     void deveDeletarImagemComSucesso() {
         Arquivo imagem = imagem(1, "imagens/uuid-foto.jpg");
 
-        when(arquivoRepository.findByTabelaOrigemAndRegistroIdAndTipoArquivo(
-                TABELA_ORIGEM_ITEM,
+        when(arquivoRepository.findByItem_IdAndTipoArquivo(
                 1,
                 TIPO_ARQUIVO_IMAGEM
         )).thenReturn(Optional.of(imagem));
