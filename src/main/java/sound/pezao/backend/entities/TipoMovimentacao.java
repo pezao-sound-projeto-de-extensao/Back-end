@@ -1,5 +1,7 @@
 package sound.pezao.backend.entities;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 import java.util.Arrays;
 
 /**
@@ -18,6 +20,11 @@ public enum TipoMovimentacao {
         this.valor = valor;
     }
 
+    /**
+     * Valor usado tanto na coluna quanto no JSON da API, para que banco,
+     * documentacao e front-end falem a mesma grafia.
+     */
+    @JsonValue
     public String getValor() {
         return valor;
     }
