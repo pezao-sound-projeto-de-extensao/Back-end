@@ -40,7 +40,7 @@ public class AuthenticationService {
     }
 
     public AuthResponse authenticate(AuthRequest authRequest){
-        Usuario usuario = usuarioRepository.findByEmail(authRequest.email())
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(authRequest.email())
                 .orElseThrow(LoginInvalidoException::new);
 
         Authentication authentication = authenticationManager.authenticate(
@@ -58,7 +58,7 @@ public class AuthenticationService {
     }
 
     public void trocarSenha(AuthTrocarSenhaRequest authTrocarSenhaRequest){
-        Usuario usuario = usuarioRepository.findByEmail(authTrocarSenhaRequest.email())
+        Usuario usuario = usuarioRepository.findByEmailIgnoreCase(authTrocarSenhaRequest.email())
                 .orElseThrow(LoginInvalidoException::new);
 
         boolean senhaCorreta = passwordEncoder.matches(

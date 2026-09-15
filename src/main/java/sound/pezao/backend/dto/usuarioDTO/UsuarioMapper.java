@@ -1,5 +1,6 @@
 package sound.pezao.backend.dto.usuarioDTO;
 
+import sound.pezao.backend.dto.authDTO.AuthMeResponse;
 import sound.pezao.backend.dto.cargoDTO.CargoMapper;
 import sound.pezao.backend.entities.Usuario;
 
@@ -32,5 +33,14 @@ public class UsuarioMapper {
         return usuarios.stream()
                 .map(UsuarioMapper::toResponse)
                 .toList();
+    }
+
+    public static AuthMeResponse toMeResponse(Usuario usuario) {
+        return new AuthMeResponse(
+                usuario.getId(),
+                usuario.getNome(),
+                usuario.getEmail(),
+                CargoMapper.toResponse(usuario.getCargo())
+        );
     }
 }
