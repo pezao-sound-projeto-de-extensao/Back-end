@@ -94,7 +94,7 @@ class AuthenticationServiceTest {
             AuthRequest request =
                     new AuthRequest("teste@email.com", "123");
 
-            when(usuarioRepository.findByEmail("teste@email.com"))
+            when(usuarioRepository.findByEmailIgnoreCase("teste@email.com"))
                     .thenReturn(Optional.empty());
 
             assertThrows(
@@ -123,7 +123,7 @@ class AuthenticationServiceTest {
             Authentication authentication = mockAuthentication();
             UserAuthenticated userDetails = mockUserDetails();
 
-            when(usuarioRepository.findByEmail("teste@email.com"))
+            when(usuarioRepository.findByEmailIgnoreCase("teste@email.com"))
                     .thenReturn(Optional.of(usuario));
 
             when(authenticationManager.authenticate(
@@ -174,7 +174,7 @@ class AuthenticationServiceTest {
                             "nova"
                     );
 
-            when(usuarioRepository.findByEmail("teste@email.com"))
+            when(usuarioRepository.findByEmailIgnoreCase("teste@email.com"))
                     .thenReturn(Optional.empty());
 
             assertThrows(
@@ -195,7 +195,7 @@ class AuthenticationServiceTest {
                             "nova"
                     );
 
-            when(usuarioRepository.findByEmail("teste@email.com"))
+            when(usuarioRepository.findByEmailIgnoreCase("teste@email.com"))
                     .thenReturn(Optional.of(usuario));
 
             when(passwordEncoder.matches(
@@ -222,7 +222,7 @@ class AuthenticationServiceTest {
                             "nova"
                     );
 
-            when(usuarioRepository.findByEmail("teste@email.com"))
+            when(usuarioRepository.findByEmailIgnoreCase("teste@email.com"))
                     .thenReturn(Optional.of(usuario));
 
             when(passwordEncoder.matches(
