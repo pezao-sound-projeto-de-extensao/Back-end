@@ -1,0 +1,28 @@
+meta {
+  name: Listar itens - apenas alerta
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/itens?apenasAlerta=true&categoriaId={{categoriaId}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  apenasAlerta: true
+  categoriaId: {{categoriaId}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("só o item zerado está em alerta", function () {
+    const ids = res.body.content.map(i => i.id);
+    expect(ids).to.include(Number(bru.getVar("itemZeradoId")));
+    expect(ids).to.not.include(Number(bru.getVar("itemId")));
+  });
+}

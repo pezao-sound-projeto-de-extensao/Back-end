@@ -1,0 +1,31 @@
+meta {
+  name: Movimentacao automatica do estoque inicial
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/movimentacoes?itemId={{itemId}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  itemId: {{itemId}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("gerou uma entrada de 10 com a observação padrão", function () {
+    expect(res.body.content).to.have.lengthOf(1);
+    const m = res.body.content[0];
+    expect(m.tipo).to.equal("entrada");
+    expect(m.quantidade).to.equal(10);
+    expect(m.estoqueAntes).to.equal(0);
+    expect(m.estoqueDepois).to.equal(10);
+    expect(m.observacao).to.equal("Estoque inicial do cadastro do produto");
+  });
+}

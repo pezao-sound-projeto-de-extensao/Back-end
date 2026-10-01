@@ -1,0 +1,21 @@
+meta {
+  name: Listar categorias
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/categorias
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("contém a categoria criada", function () {
+    expect(res.body.map(c => c.id)).to.include(Number(bru.getVar("categoriaId")));
+  });
+}

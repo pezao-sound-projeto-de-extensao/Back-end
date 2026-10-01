@@ -1,0 +1,34 @@
+meta {
+  name: Login usuario - senha nova
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{usuarioEmail}}",
+    "senha": "{{usuarioSenhaNova}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("usuarioAccessToken", res.body.accessToken);
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
+
+docs {
+  Captura `usuarioAccessToken`. A partir daqui o cookie `access_token` é o do usuário de teste.
+}

@@ -1,0 +1,17 @@
+meta {
+  name: Buscar item - inexistente (404)
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/itens/999999
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

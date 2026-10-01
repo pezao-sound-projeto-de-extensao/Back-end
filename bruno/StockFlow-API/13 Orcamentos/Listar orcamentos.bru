@@ -1,0 +1,31 @@
+meta {
+  name: Listar orcamentos
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/orcamentos?status=PENDENTE&page=0&size=20
+  body: none
+  auth: inherit
+}
+
+params:query {
+  status: PENDENTE
+  page: 0
+  size: 20
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("só pendentes", function () {
+    res.body.content.forEach(o => expect(o.status).to.equal("PENDENTE"));
+  });
+}
+
+docs {
+  `search` aceita nome do cliente ou número do orçamento. `status`: PENDENTE, ACEITO, REJEITADO ou CONCLUIDO.
+}

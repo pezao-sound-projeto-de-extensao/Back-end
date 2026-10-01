@@ -1,0 +1,37 @@
+meta {
+  name: Atualizar orcamento
+  type: http
+  seq: 15
+}
+
+put {
+  url: {{baseUrl}}/orcamentos/{{orcamentoId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "clienteId": {{clienteId}},
+    "observacao": "Orçamento revisado",
+    "itens": [
+      { "itemId": {{itemId}}, "quantidade": 2, "precoUnitario": 290.00 },
+      { "itemId": {{itemSemImagemId}}, "quantidade": 1, "precoUnitario": 120.00 }
+    ]
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("substitui os itens e recalcula o total", function () {
+    expect(res.body.valorTotal).to.equal(700);
+    expect(res.body.observacao).to.equal("Orçamento revisado");
+  });
+}
+
+docs {
+  Os itens enviados substituem os anteriores. Só para orçamento PENDENTE.
+}

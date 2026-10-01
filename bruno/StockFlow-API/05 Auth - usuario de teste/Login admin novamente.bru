@@ -1,0 +1,40 @@
+meta {
+  name: Login admin novamente
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{adminEmail}}",
+    "senha": "{{adminSenha}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("accessToken", res.body.accessToken);
+    bru.setVar("refreshToken", res.body.refreshToken);
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
+
+docs {
+  Refaz o login do administrador.
+
+  O backend grava o JWT também no cookie `access_token` e o **cookie tem prioridade
+  sobre o header `Authorization`**. Como o Bruno guarda cookies, depois de logar com
+  o usuário de teste as próximas requests seguiriam autenticadas como ele. Este login
+  devolve o cookie (e o `accessToken` do environment) ao administrador.
+}

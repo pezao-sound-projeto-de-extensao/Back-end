@@ -1,0 +1,21 @@
+meta {
+  name: Buscar cargo - inexistente (404)
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/cargos/999999
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+
+  test("responde ProblemDetail", function () {
+    expect(res.body).to.have.property("detail");
+  });
+}

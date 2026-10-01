@@ -1,0 +1,33 @@
+meta {
+  name: Criar cargo - sem permissoes (400)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/cargos
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Cargo Vazio {{runId}}",
+    "descricao": "Sem permissões",
+    "permissoes": []
+  }
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("valida permissoes obrigatórias", function () {
+    expect(res.body.errors).to.have.property("permissoes");
+  });
+}
+
+docs {
+  `nome`, `descricao` e `permissoes` (não vazia) são obrigatórios.
+}

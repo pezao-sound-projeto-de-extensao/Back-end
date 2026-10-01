@@ -1,0 +1,30 @@
+meta {
+  name: Enviar nota
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/movimentacoes/{{movimentacaoId}}/nota
+  body: multipartForm
+  auth: inherit
+}
+
+body:multipart-form {
+  arquivo: @file(fixtures/nota.pdf)
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("movimentação passa a ter nota", function () {
+    expect(res.body.nota).to.not.equal(null);
+    expect(res.body.nota.mimeType).to.equal("application/pdf");
+  });
+}
+
+docs {
+  Multipart com o campo `arquivo`. Usa `fixtures/nota.pdf`. Precisa do S3/LocalStack rodando.
+}

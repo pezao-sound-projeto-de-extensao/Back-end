@@ -1,0 +1,23 @@
+meta {
+  name: Atualizar categoria - inexistente (404)
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/categorias/999999
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Nao existe"
+  }
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

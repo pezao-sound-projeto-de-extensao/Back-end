@@ -1,0 +1,25 @@
+meta {
+  name: Listar orcamentos - por numero
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/orcamentos?search={{orcamentoId}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  search: {{orcamentoId}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("encontra pelo número", function () {
+    expect(res.body.content.map(o => o.id)).to.include(Number(bru.getVar("orcamentoId")));
+  });
+}

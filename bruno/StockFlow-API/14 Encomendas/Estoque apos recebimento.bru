@@ -1,0 +1,21 @@
+meta {
+  name: Estoque apos recebimento
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/itens/{{itemId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("10 + 2 = 12", function () {
+    expect(res.body.quantidadeAtual).to.equal(12);
+  });
+}

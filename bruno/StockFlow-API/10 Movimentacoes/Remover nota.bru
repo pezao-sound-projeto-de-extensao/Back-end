@@ -1,0 +1,17 @@
+meta {
+  name: Remover nota
+  type: http
+  seq: 14
+}
+
+delete {
+  url: {{baseUrl}}/movimentacoes/{{movimentacaoId}}/nota
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

@@ -1,0 +1,26 @@
+meta {
+  name: Listar itens - inativos
+  type: http
+  seq: 19
+}
+
+get {
+  url: {{baseUrl}}/itens?ativo=false&search={{runId}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  ativo: false
+  search: {{runId}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("o item inativado aparece", function () {
+    expect(res.body.content.map(i => i.id)).to.include(Number(bru.getVar("itemId")));
+  });
+}

@@ -1,0 +1,28 @@
+meta {
+  name: Listar permissoes
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/permissoes
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("lista as 10 permissões do sistema", function () {
+    const nomes = res.body.map(p => p.nome);
+    ["GERENCIAR_USUARIOS", "GERENCIAR_CARGOS", "CADASTRAR_ITENS", "EDITAR_ITENS", "EXCLUIR_ITENS",
+     "REGISTRAR_ENTRADA", "REGISTRAR_SAIDA", "VER_RELATORIOS", "GERENCIAR_ORCAMENTOS",
+     "GERENCIAR_ENCOMENDAS"].forEach(n => expect(nomes).to.include(n));
+  });
+}
+
+docs {
+  Os nomes devolvidos aqui são os aceitos em `permissoes` ao criar/editar um cargo.
+}

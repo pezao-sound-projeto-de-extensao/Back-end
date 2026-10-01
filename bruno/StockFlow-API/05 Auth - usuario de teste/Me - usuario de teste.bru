@@ -1,0 +1,26 @@
+meta {
+  name: Me - usuario de teste
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/auth/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{usuarioAccessToken}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("token pertence ao usuário de teste", function () {
+    expect(res.body.id).to.equal(Number(bru.getVar("usuarioId")));
+    expect(res.body.cargo.permissoes).to.not.include("GERENCIAR_CARGOS");
+  });
+}

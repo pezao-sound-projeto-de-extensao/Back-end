@@ -1,0 +1,24 @@
+meta {
+  name: Login usuario - senha antiga (401)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{usuarioEmail}}",
+    "senha": "{{usuarioSenhaTemp}}"
+  }
+}
+
+tests {
+  test("status 401", function () {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

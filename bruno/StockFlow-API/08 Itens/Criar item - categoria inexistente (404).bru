@@ -1,0 +1,27 @@
+meta {
+  name: Criar item - categoria inexistente (404)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/itens
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Sem categoria {{runId}}",
+    "categoriaId": 999999,
+    "unidadeId": {{unidadeId}},
+    "quantidadeAtual": 0,
+    "quantidadeMinima": 0
+  }
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

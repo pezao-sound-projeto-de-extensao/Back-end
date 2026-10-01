@@ -1,0 +1,28 @@
+meta {
+  name: Atualizar unidade
+  type: http
+  seq: 5
+}
+
+put {
+  url: {{baseUrl}}/unidades/{{unidadeId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Caixa {{runId}} Editada",
+    "abreviacao": "CXE"
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("altera nome e abreviacao", function () {
+    expect(res.body.abreviacao).to.equal("CXE");
+  });
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Listar unidades
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/unidades
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("contém as unidades do init.sql e a criada", function () {
+    const nomes = res.body.map(u => u.nome);
+    expect(nomes).to.include("Unidade");
+    expect(res.body.map(u => u.id)).to.include(Number(bru.getVar("unidadeId")));
+  });
+}

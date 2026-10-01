@@ -1,0 +1,25 @@
+meta {
+  name: Buscar alertas - estoque baixo
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/alertas/buscar?tipo=estoque_baixo
+  body: none
+  auth: inherit
+}
+
+params:query {
+  tipo: estoque_baixo
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("todos são do tipo estoque_baixo", function () {
+    res.body.forEach(a => expect(a.tipoAlerta).to.equal("estoque_baixo"));
+  });
+}

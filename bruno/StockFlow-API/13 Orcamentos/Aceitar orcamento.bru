@@ -1,0 +1,25 @@
+meta {
+  name: Aceitar orcamento
+  type: http
+  seq: 16
+}
+
+patch {
+  url: {{baseUrl}}/orcamentos/{{orcamentoId}}/aceitar
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("status ACEITO", function () {
+    expect(res.body.status).to.equal("ACEITO");
+  });
+}
+
+docs {
+  Gera uma encomenda PENDENTE para cada item (aqui, 2).
+}

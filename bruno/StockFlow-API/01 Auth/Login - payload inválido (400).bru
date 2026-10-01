@@ -1,0 +1,33 @@
+meta {
+  name: Login - payload inválido (400)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "nao-e-email",
+    "senha": "123"
+  }
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("aponta os campos inválidos", function () {
+    expect(res.body.errors).to.have.property("email");
+    expect(res.body.errors).to.have.property("senha");
+  });
+}
+
+docs {
+  `email` precisa ser um e-mail válido e `senha` ter entre 5 e 20 caracteres.
+}

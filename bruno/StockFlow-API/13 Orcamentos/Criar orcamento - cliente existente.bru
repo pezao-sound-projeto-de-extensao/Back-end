@@ -1,0 +1,45 @@
+meta {
+  name: Criar orcamento - cliente existente
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/orcamentos
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "clienteId": {{clienteId}},
+    "observacao": "Orçamento de itens do catálogo",
+    "itens": [
+      { "itemId": {{itemId}}, "quantidade": 2, "precoUnitario": 300.00 },
+      { "itemId": {{itemSemImagemId}}, "quantidade": 3, "precoUnitario": 120.00 }
+    ]
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("orcamentoId", res.body.id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("PENDENTE, 2 itens, total 960", function () {
+    expect(res.body.status).to.equal("PENDENTE");
+    expect(res.body.quantidadeItens).to.equal(2);
+    expect(res.body.valorTotal).to.equal(960);
+    expect(res.body.cliente.id).to.equal(Number(bru.getVar("clienteId")));
+  });
+}
+
+docs {
+  Captura `orcamentoId`. O nome do produto é copiado para a `descricao` do item do orçamento.
+}

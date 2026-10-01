@@ -1,0 +1,27 @@
+meta {
+  name: Logout
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/auth/logout
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "refreshToken": "{{refreshToken}}"
+  }
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
+
+docs {
+  Público. Revoga o refresh token e limpa os cookies `access_token`/`refresh_token`. O access token (JWT) continua válido até expirar.
+}

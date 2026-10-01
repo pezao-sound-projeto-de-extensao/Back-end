@@ -1,0 +1,39 @@
+meta {
+  name: Criar item - segundo item
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/itens
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Microfone {{runId}}",
+    "categoriaId": {{categoriaId}},
+    "unidadeId": {{unidadeId}},
+    "quantidadeAtual": 5,
+    "quantidadeMinima": 1,
+    "precoCusto": 50.00,
+    "precoVenda": 120.00
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("itemSemImagemId", res.body.id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}
+
+docs {
+  Captura `itemSemImagemId`. Usado em movimentações, orçamentos e encomendas.
+}

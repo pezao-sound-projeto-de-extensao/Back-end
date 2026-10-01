@@ -1,0 +1,33 @@
+meta {
+  name: Registrar saida - maior que o estoque (400)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/movimentacoes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "itemId": {{itemSemImagemId}},
+    "tipo": "saida",
+    "quantidade": 9999
+  }
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("responde ProblemDetail", function () {
+    expect(res.body).to.have.property("detail");
+  });
+}
+
+docs {
+  `EstoqueInsuficienteException` → 400.
+}

@@ -1,0 +1,29 @@
+meta {
+  name: Criar categoria descartavel
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/categorias
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Categoria Descartavel {{runId}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("categoriaDescartavelId", res.body.id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

@@ -1,0 +1,25 @@
+meta {
+  name: Trocar senha - senha atual errada (401)
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/auth/trocar-senha
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{usuarioEmail}}",
+    "senhaAtual": "senha_errada",
+    "senhaNova": "{{usuarioSenhaNova}}"
+  }
+}
+
+tests {
+  test("status 401", function () {
+    expect(res.getStatus()).to.equal(401);
+  });
+}

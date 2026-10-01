@@ -1,0 +1,31 @@
+meta {
+  name: Criar cargo descartavel
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/cargos
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Descartavel {{runId}}",
+    "descricao": "Cargo sem usuários, para testar exclusão",
+    "permissoes": ["VER_RELATORIOS"]
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("cargoDescartavelId", res.body.id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

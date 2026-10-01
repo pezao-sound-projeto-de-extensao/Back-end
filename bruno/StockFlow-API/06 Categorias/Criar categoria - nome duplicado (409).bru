@@ -1,0 +1,27 @@
+meta {
+  name: Criar categoria - nome duplicado (409)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/categorias
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "CATEGORIA TESTE {{runId}}"
+  }
+}
+
+tests {
+  test("status 409", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+
+  test("responde ProblemDetail", function () {
+    expect(res.body).to.have.property("detail");
+  });
+}

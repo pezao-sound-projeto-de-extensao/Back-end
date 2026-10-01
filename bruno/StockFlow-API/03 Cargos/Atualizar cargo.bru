@@ -1,0 +1,34 @@
+meta {
+  name: Atualizar cargo
+  type: http
+  seq: 8
+}
+
+put {
+  url: {{baseUrl}}/cargos/{{cargoId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Operador {{runId}} Atualizado",
+    "descricao": "Cargo atualizado",
+    "permissoes": ["REGISTRAR_ENTRADA", "REGISTRAR_SAIDA", "VER_RELATORIOS"]
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("substitui as permissões", function () {
+    expect(res.body.nome).to.equal("Operador " + bru.getVar("runId") + " Atualizado");
+    expect(res.body.permissoes).to.have.members(["REGISTRAR_ENTRADA", "REGISTRAR_SAIDA", "VER_RELATORIOS"]);
+  });
+}
+
+docs {
+  O conjunto de permissões enviado substitui o anterior.
+}

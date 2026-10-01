@@ -1,0 +1,25 @@
+meta {
+  name: Saida consumindo a entrada
+  type: http
+  seq: 19
+}
+
+post {
+  url: {{baseUrl}}/movimentacoes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "itemId": {{itemZeradoId}},
+    "tipo": "saida",
+    "quantidade": 3
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

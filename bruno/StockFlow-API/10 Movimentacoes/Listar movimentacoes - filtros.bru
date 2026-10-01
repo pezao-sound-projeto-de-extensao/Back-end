@@ -1,0 +1,32 @@
+meta {
+  name: Listar movimentacoes - filtros
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/movimentacoes?itemId={{itemSemImagemId}}&tipo=entrada&dataInicio={{hoje}}&dataFim={{hoje}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  itemId: {{itemSemImagemId}}
+  tipo: entrada
+  dataInicio: {{hoje}}
+  dataFim: {{hoje}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("só entradas do item", function () {
+    expect(res.body.content.length).to.be.greaterThan(0);
+    res.body.content.forEach(m => {
+      expect(m.tipo).to.equal("entrada");
+      expect(m.item.id).to.equal(Number(bru.getVar("itemSemImagemId")));
+    });
+  });
+}

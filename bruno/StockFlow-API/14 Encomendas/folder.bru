@@ -1,0 +1,12 @@
+meta {
+  name: 14 Encomendas
+  seq: 15
+}
+
+docs {
+  Exige `GERENCIAR_ENCOMENDAS`. Criadas pelo aceite de orçamento.
+
+  Fluxo: `PENDENTE` → **receber** (entrada no estoque) → `RECEBIDA` → **concluir** (saída do estoque)
+  → `CONCLUIDA`. Quando todas as encomendas do orçamento são concluídas, o orçamento vira `CONCLUIDO`.
+  Encomenda de produto novo precisa de `{"itemId": ...}` no recebimento.
+}

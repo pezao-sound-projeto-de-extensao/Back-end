@@ -1,0 +1,34 @@
+meta {
+  name: Criar usuario - senha curta (400)
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/usuarios
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Senha curta",
+    "email": "senhacurta.{{runId}}@stockflow.com",
+    "cargo_id": {{cargoId}},
+    "senha": "123"
+  }
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("valida o tamanho da senha", function () {
+    expect(res.body.errors).to.have.property("senha");
+  });
+}
+
+docs {
+  Quando informada, a senha precisa ter entre 8 e 20 caracteres.
+}

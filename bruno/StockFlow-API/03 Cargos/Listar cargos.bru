@@ -1,0 +1,21 @@
+meta {
+  name: Listar cargos
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/cargos
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("contém o cargo criado", function () {
+    expect(res.body.map(c => c.id)).to.include(Number(bru.getVar("cargoId")));
+  });
+}

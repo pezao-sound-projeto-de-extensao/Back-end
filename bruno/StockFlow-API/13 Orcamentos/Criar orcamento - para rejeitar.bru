@@ -1,0 +1,36 @@
+meta {
+  name: Criar orcamento - para rejeitar
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/orcamentos
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "clienteId": {{clienteId}},
+    "itens": [
+      { "itemId": {{itemId}}, "quantidade": 1, "precoUnitario": 300.00 }
+    ]
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("orcamentoRejeitarId", res.body.id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}
+
+docs {
+  Captura `orcamentoRejeitarId`.
+}

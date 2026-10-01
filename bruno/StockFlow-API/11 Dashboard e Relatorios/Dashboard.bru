@@ -1,0 +1,27 @@
+meta {
+  name: Dashboard
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/dashboard
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("kpis e itens de atenção", function () {
+    ["totalProdutos", "estoqueOk", "emAlerta", "zerados"].forEach(k => expect(res.body.kpis).to.have.property(k));
+    expect(res.body.possuiAlertas).to.equal(true);
+    expect(res.body.itensAtencao[0].status).to.equal("ZERADO");
+  });
+}
+
+docs {
+  Itens de atenção: zerados primeiro, depois estoque baixo, do menor saldo para o maior.
+}

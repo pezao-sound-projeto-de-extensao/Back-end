@@ -1,0 +1,15 @@
+meta {
+  name: 13 Orcamentos
+  seq: 14
+}
+
+docs {
+  Exige `GERENCIAR_ORCAMENTOS`.
+
+  Regras:
+  - cliente: `clienteId` **ou** `clienteNovo`, nunca os dois e nunca nenhum (400);
+  - cada item: `itemId` (catálogo) **ou** `descricao` (produto novo), nunca os dois (400);
+  - `itens` com pelo menos um elemento; `quantidade` > 0; `precoUnitario` ≥ 0;
+  - só orçamento `PENDENTE` pode ser editado, aceito ou rejeitado (400);
+  - aceitar gera uma encomenda `PENDENTE` por item.
+}

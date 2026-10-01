@@ -1,0 +1,22 @@
+meta {
+  name: Buscar usuario
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/usuarios/{{usuarioId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("usuário ativo com o cargo de teste", function () {
+    expect(res.body.ativo).to.equal(true);
+    expect(res.body.cargo.id).to.equal(Number(bru.getVar("cargoId")));
+  });
+}

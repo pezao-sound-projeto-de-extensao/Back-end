@@ -1,0 +1,31 @@
+meta {
+  name: Listar usuarios
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/usuarios?search={{runId}}&page=0&size=10
+  body: none
+  auth: inherit
+}
+
+params:query {
+  search: {{runId}}
+  page: 0
+  size: 10
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("filtra pelo termo de busca (nome ou e-mail)", function () {
+    expect(res.body.content.map(u => u.id)).to.include(Number(bru.getVar("usuarioId")));
+  });
+}
+
+docs {
+  Paginado (padrão `size=10`, ordenado por nome). Filtros opcionais: `search` (nome/e-mail) e `cargoId`.
+}

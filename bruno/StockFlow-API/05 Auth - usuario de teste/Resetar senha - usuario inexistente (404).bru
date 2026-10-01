@@ -1,0 +1,17 @@
+meta {
+  name: Resetar senha - usuario inexistente (404)
+  type: http
+  seq: 11
+}
+
+put {
+  url: {{baseUrl}}/auth/resetar-senha/999999
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

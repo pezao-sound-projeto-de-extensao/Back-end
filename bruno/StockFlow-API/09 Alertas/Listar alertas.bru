@@ -1,0 +1,21 @@
+meta {
+  name: Listar alertas
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/alertas
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("contém o item zerado", function () {
+    expect(res.body.map(a => a.itemId)).to.include(Number(bru.getVar("itemZeradoId")));
+  });
+}

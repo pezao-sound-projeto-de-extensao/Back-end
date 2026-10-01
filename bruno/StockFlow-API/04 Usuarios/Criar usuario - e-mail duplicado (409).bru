@@ -1,0 +1,29 @@
+meta {
+  name: Criar usuario - e-mail duplicado (409)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/usuarios
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Duplicado",
+    "email": "{{usuarioEmail}}",
+    "cargo_id": {{cargoId}}
+  }
+}
+
+tests {
+  test("status 409", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+
+  test("responde ProblemDetail", function () {
+    expect(res.body).to.have.property("detail");
+  });
+}

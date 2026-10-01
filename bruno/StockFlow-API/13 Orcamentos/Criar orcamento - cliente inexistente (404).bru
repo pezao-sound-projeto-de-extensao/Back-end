@@ -1,0 +1,24 @@
+meta {
+  name: Criar orcamento - cliente inexistente (404)
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/orcamentos
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "clienteId": 999999,
+    "itens": [ { "itemId": {{itemId}}, "quantidade": 1, "precoUnitario": 300.00 } ]
+  }
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

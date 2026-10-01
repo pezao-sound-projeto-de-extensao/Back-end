@@ -1,0 +1,34 @@
+meta {
+  name: Criar unidade
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/unidades
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Caixa {{runId}}",
+    "abreviacao": "CX"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("unidadeId", res.body.id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}
+
+docs {
+  Captura `unidadeId`, usada pelos itens.
+}

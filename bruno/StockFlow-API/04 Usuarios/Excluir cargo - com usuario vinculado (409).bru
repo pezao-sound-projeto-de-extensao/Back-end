@@ -1,0 +1,25 @@
+meta {
+  name: Excluir cargo - com usuario vinculado (409)
+  type: http
+  seq: 13
+}
+
+delete {
+  url: {{baseUrl}}/cargos/{{cargoId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 409", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+
+  test("responde ProblemDetail", function () {
+    expect(res.body).to.have.property("detail");
+  });
+}
+
+docs {
+  Cargo com usuários vinculados não pode ser excluído → 409.
+}

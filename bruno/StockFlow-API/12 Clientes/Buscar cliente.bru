@@ -1,0 +1,17 @@
+meta {
+  name: Buscar cliente
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/clientes/{{clienteId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

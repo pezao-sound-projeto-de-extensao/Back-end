@@ -1,0 +1,32 @@
+meta {
+  name: Criar cliente - sem nome (400)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/clientes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "",
+    "telefone": "(11) 3333-4444"
+  }
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("valida nome", function () {
+    expect(res.body.errors).to.have.property("nome");
+  });
+}
+
+docs {
+  `nome` obrigatório; `telefone` opcional, até 30 caracteres.
+}

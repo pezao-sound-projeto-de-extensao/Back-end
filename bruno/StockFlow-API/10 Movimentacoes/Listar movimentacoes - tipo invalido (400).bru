@@ -1,0 +1,21 @@
+meta {
+  name: Listar movimentacoes - tipo invalido (400)
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/movimentacoes?tipo=xpto
+  body: none
+  auth: inherit
+}
+
+params:query {
+  tipo: xpto
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

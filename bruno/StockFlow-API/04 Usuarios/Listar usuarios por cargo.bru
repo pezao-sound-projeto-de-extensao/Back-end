@@ -1,0 +1,25 @@
+meta {
+  name: Listar usuarios por cargo
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/usuarios?cargoId={{cargoId}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  cargoId: {{cargoId}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("todos pertencem ao cargo", function () {
+    res.body.content.forEach(u => expect(u.cargo.id).to.equal(Number(bru.getVar("cargoId"))));
+  });
+}

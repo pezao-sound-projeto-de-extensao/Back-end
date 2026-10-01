@@ -1,0 +1,30 @@
+meta {
+  name: Listar movimentacoes
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/movimentacoes?page=0&size=20
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 0
+  size: 20
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("resposta paginada", function () {
+    expect(res.body).to.have.property("content");
+  });
+}
+
+docs {
+  Mais recente primeiro. Filtros: `itemId`, `tipo`, `usuarioId`, `search` (nome do item), `dataInicio` e `dataFim` (aaaa-MM-dd).
+}

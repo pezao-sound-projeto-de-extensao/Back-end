@@ -1,0 +1,21 @@
+meta {
+  name: Relatorio - sem periodo (400)
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{baseUrl}}/relatorios
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}
+
+docs {
+  Sem `dataInicio`/`dataFim` → 400.
+}

@@ -1,0 +1,22 @@
+meta {
+  name: Buscar movimentacao
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/movimentacoes/{{movimentacaoId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("sem nota anexada", function () {
+    expect(res.body.id).to.equal(Number(bru.getVar("movimentacaoId")));
+    expect(res.body.nota).to.equal(null);
+  });
+}

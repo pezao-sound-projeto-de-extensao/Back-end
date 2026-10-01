@@ -1,0 +1,21 @@
+meta {
+  name: Orcamento ainda aceito
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/orcamentos/{{orcamentoId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("falta concluir a segunda encomenda", function () {
+    expect(res.body.status).to.equal("ACEITO");
+  });
+}

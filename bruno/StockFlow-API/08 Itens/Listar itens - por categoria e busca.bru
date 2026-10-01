@@ -1,0 +1,26 @@
+meta {
+  name: Listar itens - por categoria e busca
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/itens?categoriaId={{categoriaId}}&search={{runId}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  categoriaId: {{categoriaId}}
+  search: {{runId}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("devolve os 3 itens criados", function () {
+    expect(res.body.totalElements).to.equal(3);
+  });
+}
