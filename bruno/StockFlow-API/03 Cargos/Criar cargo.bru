@@ -1,0 +1,40 @@
+meta {
+  name: Criar cargo
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/cargos
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Operador {{runId}}",
+    "descricao": "Cargo de teste com permissões de estoque",
+    "permissoes": ["REGISTRAR_ENTRADA", "REGISTRAR_SAIDA"]
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("cargoId", res.body.id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("devolve o cargo com as permissões", function () {
+    expect(res.body.id).to.be.a("number");
+    expect(res.body.permissoes).to.have.members(["REGISTRAR_ENTRADA", "REGISTRAR_SAIDA"]);
+  });
+}
+
+docs {
+  Captura `cargoId`. Esse cargo será usado pelo usuário de teste (sem permissões administrativas).
+}

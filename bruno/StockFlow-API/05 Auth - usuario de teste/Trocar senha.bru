@@ -1,0 +1,29 @@
+meta {
+  name: Trocar senha
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/auth/trocar-senha
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{usuarioEmail}}",
+    "senhaAtual": "{{usuarioSenhaTemp}}",
+    "senhaNova": "{{usuarioSenhaNova}}"
+  }
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
+
+docs {
+  Público. Valida a senha atual e grava a nova (5 a 20 caracteres).
+}

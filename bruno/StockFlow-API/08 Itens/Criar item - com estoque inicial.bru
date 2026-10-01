@@ -1,0 +1,46 @@
+meta {
+  name: Criar item - com estoque inicial
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/itens
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Caixa de Som {{runId}}",
+    "categoriaId": {{categoriaId}},
+    "unidadeId": {{unidadeId}},
+    "quantidadeAtual": 10,
+    "quantidadeMinima": 3,
+    "precoCusto": 150.00,
+    "precoVenda": 300.00
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("itemId", res.body.id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("item ativo, status OK e sem imagem", function () {
+    expect(res.body.quantidadeAtual).to.equal(10);
+    expect(res.body.status).to.equal("OK");
+    expect(res.body.ativo).to.equal(true);
+    expect(res.body.imagem).to.equal(null);
+  });
+}
+
+docs {
+  Captura `itemId`.
+}

@@ -1,0 +1,25 @@
+meta {
+  name: Excluir entrada ja consumida (400)
+  type: http
+  seq: 20
+}
+
+delete {
+  url: {{baseUrl}}/movimentacoes/{{movimentacaoConsumidaId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("responde ProblemDetail", function () {
+    expect(res.body).to.have.property("detail");
+  });
+}
+
+docs {
+  Reverter a entrada deixaria o saldo negativo (0 - 3) → 400. O item continua zerado.
+}

@@ -1,0 +1,35 @@
+meta {
+  name: Cadastrar item - sem permissao (403)
+  type: http
+  seq: 8
+}
+
+post {
+  url: {{baseUrl}}/itens
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{usuarioAccessToken}}
+}
+
+body:json {
+  {
+    "nome": "Nao deveria {{runId}}",
+    "categoriaId": 1,
+    "unidadeId": 1,
+    "quantidadeAtual": 0,
+    "quantidadeMinima": 0
+  }
+}
+
+tests {
+  test("status 403", function () {
+    expect(res.getStatus()).to.equal(403);
+  });
+}
+
+docs {
+  Sem `CADASTRAR_ITENS` → 403.
+}

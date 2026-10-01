@@ -1,0 +1,26 @@
+meta {
+  name: Concluir encomenda
+  type: http
+  seq: 10
+}
+
+patch {
+  url: {{baseUrl}}/encomendas/{{encomendaId}}/concluir
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("CONCLUIDA com data de conclusão", function () {
+    expect(res.body.status).to.equal("CONCLUIDA");
+    expect(res.body.concluidaEm).to.not.equal(null);
+  });
+}
+
+docs {
+  Registra saída de 2 no estoque.
+}

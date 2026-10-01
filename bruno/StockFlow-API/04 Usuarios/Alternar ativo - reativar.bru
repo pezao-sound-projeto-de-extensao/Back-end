@@ -1,0 +1,17 @@
+meta {
+  name: Alternar ativo - reativar
+  type: http
+  seq: 12
+}
+
+patch {
+  url: {{baseUrl}}/usuarios/ativo/{{usuarioId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

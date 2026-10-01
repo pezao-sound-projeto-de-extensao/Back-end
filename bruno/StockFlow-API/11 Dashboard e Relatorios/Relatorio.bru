@@ -1,0 +1,33 @@
+meta {
+  name: Relatorio
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/relatorios?dataInicio={{inicioAno}}&dataFim={{hoje}}&page=0&size=20
+  body: none
+  auth: inherit
+}
+
+params:query {
+  dataInicio: {{inicioAno}}
+  dataFim: {{hoje}}
+  page: 0
+  size: 20
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("kpis, críticos, mais movimentados e histórico", function () {
+    expect(res.body).to.have.all.keys("kpis", "itensCriticos", "maisMovimentados", "historico");
+    expect(res.body.historico).to.have.property("content");
+  });
+}
+
+docs {
+  `dataInicio` e `dataFim` (aaaa-MM-dd) são obrigatórios; `categoriaId` é opcional. O `tipo` do histórico vem em MAIÚSCULO (`ENTRADA`/`SAIDA`), diferente de `/movimentacoes`.
+}

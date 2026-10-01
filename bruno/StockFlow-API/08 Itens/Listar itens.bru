@@ -1,0 +1,31 @@
+meta {
+  name: Listar itens
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/itens?page=0&size=20
+  body: none
+  auth: inherit
+}
+
+params:query {
+  page: 0
+  size: 20
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("resposta paginada", function () {
+    expect(res.body).to.have.property("content");
+    expect(res.body).to.have.property("totalElements");
+  });
+}
+
+docs {
+  Filtros opcionais: `ativo`, `search` (nome), `categoriaId`, `apenasAlerta=true` (baixo ou zerado).
+}

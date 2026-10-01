@@ -1,0 +1,36 @@
+meta {
+  name: Registrar saida
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/movimentacoes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "itemId": {{itemSemImagemId}},
+    "tipo": "SAIDA",
+    "quantidade": 2,
+    "observacao": "Venda balcão"
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("10 → 8 e tipo normalizado para minúsculo", function () {
+    expect(res.body.tipo).to.equal("saida");
+    expect(res.body.estoqueAntes).to.equal(10);
+    expect(res.body.estoqueDepois).to.equal(8);
+  });
+}
+
+docs {
+  O `tipo` é aceito sem diferenciar maiúsculas, mas a resposta vem em minúsculo.
+}

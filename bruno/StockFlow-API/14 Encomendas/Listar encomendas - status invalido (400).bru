@@ -1,0 +1,21 @@
+meta {
+  name: Listar encomendas - status invalido (400)
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/encomendas?status=XPTO
+  body: none
+  auth: inherit
+}
+
+params:query {
+  status: XPTO
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+}

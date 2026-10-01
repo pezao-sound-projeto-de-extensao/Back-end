@@ -1,0 +1,42 @@
+meta {
+  name: Refresh
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/auth/refresh
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "refreshToken": "{{refreshToken}}"
+  }
+}
+
+script:pre-request {
+  bru.setVar("refreshTokenAnterior", bru.getVar("refreshToken"));
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("accessToken", res.body.accessToken);
+    bru.setVar("refreshToken", res.body.refreshToken);
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("gera um refresh token novo (rotação)", function () {
+    expect(res.body.refreshToken).to.not.equal(bru.getVar("refreshTokenAnterior"));
+  });
+}
+
+docs {
+  Troca o refresh token por um novo par de tokens. O token enviado é revogado.
+}

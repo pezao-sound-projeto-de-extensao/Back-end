@@ -1,0 +1,22 @@
+meta {
+  name: Buscar item
+  type: http
+  seq: 11
+}
+
+get {
+  url: {{baseUrl}}/itens/{{itemId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("devolve categoria e unidade", function () {
+    expect(res.body.categoriaId).to.equal(Number(bru.getVar("categoriaId")));
+    expect(res.body.unidadeId).to.equal(Number(bru.getVar("unidadeId")));
+  });
+}

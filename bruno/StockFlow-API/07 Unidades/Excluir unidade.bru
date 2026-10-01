@@ -1,0 +1,17 @@
+meta {
+  name: Excluir unidade
+  type: http
+  seq: 8
+}
+
+delete {
+  url: {{baseUrl}}/unidades/{{unidadeDescartavelId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

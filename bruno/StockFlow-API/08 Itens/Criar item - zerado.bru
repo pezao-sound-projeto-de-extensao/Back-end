@@ -1,0 +1,41 @@
+meta {
+  name: Criar item - zerado
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{baseUrl}}/itens
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Cabo RCA {{runId}}",
+    "categoriaId": {{categoriaId}},
+    "unidadeId": {{unidadeId}},
+    "quantidadeAtual": 0,
+    "quantidadeMinima": 2
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("itemZeradoId", res.body.id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("status ZERADO", function () {
+    expect(res.body.status).to.equal("ZERADO");
+  });
+}
+
+docs {
+  Captura `itemZeradoId`. Com quantidade 0 não gera movimentação e entra nos alertas como `zerado`. Preços são opcionais.
+}

@@ -1,0 +1,33 @@
+meta {
+  name: Criar cargo - sem permissao (403)
+  type: http
+  seq: 6
+}
+
+post {
+  url: {{baseUrl}}/cargos
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{usuarioAccessToken}}
+}
+
+body:json {
+  {
+    "nome": "Nao deveria {{runId}}",
+    "descricao": "Usuário sem GERENCIAR_CARGOS",
+    "permissoes": ["VER_RELATORIOS"]
+  }
+}
+
+tests {
+  test("status 403", function () {
+    expect(res.getStatus()).to.equal(403);
+  });
+}
+
+docs {
+  O usuário de teste não tem `GERENCIAR_CARGOS` → 403.
+}

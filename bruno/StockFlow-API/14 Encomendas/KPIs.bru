@@ -1,0 +1,22 @@
+meta {
+  name: KPIs
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/encomendas/kpis
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("pendentes, recebidas e concluídas no mês", function () {
+    expect(res.body).to.have.all.keys("pendentes", "recebidas", "concluidasNoMes");
+    expect(res.body.pendentes).to.be.at.least(3);
+  });
+}

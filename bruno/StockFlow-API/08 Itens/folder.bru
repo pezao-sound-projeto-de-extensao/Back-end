@@ -1,0 +1,16 @@
+meta {
+  name: 08 Itens
+  seq: 9
+}
+
+docs {
+  Listar/buscar/baixar imagem: qualquer autenticado. Criar: `CADASTRAR_ITENS`. Editar e enviar imagem:
+  `EDITAR_ITENS`. Inativar, reativar e remover imagem: `EXCLUIR_ITENS`.
+
+  Regras:
+  - nome único;
+  - `quantidadeAtual` > 0 no cadastro gera uma movimentação de **entrada** automática;
+  - na edição `quantidadeAtual` é ignorada (o saldo só muda por movimentação);
+  - item inativo não pode ser editado (400);
+  - `status` é calculado: `ZERADO` (≤ 0), `BAIXO` (≤ mínima), `OK`.
+}

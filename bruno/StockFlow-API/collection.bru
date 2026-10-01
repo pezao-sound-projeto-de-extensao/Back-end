@@ -1,0 +1,30 @@
+auth {
+  mode: bearer
+}
+
+auth:bearer {
+  token: {{accessToken}}
+}
+
+script:pre-request {
+  // Sufixo único por execução: evita conflito de nomes únicos (cargo, item, e-mail...)
+  // ao rodar a collection várias vezes no mesmo banco.
+  if (!bru.getVar("runId")) {
+    bru.setVar("runId", String(Date.now()).slice(-7));
+  }
+  const hoje = new Date();
+  const iso = d => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+  bru.setVar("hoje", iso(hoje));
+  bru.setVar("inicioAno", hoje.getFullYear() + "-01-01");
+}
+
+docs {
+  # StockFlow API
+
+  Todas as requests herdam `Bearer {{accessToken}}` desta collection, exceto os
+  endpoints públicos (`/health`, `/auth/login`, `/auth/refresh`, `/auth/logout`,
+  `/auth/trocar-senha`), que usam `auth: none`.
+
+  Execute as pastas na ordem numérica (ou *Run Collection*): cada pasta usa ids
+  capturados pelas anteriores. Veja `README.md` na pasta `bruno/`.
+}

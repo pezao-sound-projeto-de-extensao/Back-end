@@ -1,0 +1,27 @@
+meta {
+  name: Criar categoria - nome vazio (400)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/categorias
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": ""
+  }
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("valida nome", function () {
+    expect(res.body.errors).to.have.property("nome");
+  });
+}

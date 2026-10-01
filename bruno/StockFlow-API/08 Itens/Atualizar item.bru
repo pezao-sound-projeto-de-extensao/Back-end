@@ -1,0 +1,42 @@
+meta {
+  name: Atualizar item
+  type: http
+  seq: 13
+}
+
+put {
+  url: {{baseUrl}}/itens/{{itemId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Caixa de Som {{runId}} Pro",
+    "categoriaId": {{categoriaId}},
+    "unidadeId": {{unidadeId}},
+    "quantidadeAtual": 999,
+    "quantidadeMinima": 4,
+    "precoCusto": 160.00,
+    "precoVenda": 320.00
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("quantidadeAtual enviada é ignorada", function () {
+    expect(res.body.quantidadeAtual).to.equal(10);
+  });
+
+  test("demais campos são atualizados", function () {
+    expect(res.body.quantidadeMinima).to.equal(4);
+    expect(res.body.precoVenda).to.equal(320);
+  });
+}
+
+docs {
+  Envia `quantidadeAtual: 999` de propósito: o saldo não muda na edição.
+}

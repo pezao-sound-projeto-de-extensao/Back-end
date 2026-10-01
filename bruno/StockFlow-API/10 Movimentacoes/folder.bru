@@ -1,0 +1,15 @@
+meta {
+  name: 10 Movimentacoes
+  seq: 11
+}
+
+docs {
+  Todos os endpoints exigem `REGISTRAR_ENTRADA` ou `REGISTRAR_SAIDA`; registrar/excluir uma entrada exige
+  `REGISTRAR_ENTRADA` e uma saída exige `REGISTRAR_SAIDA`.
+
+  Regras:
+  - `tipo` é `entrada` ou `saida` (resposta sempre em minúsculo);
+  - `quantidade` > 0; saída maior que o saldo → 400;
+  - `data` é opcional;
+  - excluir uma movimentação reverte o estoque; excluir uma entrada cujo saldo já foi consumido → 400.
+}
