@@ -134,6 +134,7 @@ public class UsuarioService {
         usuarioRepository.save(usuario);
     }
 
+    @PreAuthorize("isAuthenticated()")
     public AuthMeResponse buscarMePorEmail(String email) {
         Usuario usuario = usuarioRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário", 0));
