@@ -3,6 +3,7 @@ package sound.pezao.backend.service;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.Queue;
+import org.springframework.amqp.core.QueueBuilder;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.annotation.Bean;
@@ -22,6 +23,7 @@ import java.util.List;
 public class ImagemItemProcessor {
 
     static final String FILA = "imagens.processar";
+    static final String FILA_DLQ = FILA + ".dlq";
     static final List<String> TIPOS = List.of("icon", "full");
     static final int LADO_MAXIMO_ICON = 120;
     static final int LADO_MAXIMO_FULL = 900;
@@ -39,7 +41,15 @@ public class ImagemItemProcessor {
 
     @Bean
     static Queue filaImagens() {
-        return new Queue(FILA);
+        return QueueBuilder.durable(FILA)
+                .deadLetterExchange("")
+                .deadLetterRoutingKey(FILA_DLQ)
+                .build();
+    }
+
+    @Bean
+    static Queue filaImagensDlq() {
+        return new Queue(FILA_DLQ);
     }
 
     public static String chave(String id, String tipo) {
