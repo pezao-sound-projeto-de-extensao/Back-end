@@ -46,7 +46,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -77,6 +76,9 @@ class ItemServiceTest {
 
     @Mock
     private ArquivoRepository arquivoRepository;
+
+    @Mock
+    private ImagemItemProcessor imagemProcessor;
 
     @InjectMocks
     private ItemService service;
@@ -109,9 +111,7 @@ class ItemServiceTest {
         arquivo.setItem(item(itemId, "Amplificador", true));
         arquivo.setTipoArquivo(TIPO_ARQUIVO_IMAGEM);
         arquivo.setUri(uri);
-        arquivo.setNome("foto.jpg");
-        arquivo.setMimeType("image/jpeg");
-        arquivo.setTamanho(8);
+        arquivo.setNome("foto");
         arquivo.setCriadoEm(LocalDateTime.now());
         return arquivo;
     }
@@ -482,144 +482,87 @@ class ItemServiceTest {
         assertThrows(EntityNotFoundException.class, () -> service.reativar(99));
     }
 
-    @Test
-    @DisplayName("Deve fazer upload de imagem com sucesso")
-    void deveFazerUploadImagemComSucesso() {
-        Item item = item(1, "Amplificador", true);
-
-        MultipartFile arquivo = new MockMultipartFile(
-                "arquivo",
-                "foto.jpg",
-                "image/jpeg",
-                "conteudo".getBytes()
-        );
-
-        when(repository.findById(1)).thenReturn(Optional.of(item));
-
-        when(arquivoRepository.findByItem_IdAndTipoArquivo(
-                1,
-                TIPO_ARQUIVO_IMAGEM
-        )).thenReturn(Optional.empty());
-
-        when(armazenamento.salvar(arquivo, "imagens"))
-                .thenReturn("imagens/uuid-foto.jpg");
-
-        when(arquivoRepository.save(any(Arquivo.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        when(arquivoRepository.findByItem_IdAndTipoArquivo(
-                1,
-                TIPO_ARQUIVO_IMAGEM
-        )).thenAnswer(invocation -> {
-            Arquivo imagem = new Arquivo();
-            imagem.setId(1);
-            imagem.setItem(item);
-            imagem.setTipoArquivo(TIPO_ARQUIVO_IMAGEM);
-            imagem.setUri("imagens/uuid-foto.jpg");
-            imagem.setNome("foto.jpg");
-            imagem.setMimeType("image/jpeg");
-            imagem.setTamanho(8);
-            return Optional.of(imagem);
-        });
-
-        ItemResponse resposta = service.uploadImagem(1, arquivo);
-
-        assertNotNull(resposta);
-        assertEquals("Amplificador", resposta.nome());
-        assertNotNull(resposta.imagem());
-        assertEquals("/itens/1/imagem/download", resposta.imagem().url());
-        assertEquals("foto.jpg", resposta.imagem().nomeArquivo());
-        assertEquals("image/jpeg", resposta.imagem().mimeType());
-        assertEquals(8, resposta.imagem().tamanhoBytes());
-
-        verify(armazenamento).salvar(arquivo, "imagens");
-        verify(arquivoRepository).save(any(Arquivo.class));
+    private static MultipartFile png() {
+        try {
+            java.io.ByteArrayOutputStream saida = new java.io.ByteArrayOutputStream();
+            javax.imageio.ImageIO.write(
+                    new java.awt.image.BufferedImage(2, 2, java.awt.image.BufferedImage.TYPE_INT_RGB),
+                    "png",
+                    saida
+            );
+            return new MockMultipartFile("arquivo", "foto.png", "image/png", saida.toByteArray());
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
     }
 
     @Test
-    @DisplayName("Deve deletar imagem antiga ao fazer upload de nova imagem")
-    void deveDeletarImagemAntigaAoFazerUpload() {
+    @DisplayName("Deve salvar imagem sem extensão e enfileirar conversão para WebP")
+    void deveFazerUploadImagemComSucesso() {
         Item item = item(1, "Amplificador", true);
-        Arquivo imagemAntiga = imagem(1, "imagens/uuid-antiga.jpg");
-
-        MultipartFile arquivo = new MockMultipartFile(
-                "arquivo",
-                "foto.jpg",
-                "image/jpeg",
-                "conteudo".getBytes()
-        );
+        MultipartFile arquivo = png();
 
         when(repository.findById(1)).thenReturn(Optional.of(item));
-        when(arquivoRepository.findByItem_IdAndTipoArquivo(
-                1,
-                TIPO_ARQUIVO_IMAGEM
-        )).thenReturn(Optional.of(imagemAntiga));
-        when(armazenamento.salvar(arquivo, "imagens"))
-                .thenReturn("imagens/uuid-nova.jpg");
-        when(arquivoRepository.save(any(Arquivo.class)))
+        when(arquivoRepository.findByItem_IdAndTipoArquivo(1, TIPO_ARQUIVO_IMAGEM))
+                .thenReturn(Optional.empty());
+
+        ArgumentCaptor<Arquivo> salvo = ArgumentCaptor.forClass(Arquivo.class);
+        when(arquivoRepository.save(salvo.capture()))
                 .thenAnswer(invocation -> invocation.getArgument(0));
-        doNothing().when(armazenamento).deletar("imagens/uuid-antiga.jpg");
 
         service.uploadImagem(1, arquivo);
 
-        verify(arquivoRepository).save(imagemAntiga);
-        verify(armazenamento).deletar("imagens/uuid-antiga.jpg");
-        assertEquals("imagens/uuid-nova.jpg", imagemAntiga.getUri());
+        Arquivo arq = salvo.getValue();
+        assertEquals("foto", arq.getNome());
+        assertNull(arq.getMimeType());
+        assertFalse(arq.getUri().contains("."));
+        verify(imagemProcessor).enfileirar(eq(arq.getUri()), any(byte[].class), eq(List.of()));
+        verify(armazenamento, never()).deletar(any(String.class));
     }
 
     @Test
-    @DisplayName("Deve reverter upload se salvar metadados no banco falhar")
-    void deveReverterUploadSeSalvarFalhar() {
-        Item item = item(1, "Amplificador", true);
-
+    @DisplayName("Deve rejeitar upload de arquivo que não é imagem")
+    void deveRejeitarUploadQueNaoEhImagem() {
+        when(repository.findById(1)).thenReturn(Optional.of(item(1, "Amplificador", true)));
         MultipartFile arquivo = new MockMultipartFile(
-                "arquivo",
-                "foto.jpg",
-                "image/jpeg",
-                "conteudo".getBytes()
+                "arquivo", "foto.jpg", "image/jpeg", "conteudo".getBytes()
         );
+
+        assertThrows(ArquivoInvalidoException.class, () -> service.uploadImagem(1, arquivo));
+        verify(arquivoRepository, never()).save(any(Arquivo.class));
+    }
+
+    @Test
+    @DisplayName("Deve enfileirar remoção das versões WebP da imagem antiga")
+    void deveDeletarImagemAntigaAoFazerUpload() {
+        Item item = item(1, "Amplificador", true);
+        Arquivo imagemAntiga = imagem(1, "uuid-antiga");
 
         when(repository.findById(1)).thenReturn(Optional.of(item));
-        when(arquivoRepository.findByItem_IdAndTipoArquivo(
-                1,
-                TIPO_ARQUIVO_IMAGEM
-        )).thenReturn(Optional.empty());
-        when(armazenamento.salvar(arquivo, "imagens"))
-                .thenReturn("imagens/uuid-foto.jpg");
-        when(arquivoRepository.save(any(Arquivo.class)))
-                .thenThrow(new RuntimeException("Erro no banco"));
-        doNothing().when(armazenamento).deletar("imagens/uuid-foto.jpg");
+        when(arquivoRepository.findByItem_IdAndTipoArquivo(1, TIPO_ARQUIVO_IMAGEM))
+                .thenReturn(Optional.of(imagemAntiga));
 
-        assertThrows(
-                RuntimeException.class,
-                () -> service.uploadImagem(1, arquivo)
+        service.uploadImagem(1, png());
+
+        verify(imagemProcessor).enfileirar(
+                eq(imagemAntiga.getUri()),
+                any(byte[].class),
+                eq(List.of("images/icon/uuid-antiga.webp", "images/full/uuid-antiga.webp"))
         );
-
-        verify(armazenamento).deletar("imagens/uuid-foto.jpg");
     }
 
     @Test
-    @DisplayName("Deve baixar imagem com sucesso")
+    @DisplayName("Deve baixar a versão pedida da imagem WebP")
     void deveBaixarImagemComSucesso() {
-        Arquivo imagem = imagem(1, "imagens/uuid-foto.jpg");
-        Resource recurso = new MockMultipartFile(
-                "arquivo",
-                "foto.jpg",
-                "image/jpeg",
-                "conteudo".getBytes()
-        ).getResource();
+        Arquivo imagem = imagem(1, "uuid-foto");
+        Resource recurso = new MockMultipartFile("arquivo", "conteudo".getBytes()).getResource();
 
-        when(arquivoRepository.findByItem_IdAndTipoArquivo(
-                1,
-                TIPO_ARQUIVO_IMAGEM
-        )).thenReturn(Optional.of(imagem));
-        when(armazenamento.carregar("imagens/uuid-foto.jpg"))
-                .thenReturn(recurso);
+        when(arquivoRepository.findByItem_IdAndTipoArquivo(1, TIPO_ARQUIVO_IMAGEM))
+                .thenReturn(Optional.of(imagem));
+        when(armazenamento.carregar("images/icon/uuid-foto.webp")).thenReturn(recurso);
 
-        Resource resultado = service.baixarImagem(1);
-
-        assertNotNull(resultado);
-        verify(armazenamento).carregar("imagens/uuid-foto.jpg");
+        assertNotNull(service.baixarImagem(1, "icon"));
+        assertThrows(IllegalArgumentException.class, () -> service.baixarImagem(1, "grande"));
     }
 
     @Test
@@ -629,25 +572,25 @@ class ItemServiceTest {
 
         assertThrows(
                 ArquivoInvalidoException.class,
-                () -> service.baixarImagem(1)
+                () -> service.baixarImagem(1, "full")
         );
     }
 
     @Test
     @DisplayName("Deve deletar imagem com sucesso")
     void deveDeletarImagemComSucesso() {
-        Arquivo imagem = imagem(1, "imagens/uuid-foto.jpg");
+        Arquivo imagem = imagem(1, "uuid-foto");
 
         when(arquivoRepository.findByItem_IdAndTipoArquivo(
                 1,
                 TIPO_ARQUIVO_IMAGEM
         )).thenReturn(Optional.of(imagem));
-        doNothing().when(armazenamento).deletar("imagens/uuid-foto.jpg");
 
         service.deletarImagem(1);
 
         verify(arquivoRepository).delete(imagem);
-        verify(armazenamento).deletar("imagens/uuid-foto.jpg");
+        verify(armazenamento).deletar("images/icon/uuid-foto.webp");
+        verify(armazenamento).deletar("images/full/uuid-foto.webp");
     }
 
     @Test

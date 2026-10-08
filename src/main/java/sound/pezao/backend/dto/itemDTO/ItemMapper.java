@@ -19,10 +19,11 @@ public class ItemMapper {
 
         if (arqOpt.isPresent()) {
             Arquivo arq = arqOpt.get();
+            // Toda imagem de item é WebP; o banco não guarda extensão nem mime_type.
             imagemInfo = new ImagemInfo(
                     "/itens/" + item.getId() + "/imagem/download",
-                    arq.getNome(),
-                    arq.getMimeType(),
+                    arq.getNome() + ".webp",
+                    "image/webp",
                     arq.getTamanho()
             );
         }
