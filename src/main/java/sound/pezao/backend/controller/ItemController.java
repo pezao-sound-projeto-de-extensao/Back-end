@@ -83,9 +83,13 @@ public class ItemController {
     }
 
     @GetMapping("/{id}/imagem/download")
-    @Operation(summary = "Baixa o arquivo de uma imagem")
+    @Operation(
+            summary = "Baixa o arquivo de uma imagem",
+            description = "tipo=icon devolve a versão reduzida; tipo=full (padrão) a resolução original."
+    )
     public ResponseEntity<Resource> baixarImagem(
-            @PathVariable Integer id
+            @PathVariable Integer id,
+            @RequestParam(defaultValue = "full") String tipo
     ) {
         ItemResponse item = service.findById(id);
 
@@ -93,7 +97,7 @@ public class ItemController {
             return ResponseEntity.notFound().build();
         }
 
-        Resource arquivo = service.baixarImagem(id);
+        Resource arquivo = service.baixarImagem(id, tipo);
 
         return ResponseEntity.ok()
                 .contentType(

@@ -29,6 +29,10 @@ public class ArmazenamentoArquivoService {
         return strategy.salvar(arquivo, pasta);
     }
 
+    public void salvar(byte[] conteudo, String key, String contentType) {
+        strategy.salvar(conteudo, key, contentType);
+    }
+
     public Resource carregar(String key) {
         return strategy.carregar(key);
     }
