@@ -96,6 +96,24 @@ public class S3ArmazenamentoStrategy implements ArmazenamentoArquivoStrategy {
     }
 
     @Override
+    public void salvar(byte[] conteudo, String key, String contentType) {
+        try {
+            s3Client.putObject(
+                    PutObjectRequest.builder()
+                            .bucket(bucket)
+                            .key(key)
+                            .contentType(contentType)
+                            .build(),
+                    RequestBody.fromBytes(conteudo)
+            );
+        } catch (RuntimeException e) {
+            throw new ArquivoInvalidoException(
+                    "Falha ao salvar o arquivo no S3."
+            );
+        }
+    }
+
+    @Override
     public Resource carregar(String key) {
         try {
             GetObjectRequest request = GetObjectRequest.builder()
