@@ -184,6 +184,25 @@ CREATE TABLE refresh_tokens (
   DEFAULT CHARSET=utf8mb4
   COLLATE=utf8mb4_unicode_ci;
 
+-- Link de "esqueci minha senha": uso único e com validade curta.
+-- Guarda só o hash do segredo, no mesmo formato dos refresh tokens.
+CREATE TABLE tokens_recuperacao_senha (
+                                id BIGINT NOT NULL AUTO_INCREMENT,
+                                token_hash VARCHAR(100) NOT NULL,
+                                expira_em TIMESTAMP NOT NULL,
+                                usado_em TIMESTAMP NULL,
+                                criado_em TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                usuario_id INT NOT NULL,
+                                PRIMARY KEY (id),
+                                KEY idx_token_recuperacao_usuario (usuario_id),
+                                CONSTRAINT fk_tokens_recuperacao_usuario
+                                    FOREIGN KEY (usuario_id)
+                                        REFERENCES usuarios(id)
+                                        ON DELETE CASCADE
+) ENGINE=InnoDB
+  DEFAULT CHARSET=utf8mb4
+  COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE itens (
                        id INT NOT NULL AUTO_INCREMENT,
                        categoria_id INT NOT NULL,

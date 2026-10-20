@@ -12,6 +12,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import sound.pezao.backend.dto.authDTO.*;
 import sound.pezao.backend.service.AuthenticationService;
+import sound.pezao.backend.service.RecuperacaoSenhaService;
 import sound.pezao.backend.service.UsuarioService;
 
 import java.time.Duration;
@@ -23,10 +24,13 @@ public class AuthenticationController {
 
     final AuthenticationService authenticationService;
     private final UsuarioService usuarioService;
+    private final RecuperacaoSenhaService recuperacaoSenhaService;
 
-    public AuthenticationController(AuthenticationService authenticationService, UsuarioService usuarioService) {
+    public AuthenticationController(AuthenticationService authenticationService, UsuarioService usuarioService,
+                                    RecuperacaoSenhaService recuperacaoSenhaService) {
         this.authenticationService = authenticationService;
         this.usuarioService = usuarioService;
+        this.recuperacaoSenhaService = recuperacaoSenhaService;
     }
 
     @Operation(summary = "Login e geração do accessToken e refreshToken.")
@@ -60,6 +64,22 @@ public class AuthenticationController {
     @PostMapping("/trocar-senha")
     public ResponseEntity<Void> trocarSenha(@Valid @RequestBody AuthTrocarSenhaRequest authTrocarSenhaRequest) {
         authenticationService.trocarSenha(authTrocarSenhaRequest);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Envia por e-mail um link para redefinir a senha",
+            description = "Responde 202 mesmo quando o e-mail não está cadastrado, para não revelar quem tem conta. "
+                    + "O e-mail é enviado em segundo plano pela fila.")
+    @PostMapping("/esqueci-senha")
+    public ResponseEntity<Void> esqueciSenha(@Valid @RequestBody EsqueciSenhaRequest request) {
+        recuperacaoSenhaService.solicitar(request.email());
+        return ResponseEntity.accepted().build();
+    }
+
+    @Operation(summary = "Define uma nova senha a partir do link recebido por e-mail")
+    @PostMapping("/redefinir-senha")
+    public ResponseEntity<Void> redefinirSenha(@Valid @RequestBody RedefinirSenhaRequest request) {
+        recuperacaoSenhaService.redefinir(request.token(), request.senhaNova());
         return ResponseEntity.noContent().build();
     }
 

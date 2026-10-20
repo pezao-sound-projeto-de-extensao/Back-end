@@ -15,11 +15,15 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import sound.pezao.backend.dto.authDTO.AuthRequest;
 import sound.pezao.backend.dto.authDTO.AuthResponse;
 import sound.pezao.backend.dto.authDTO.AuthTrocarSenhaRequest;
+import sound.pezao.backend.dto.authDTO.EsqueciSenhaRequest;
+import sound.pezao.backend.dto.authDTO.RedefinirSenhaRequest;
 import sound.pezao.backend.dto.authDTO.RefreshTokenRequest;
 import sound.pezao.backend.service.AuthenticationService;
+import sound.pezao.backend.service.RecuperacaoSenhaService;
 
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -31,6 +35,9 @@ class AuthenticationControllerTest {
 
     @Mock
     private AuthenticationService authenticationService;
+
+    @Mock
+    private RecuperacaoSenhaService recuperacaoSenhaService;
 
     @InjectMocks
     private AuthenticationController authenticationController;
@@ -141,6 +148,55 @@ class AuthenticationControllerTest {
                     .andExpect(status().isNoContent());
 
             verify(authenticationService).resetarSenha(1);
+        }
+    }
+
+    @Nested
+    @DisplayName("Teste das rotas de recuperação de senha por e-mail")
+    class RecuperacaoSenhaTest {
+
+        @Test
+        @DisplayName("Esqueci a senha deve responder 202 e pedir o envio do e-mail")
+        void esqueciSenhaDeveRetornar202() throws Exception {
+            mockMvc.perform(post("/auth/esqueci-senha")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new EsqueciSenhaRequest("ana@email.com"))))
+                    .andExpect(status().isAccepted());
+
+            verify(recuperacaoSenhaService).solicitar("ana@email.com");
+        }
+
+        @Test
+        @DisplayName("Esqueci a senha deve recusar e-mail inválido")
+        void esqueciSenhaDeveRecusarEmailInvalido() throws Exception {
+            mockMvc.perform(post("/auth/esqueci-senha")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new EsqueciSenhaRequest("nao-e-email"))))
+                    .andExpect(status().isBadRequest());
+
+            verifyNoInteractions(recuperacaoSenhaService);
+        }
+
+        @Test
+        @DisplayName("Redefinir senha deve responder 204")
+        void redefinirSenhaDeveRetornar204() throws Exception {
+            mockMvc.perform(post("/auth/redefinir-senha")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new RedefinirSenhaRequest("7.segredo", "novaSenha"))))
+                    .andExpect(status().isNoContent());
+
+            verify(recuperacaoSenhaService).redefinir("7.segredo", "novaSenha");
+        }
+
+        @Test
+        @DisplayName("Redefinir senha deve recusar senha curta, com a mesma regra da troca de senha")
+        void redefinirSenhaDeveRecusarSenhaCurta() throws Exception {
+            mockMvc.perform(post("/auth/redefinir-senha")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(new RedefinirSenhaRequest("7.segredo", "123"))))
+                    .andExpect(status().isBadRequest());
+
+            verifyNoInteractions(recuperacaoSenhaService);
         }
     }
 }
