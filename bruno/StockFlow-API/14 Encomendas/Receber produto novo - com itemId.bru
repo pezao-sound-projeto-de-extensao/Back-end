@@ -1,0 +1,28 @@
+meta {
+  name: Receber produto novo - com itemId
+  type: http
+  seq: 16
+}
+
+patch {
+  url: {{baseUrl}}/encomendas/{{encomendaProdutoNovoId}}/receber
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "itemId": {{itemSemImagemId}}
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("vincula o produto do catálogo", function () {
+    expect(res.body.status).to.equal("RECEBIDA");
+    expect(res.body.itemId).to.equal(Number(bru.getVar("itemSemImagemId")));
+  });
+}

@@ -1,0 +1,43 @@
+meta {
+  name: Criar orcamento - cliente novo e produto novo
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/orcamentos
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "clienteNovo": { "nome": "Cliente Novo {{runId}}", "telefone": "(11) 99999-0000" },
+    "observacao": "Produto ainda não cadastrado",
+    "itens": [
+      { "descricao": "Fone Bluetooth Customizado", "quantidade": 1, "precoUnitario": 250.00 }
+    ]
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("orcamentoProdutoNovoId", res.body.id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("cadastra o cliente junto e marca produto novo", function () {
+    expect(res.body.cliente.id).to.be.a("number");
+    expect(res.body.itens[0].produtoNovo).to.equal(true);
+    expect(res.body.itens[0].itemId).to.equal(null);
+  });
+}
+
+docs {
+  Captura `orcamentoProdutoNovoId`.
+}

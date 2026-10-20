@@ -1,0 +1,32 @@
+meta {
+  name: Login - e-mail inexistente (401)
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "naoexiste.{{runId}}@stockflow.com",
+    "senha": "qualquer"
+  }
+}
+
+tests {
+  test("status 401", function () {
+    expect(res.getStatus()).to.equal(401);
+  });
+
+  test("responde ProblemDetail", function () {
+    expect(res.body).to.have.property("detail");
+  });
+}
+
+docs {
+  E-mail não cadastrado → `LoginInvalidoException` → 401.
+}

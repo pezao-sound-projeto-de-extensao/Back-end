@@ -1,0 +1,28 @@
+meta {
+  name: Login usuario - senha padrao apos reset
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{usuarioEmail}}",
+    "senha": "{{usuarioSenhaTemp}}"
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
+
+docs {
+  Após o reset a senha padrão volta a valer.
+}

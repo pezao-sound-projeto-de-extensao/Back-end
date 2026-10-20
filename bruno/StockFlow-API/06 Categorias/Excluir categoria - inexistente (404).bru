@@ -1,0 +1,17 @@
+meta {
+  name: Excluir categoria - inexistente (404)
+  type: http
+  seq: 9
+}
+
+delete {
+  url: {{baseUrl}}/categorias/999999
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 404", function () {
+    expect(res.getStatus()).to.equal(404);
+  });
+}

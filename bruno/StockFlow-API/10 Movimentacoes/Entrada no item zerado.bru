@@ -1,0 +1,31 @@
+meta {
+  name: Entrada no item zerado
+  type: http
+  seq: 18
+}
+
+post {
+  url: {{baseUrl}}/movimentacoes
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "itemId": {{itemZeradoId}},
+    "tipo": "entrada",
+    "quantidade": 3
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("movimentacaoConsumidaId", res.body.id);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+}

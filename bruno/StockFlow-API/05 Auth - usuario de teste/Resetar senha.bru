@@ -1,0 +1,21 @@
+meta {
+  name: Resetar senha
+  type: http
+  seq: 10
+}
+
+put {
+  url: {{baseUrl}}/auth/resetar-senha/{{usuarioId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
+
+docs {
+  Exige `GERENCIAR_USUARIOS`. Volta a senha do usuário para a padrão `Pezao_<id>`.
+}

@@ -1,0 +1,31 @@
+meta {
+  name: Listar clientes
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/clientes?search={{runId}}&page=0&size=20
+  body: none
+  auth: inherit
+}
+
+params:query {
+  search: {{runId}}
+  page: 0
+  size: 20
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("encontra pelo nome", function () {
+    expect(res.body.content.map(c => c.id)).to.include(Number(bru.getVar("clienteId")));
+  });
+}
+
+docs {
+  `search` busca por nome ou telefone.
+}

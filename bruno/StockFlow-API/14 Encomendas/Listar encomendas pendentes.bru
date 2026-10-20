@@ -1,0 +1,47 @@
+meta {
+  name: Listar encomendas pendentes
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/encomendas?status=PENDENTE&search={{runId}}&page=0&size=50
+  body: none
+  auth: inherit
+}
+
+params:query {
+  status: PENDENTE
+  search: {{runId}}
+  page: 0
+  size: 50
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    const orc = Number(bru.getVar("orcamentoId"));
+    const novo = Number(bru.getVar("orcamentoProdutoNovoId"));
+    const e1 = res.body.content.find(e => e.orcamentoId === orc && e.itemId === Number(bru.getVar("itemId")));
+    const e2 = res.body.content.find(e => e.orcamentoId === orc && e.itemId === Number(bru.getVar("itemSemImagemId")));
+    const e3 = res.body.content.find(e => e.orcamentoId === novo);
+    if (e1) bru.setVar("encomendaId", e1.id);
+    if (e2) bru.setVar("encomenda2Id", e2.id);
+    if (e3) bru.setVar("encomendaProdutoNovoId", e3.id);
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("encontrou as encomendas geradas pelos aceites", function () {
+    expect(bru.getVar("encomendaId")).to.be.ok;
+    expect(bru.getVar("encomenda2Id")).to.be.ok;
+    expect(bru.getVar("encomendaProdutoNovoId")).to.be.ok;
+  });
+}
+
+docs {
+  Captura `encomendaId`, `encomenda2Id` (orçamento de catálogo) e `encomendaProdutoNovoId`. `search` aceita nome do item ou do cliente; `status`: PENDENTE, RECEBIDA ou CONCLUIDA.
+}

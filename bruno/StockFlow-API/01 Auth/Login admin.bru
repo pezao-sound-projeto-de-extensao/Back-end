@@ -1,0 +1,45 @@
+meta {
+  name: Login admin
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{adminEmail}}",
+    "senha": "{{adminSenha}}"
+  }
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("accessToken", res.body.accessToken);
+    bru.setVar("refreshToken", res.body.refreshToken);
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("devolve accessToken e refreshToken", function () {
+    expect(res.body.accessToken).to.be.a("string").and.not.empty;
+    expect(res.body.refreshToken).to.match(/^\d+\..+/);
+  });
+
+  test("devolve o usuário autenticado", function () {
+    expect(res.body.username).to.equal(bru.getEnvVar("adminEmail"));
+    expect(res.body.usuario.email).to.equal(bru.getEnvVar("adminEmail"));
+  });
+}
+
+docs {
+  Captura `accessToken` e `refreshToken` no environment. Execute antes de qualquer outra pasta.
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Relatorio - por categoria
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/relatorios?dataInicio={{inicioAno}}&dataFim={{hoje}}&categoriaId={{categoriaId}}
+  body: none
+  auth: inherit
+}
+
+params:query {
+  dataInicio: {{inicioAno}}
+  dataFim: {{hoje}}
+  categoriaId: {{categoriaId}}
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+}

@@ -1,0 +1,30 @@
+meta {
+  name: Enviar imagem
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/itens/{{itemId}}/imagem
+  body: multipartForm
+  auth: inherit
+}
+
+body:multipart-form {
+  arquivo: @file(fixtures/imagem.png)
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("item passa a ter imagem", function () {
+    expect(res.body.imagem).to.not.equal(null);
+    expect(res.body.imagem.mimeType).to.equal("image/png");
+  });
+}
+
+docs {
+  Multipart com o campo `arquivo`. Usa `fixtures/imagem.png`. Reenviar substitui a imagem atual. Precisa do S3/LocalStack rodando.
+}

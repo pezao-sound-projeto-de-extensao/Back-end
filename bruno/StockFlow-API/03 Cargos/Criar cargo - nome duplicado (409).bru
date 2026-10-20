@@ -1,0 +1,33 @@
+meta {
+  name: Criar cargo - nome duplicado (409)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/cargos
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "OPERADOR {{runId}}",
+    "descricao": "Duplicado",
+    "permissoes": ["REGISTRAR_ENTRADA"]
+  }
+}
+
+tests {
+  test("status 409", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+
+  test("responde ProblemDetail", function () {
+    expect(res.body).to.have.property("detail");
+  });
+}
+
+docs {
+  A comparação de nome ignora maiúsculas/minúsculas.
+}

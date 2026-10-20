@@ -1,0 +1,21 @@
+meta {
+  name: Alternar ativo - inativar
+  type: http
+  seq: 10
+}
+
+patch {
+  url: {{baseUrl}}/usuarios/ativo/{{usuarioId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
+
+docs {
+  É um *toggle*: inverte o estado atual.
+}

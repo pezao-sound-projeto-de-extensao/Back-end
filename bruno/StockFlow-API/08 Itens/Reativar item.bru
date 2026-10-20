@@ -1,0 +1,17 @@
+meta {
+  name: Reativar item
+  type: http
+  seq: 21
+}
+
+patch {
+  url: {{baseUrl}}/itens/{{itemId}}/reativar
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}

@@ -1,0 +1,45 @@
+meta {
+  name: Criar usuario - senha padrao
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/usuarios
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Usuario Teste {{runId}}",
+    "email": "{{usuarioEmail}}",
+    "cargo_id": {{cargoId}}
+  }
+}
+
+script:pre-request {
+  bru.setVar("usuarioEmail", "teste." + bru.getVar("runId") + "@stockflow.com");
+}
+
+script:post-response {
+  if (res.getStatus() === 201) {
+    bru.setVar("usuarioId", res.body.id);
+    bru.setVar("usuarioSenhaTemp", res.body.senhaPadraoTemporaria);
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("devolve a senha padrão derivada do id", function () {
+    const esperado = "Pezao_" + String(res.body.id).padStart(4, "0");
+    expect(res.body.senhaPadraoTemporaria).to.equal(esperado);
+  });
+}
+
+docs {
+  Captura `usuarioId`, `usuarioEmail` e `usuarioSenhaTemp`. O campo do cargo é `cargo_id` (com underline).
+}

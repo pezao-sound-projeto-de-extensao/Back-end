@@ -1,0 +1,28 @@
+meta {
+  name: Atualizar cliente
+  type: http
+  seq: 6
+}
+
+put {
+  url: {{baseUrl}}/clientes/{{clienteId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Cliente {{runId}} Editado",
+    "telefone": "(11) 3333-5555"
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("altera telefone", function () {
+    expect(res.body.telefone).to.equal("(11) 3333-5555");
+  });
+}

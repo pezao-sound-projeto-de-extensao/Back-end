@@ -1,0 +1,37 @@
+meta {
+  name: Atualizar item - inativo (400)
+  type: http
+  seq: 20
+}
+
+put {
+  url: {{baseUrl}}/itens/{{itemId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Caixa de Som {{runId}} Pro",
+    "categoriaId": {{categoriaId}},
+    "unidadeId": {{unidadeId}},
+    "quantidadeAtual": 999,
+    "quantidadeMinima": 4,
+    "precoCusto": 160.00,
+    "precoVenda": 320.00
+  }
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("responde ProblemDetail", function () {
+    expect(res.body).to.have.property("detail");
+  });
+}
+
+docs {
+  `EntityInativaException` → 400.
+}

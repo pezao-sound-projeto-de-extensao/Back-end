@@ -1,0 +1,33 @@
+meta {
+  name: Atualizar usuario
+  type: http
+  seq: 9
+}
+
+put {
+  url: {{baseUrl}}/usuarios/{{usuarioId}}
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Usuario Teste {{runId}} Editado",
+    "email": "{{usuarioEmail}}",
+    "cargo_id": {{cargoId}}
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("altera o nome", function () {
+    expect(res.body.nome).to.contain("Editado");
+  });
+}
+
+docs {
+  Sem `senha` no corpo a senha atual é mantida. `ativo` só muda se vier no corpo.
+}

@@ -1,0 +1,21 @@
+meta {
+  name: Excluir movimentacao
+  type: http
+  seq: 16
+}
+
+delete {
+  url: {{baseUrl}}/movimentacoes/{{movimentacaoId}}
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 204", function () {
+    expect(res.getStatus()).to.equal(204);
+  });
+}
+
+docs {
+  Exclui a entrada de 5 e reverte o estoque (8 → 3).
+}

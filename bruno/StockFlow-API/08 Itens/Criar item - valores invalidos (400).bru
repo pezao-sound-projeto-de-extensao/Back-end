@@ -1,0 +1,33 @@
+meta {
+  name: Criar item - valores invalidos (400)
+  type: http
+  seq: 7
+}
+
+post {
+  url: {{baseUrl}}/itens
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "",
+    "categoriaId": {{categoriaId}},
+    "unidadeId": {{unidadeId}},
+    "quantidadeAtual": -1,
+    "quantidadeMinima": -1,
+    "precoVenda": -10
+  }
+}
+
+tests {
+  test("status 400", function () {
+    expect(res.getStatus()).to.equal(400);
+  });
+
+  test("aponta os campos inválidos", function () {
+    ["nome", "quantidadeAtual", "quantidadeMinima", "precoVenda"]
+      .forEach(c => expect(res.body.errors).to.have.property(c));
+  });
+}

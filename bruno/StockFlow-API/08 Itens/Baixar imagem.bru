@@ -1,0 +1,21 @@
+meta {
+  name: Baixar imagem
+  type: http
+  seq: 15
+}
+
+get {
+  url: {{baseUrl}}/itens/{{itemId}}/imagem/download
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("devolve o arquivo", function () {
+    expect(res.getHeader("content-type")).to.contain("image/png");
+  });
+}

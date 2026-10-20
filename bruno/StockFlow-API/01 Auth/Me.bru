@@ -1,0 +1,26 @@
+meta {
+  name: Me
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/auth/me
+  body: none
+  auth: inherit
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("devolve o usuário do token com cargo e permissões", function () {
+    expect(res.body.email).to.equal(bru.getEnvVar("adminEmail"));
+    expect(res.body.cargo.permissoes).to.include("GERENCIAR_USUARIOS");
+  });
+}
+
+docs {
+  `GET /auth/me` — dados do usuário autenticado (id, nome, email, cargo com permissões).
+}

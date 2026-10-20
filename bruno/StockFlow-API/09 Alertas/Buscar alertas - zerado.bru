@@ -1,0 +1,30 @@
+meta {
+  name: Buscar alertas - zerado
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/alertas/buscar?tipo=zerado
+  body: none
+  auth: inherit
+}
+
+params:query {
+  tipo: zerado
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("todos são do tipo zerado", function () {
+    res.body.forEach(a => expect(a.tipoAlerta).to.equal("zerado"));
+    expect(res.body.map(a => a.itemId)).to.include(Number(bru.getVar("itemZeradoId")));
+  });
+}
+
+docs {
+  `tipo` aceita `zerado` ou `estoque_baixo`.
+}

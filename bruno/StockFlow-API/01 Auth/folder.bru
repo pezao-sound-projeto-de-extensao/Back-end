@@ -1,0 +1,10 @@
+meta {
+  name: 01 Auth
+  seq: 2
+}
+
+docs {
+  Login do administrador (`adm@email.com`, criado pelo `init.sql` com todas as 10 permissões).
+  `/auth/login`, `/auth/refresh`, `/auth/logout` e `/auth/trocar-senha` são públicos.
+  O access token dura 15 min; o refresh token 7 dias e é **de uso único** (rotação).
+}

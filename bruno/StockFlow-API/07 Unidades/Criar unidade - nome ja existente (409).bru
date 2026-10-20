@@ -1,0 +1,32 @@
+meta {
+  name: Criar unidade - nome ja existente (409)
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/unidades
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "unidade",
+    "abreviacao": "UN"
+  }
+}
+
+tests {
+  test("status 409", function () {
+    expect(res.getStatus()).to.equal(409);
+  });
+
+  test("responde ProblemDetail", function () {
+    expect(res.body).to.have.property("detail");
+  });
+}
+
+docs {
+  `Unidade` já vem do `init.sql`; a comparação ignora maiúsculas.
+}

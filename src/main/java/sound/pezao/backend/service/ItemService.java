@@ -25,9 +25,11 @@ import sound.pezao.backend.repository.CategoriaRepository;
 import sound.pezao.backend.repository.ItemRepository;
 import sound.pezao.backend.repository.UnidadeRepository;
 
+import java.io.IOException;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class ItemService {
@@ -41,6 +43,7 @@ public class ItemService {
     private final MovimentacaoService movimentacaoService;
     private final UsuarioAutenticadoService usuarioAutenticadoService;
     private final ArquivoRepository arquivoRepository;
+    private final ImagemItemProcessor imagemProcessor;
 
     public ItemService(
             ItemRepository repository,
@@ -49,7 +52,8 @@ public class ItemService {
             ArmazenamentoArquivoService armazenamento,
             MovimentacaoService movimentacaoService,
             UsuarioAutenticadoService usuarioAutenticadoService,
-            ArquivoRepository arquivoRepository
+            ArquivoRepository arquivoRepository,
+            ImagemItemProcessor imagemProcessor
     ) {
         this.repository = repository;
         this.categoriaRepository = categoriaRepository;
@@ -58,6 +62,7 @@ public class ItemService {
         this.movimentacaoService = movimentacaoService;
         this.usuarioAutenticadoService = usuarioAutenticadoService;
         this.arquivoRepository = arquivoRepository;
+        this.imagemProcessor = imagemProcessor;
     }
 
     @Transactional
@@ -169,42 +174,62 @@ public class ItemService {
         Item item = repository.findById(itemId)
                 .orElseThrow(() -> new EntityNotFoundException("Item", itemId));
 
+        byte[] conteudo = lerImagem(arquivo);
+
         Optional<Arquivo> arquivoExistente = arquivoRepository
                 .findByItem_IdAndTipoArquivo(itemId, "imagem");
+        List<String> chavesAntigas = arquivoExistente.map(this::chaves).orElse(List.of());
 
-        String uriAntiga = arquivoExistente.map(Arquivo::getUri).orElse(null);
-        String uriNova = armazenamento.salvar(arquivo, "imagens");
+        String id = UUID.randomUUID().toString();
+        Arquivo arq = arquivoExistente.orElse(new Arquivo());
+        arq.setItem(item);
+        arq.setTipoArquivo("imagem");
+        arq.setUri(id);
+        arq.setNome(semExtensao(arquivo.getOriginalFilename()));
+        arq.setMimeType(null);
+        arq.setTamanho(null);
+        arquivoRepository.save(arq);
 
-        try {
-            Arquivo arq = arquivoExistente.orElse(new Arquivo());
-            arq.setItem(item);
-            arq.setTipoArquivo("imagem");
-            arq.setUri(uriNova);
-            arq.setNome(arquivo.getOriginalFilename());
-            arq.setMimeType(arquivo.getContentType() != null
-                    ? arquivo.getContentType()
-                    : "application/octet-stream");
-            arq.setTamanho((int) arquivo.getSize());
+        imagemProcessor.enfileirar(id, conteudo, chavesAntigas);
 
-            arquivoRepository.save(arq);
-
-            if (uriAntiga != null && !uriAntiga.equals(uriNova)) {
-                armazenamento.deletar(uriAntiga);
-            }
-
-            return ItemMapper.toResponse(item, arquivoRepository);
-        } catch (RuntimeException e) {
-            armazenamento.deletar(uriNova);
-            throw e;
-        }
+        return ItemMapper.toResponse(item, arquivoRepository);
     }
 
-    public Resource baixarImagem(Integer itemId) {
+    public Resource baixarImagem(Integer itemId, String tipo) {
         Arquivo arq = arquivoRepository
                 .findByItem_IdAndTipoArquivo(itemId, "imagem")
                 .orElseThrow(() -> new ArquivoInvalidoException("O item não possui imagem."));
 
-        return armazenamento.carregar(arq.getUri());
+        return armazenamento.carregar(ImagemItemProcessor.chave(arq.getUri(), tipo));
+    }
+
+    private byte[] lerImagem(MultipartFile arquivo) {
+        if (arquivo == null || arquivo.isEmpty()) {
+            throw new ArquivoInvalidoException("Arquivo vazio ou não enviado.");
+        }
+        try {
+            byte[] conteudo = arquivo.getBytes();
+            if (!ImagemItemProcessor.isImagem(conteudo)) {
+                throw new ArquivoInvalidoException("O arquivo enviado não é uma imagem suportada.");
+            }
+            return conteudo;
+        } catch (IOException e) {
+            throw new ArquivoInvalidoException("Falha ao ler o arquivo enviado.");
+        }
+    }
+
+    private List<String> chaves(Arquivo arq) {
+        return ImagemItemProcessor.TIPOS.stream()
+                .map(tipo -> ImagemItemProcessor.chave(arq.getUri(), tipo))
+                .toList();
+    }
+
+    private static String semExtensao(String nome) {
+        if (nome == null) {
+            return null;
+        }
+        int ponto = nome.lastIndexOf('.');
+        return ponto > 0 ? nome.substring(0, ponto) : nome;
     }
 
     @PreAuthorize("hasAuthority('EXCLUIR_ITENS')")
@@ -231,11 +256,8 @@ public class ItemService {
                 .orElse(null);
 
         if (arq != null) {
-            String uri = arq.getUri();
             arquivoRepository.delete(arq);
-            if (uri != null) {
-                armazenamento.deletar(uri);
-            }
+            chaves(arq).forEach(armazenamento::deletar);
         }
     }
 }
