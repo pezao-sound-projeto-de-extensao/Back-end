@@ -1,5 +1,7 @@
 package sound.pezao.backend.facade;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jakarta.transaction.Transactional;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -25,6 +27,8 @@ import java.time.LocalDate;
 
 @Component
 public class MovimentacaoFacade {
+
+    private static final Logger log = LoggerFactory.getLogger("eventos");
 
     private final MovimentacaoService movimentacaoService;
     private final EstoqueService estoqueService;
@@ -94,9 +98,10 @@ public class MovimentacaoFacade {
         movimentacao.setEstoqueAntes(estoqueAntes);
         movimentacao.setEstoqueDepois(item.getQuantidadeAtual());
 
-        return mapper.toResponse(
-                movimentacaoService.salvar(movimentacao)
-        );
+        Movimentacao salva = movimentacaoService.salvar(movimentacao);
+        log.info("movimentacao_registrada id={} tipo={} produto={} quantidade={} estoque={}->{}",
+                salva.getId(), tipo, item.getId(), request.quantidade(), estoqueAntes, item.getQuantidadeAtual());
+        return mapper.toResponse(salva);
     }
 
     @Transactional
@@ -119,6 +124,8 @@ public class MovimentacaoFacade {
         estoqueService.reverterMovimentacao(item, tipo, movimentacao.getQuantidade());
 
         movimentacaoService.deletar(movimentacao);
+        log.info("movimentacao_removida id={} tipo={} produto={} quantidade={} estoque_atual={}",
+                id, tipo, item.getId(), movimentacao.getQuantidade(), item.getQuantidadeAtual());
     }
 
     @Transactional
@@ -126,12 +133,14 @@ public class MovimentacaoFacade {
             Integer movimentacaoId,
             MultipartFile arquivo
     ) {
-        return mapper.toResponse(
+        MovimentacaoResponse response = mapper.toResponse(
                 movimentacaoService.uploadNota(
                         movimentacaoId,
                         arquivo
                 )
         );
+        log.info("movimentacao_nota_enviada movimentacao={} bytes={}", movimentacaoId, arquivo.getSize());
+        return response;
     }
 
     public Resource baixarNota(Integer movimentacaoId) {
@@ -141,6 +150,7 @@ public class MovimentacaoFacade {
     @Transactional
     public void deletarNota(Integer movimentacaoId) {
         movimentacaoService.deletarNota(movimentacaoId);
+        log.info("movimentacao_nota_removida movimentacao={}", movimentacaoId);
     }
 
     /**

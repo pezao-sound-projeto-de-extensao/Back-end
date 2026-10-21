@@ -1,5 +1,7 @@
 package sound.pezao.backend.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,6 +24,8 @@ import sound.pezao.backend.repository.UsuarioRepository;
 @PreAuthorize("hasAuthority('GERENCIAR_USUARIOS')")
 @Service
 public class UsuarioService {
+
+    private static final Logger log = LoggerFactory.getLogger("eventos");
 
     final UsuarioRepository usuarioRepository;
     final CargoRepository cargoRepository;
@@ -58,11 +62,11 @@ public class UsuarioService {
         usuario.setCargo(cargo);
         usuario.setAtivo(usuarioRequest.ativo() == null || usuarioRequest.ativo());
 
-        // Com senha informada pelo administrador, ela vale e nada é devolvido no
-        // response: quem cadastrou já a conhece.
+
         if (usuarioRequest.temSenha()) {
             usuario.setSenhaHash(passwordEncoder.encode(usuarioRequest.senha()));
             Usuario salvo = usuarioRepository.save(usuario);
+            log.info("usuario_criado id={} cargo={}", salvo.getId(), cargo.getId());
 
             return new UsuarioCadastroResponse(
                     salvo.getId(),
@@ -73,13 +77,13 @@ public class UsuarioService {
             );
         }
 
-        // Sem senha informada, o usuário recebe a senha padrão derivada do id, que
-        // é devolvida uma única vez para ser compartilhada com ele.
+
         Usuario usuarioSalvo = usuarioRepository.save(usuario);
 
         String senhaPadrao = gerarSenhaPadraoDoUsuario(usuarioSalvo.getId());
         usuarioSalvo.setSenhaHash(passwordEncoder.encode(senhaPadrao));
         usuarioRepository.save(usuarioSalvo);
+        log.info("usuario_criado id={} cargo={} senha_padrao=true", usuarioSalvo.getId(), cargo.getId());
 
         return new UsuarioCadastroResponse(
             usuarioSalvo.getId(),
@@ -116,12 +120,12 @@ public class UsuarioService {
             usuario.setAtivo(usuarioRequest.ativo());
         }
 
-        // A senha só é tocada quando vem preenchida: editar nome ou cargo não pode
-        // trocar a senha de ninguém.
+
         if (usuarioRequest.temSenha()) {
             usuario.setSenhaHash(passwordEncoder.encode(usuarioRequest.senha()));
         }
 
+        log.info("usuario_atualizado id={} cargo={} ativo={} senha_alterada={}", id, cargo.getId(), usuario.isAtivo(), usuarioRequest.temSenha());
         return UsuarioMapper.toResponse(usuarioRepository.save(usuario));
     }
 
@@ -132,6 +136,7 @@ public class UsuarioService {
 
         usuario.setAtivo(!usuario.isAtivo());
         usuarioRepository.save(usuario);
+        log.info("usuario_{} id={}", usuario.isAtivo() ? "ativado" : "inativado", id);
     }
 
     @PreAuthorize("isAuthenticated()")
