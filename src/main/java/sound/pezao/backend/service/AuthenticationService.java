@@ -1,6 +1,8 @@
 package sound.pezao.backend.service;
 
 import jakarta.validation.constraints.NotBlank;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -24,6 +26,8 @@ import java.time.LocalDateTime;
 
 @Service
 public class AuthenticationService {
+    private static final Logger log = LoggerFactory.getLogger("eventos");
+
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final UsuarioRepository usuarioRepository;
@@ -54,6 +58,7 @@ public class AuthenticationService {
         String accessToken = jwtService.generateToken(authentication);
         String refreshToken = refreshTokenService.criar(usuario);
         UserAuthenticated userDetails = (UserAuthenticated) authentication.getPrincipal();
+        log.info("login usuario={}", userDetails.getUsername());
         return new AuthResponse(accessToken, refreshToken, userDetails.getUsername(), UsuarioMapper.toResponse(usuario));
     }
 

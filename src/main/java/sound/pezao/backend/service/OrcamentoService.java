@@ -1,5 +1,7 @@
 package sound.pezao.backend.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +23,8 @@ import sound.pezao.backend.repository.OrcamentoRepository;
 @PreAuthorize("hasAuthority('GERENCIAR_ORCAMENTOS')")
 @Service
 public class OrcamentoService {
+
+    private static final Logger log = LoggerFactory.getLogger("eventos");
 
     private final OrcamentoRepository repository;
     private final ItemRepository itemRepository;
@@ -79,7 +83,9 @@ public class OrcamentoService {
 
         preencherItens(orcamento, request);
 
-        return mapper.toResponse(repository.save(orcamento));
+        Orcamento salvo = repository.save(orcamento);
+        log.info("orcamento_criado id={} itens={}", salvo.getId(), salvo.getItens().size());
+        return mapper.toResponse(salvo);
     }
 
     @Transactional
@@ -103,16 +109,17 @@ public class OrcamentoService {
     public OrcamentoResponse aceitar(Integer id) {
         Orcamento orcamento = alterarStatus(id, StatusOrcamento.ACEITO);
 
-        encomendaService.gerarParaOrcamento(orcamento);
+        int encomendas = encomendaService.gerarParaOrcamento(orcamento).size();
+        log.info("orcamento_aceito id={} encomendas_geradas={}", id, encomendas);
 
         return mapper.toResponse(orcamento);
     }
 
     @Transactional
     public OrcamentoResponse rejeitar(Integer id) {
-        return mapper.toResponse(
-                alterarStatus(id, StatusOrcamento.REJEITADO)
-        );
+        Orcamento orcamento = alterarStatus(id, StatusOrcamento.REJEITADO);
+        log.info("orcamento_rejeitado id={}", id);
+        return mapper.toResponse(orcamento);
     }
 
     public Orcamento buscarEntidade(Integer id) {
