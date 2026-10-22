@@ -74,7 +74,7 @@ Variáveis de runtime definidas no `collection.bru`:
 | 04 Usuarios | cadastro com senha padrão `Pezao_<id>`, e-mail duplicado (409), filtros, toggle de ativo, login de usuário inativo (401), exclusão de cargo em uso (409) |
 | 05 Auth - usuario de teste | troca de senha, login com o usuário de teste, **403** para quem não tem permissão, reset de senha |
 | 06 Categorias / 07 Unidades | CRUD, duplicados (409), validações (400), exclusão |
-| 08 Itens | movimentação automática do estoque inicial, `quantidadeAtual` ignorada na edição, filtros, upload/download/remoção de imagem, inativar/reativar, edição de item inativo (400) |
+| 08 Itens | movimentação automática do estoque inicial, `quantidadeAtual` ignorada na edição, filtros, upload de imagem com processamento assíncrono (RabbitMQ → WebP), download `icon`/`full`, tipo inválido (400), remoção de imagem, inativar/reativar, edição de item inativo (400) |
 | 09 Alertas | lista e filtro por `zerado` / `estoque_baixo` |
 | 10 Movimentacoes | entrada/saída com saldo antes/depois, saída acima do estoque (400), validações, filtros, nota fiscal, exclusão com reversão do estoque, reversão bloqueada de entrada já consumida (400) |
 | 11 Dashboard e Relatorios | KPIs, itens de atenção, relatório por período (datas obrigatórias) |

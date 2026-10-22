@@ -19,12 +19,20 @@ tests {
     expect(res.getStatus()).to.equal(201);
   });
 
-  test("item passa a ter imagem", function () {
+  test("item passa a ter imagem em webp", function () {
     expect(res.body.imagem).to.not.equal(null);
-    expect(res.body.imagem.mimeType).to.equal("image/png");
+    expect(res.body.imagem.mimeType).to.equal("image/webp");
+    expect(res.body.imagem.nomeArquivo).to.match(/\.webp$/);
   });
 }
 
 docs {
-  Multipart com o campo `arquivo`. Usa `fixtures/imagem.png`. Reenviar substitui a imagem atual. Precisa do S3/LocalStack rodando.
+  Multipart com o campo `arquivo`. Usa `fixtures/imagem.png`. Reenviar substitui a imagem atual.
+
+  A conversão é assíncrona: a API grava o registro, publica a imagem na fila `imagens.processar`
+  (RabbitMQ) e responde 201. O consumidor gera duas versões WebP no S3 — `icon` (lado máximo 120px)
+  e `full` (lado máximo 900px) — e apaga as da imagem anterior. Até o processamento terminar, o
+  download responde 400 ("Arquivo não encontrado no S3"). Falhas vão para `imagens.processar.dlq`.
+
+  Precisa do S3 (floci) e do RabbitMQ rodando.
 }
