@@ -38,6 +38,9 @@ public class RecuperacaoSenhaService {
     /** Intervalo mínimo entre dois e-mails para o mesmo usuário, contra spam na caixa de entrada. */
     static final Duration INTERVALO_MINIMO_ENTRE_PEDIDOS = Duration.ofMinutes(1);
 
+    /** Usado quando o CORS libera qualquer origem ("*"), como no padrão de desenvolvimento. */
+    static final String FRONT_PADRAO = "http://localhost:5173";
+
     private final UsuarioRepository usuarioRepository;
     private final TokenRecuperacaoSenhaRepository tokenRepository;
     private final RefreshTokenRepository refreshTokenRepository;
@@ -47,13 +50,17 @@ public class RecuperacaoSenhaService {
     private final Duration validade;
     private final SecureRandom secureRandom = new SecureRandom();
 
+    /**
+     * @param origensDoCors a mesma variável CORS que libera o front na API. O link do
+     *                      e-mail aponta para o primeiro endereço dela.
+     */
     public RecuperacaoSenhaService(
             UsuarioRepository usuarioRepository,
             TokenRecuperacaoSenhaRepository tokenRepository,
             RefreshTokenRepository refreshTokenRepository,
             PasswordEncoder passwordEncoder,
             PublicadorDeMensagens publicador,
-            @Value("${app.frontend.url}") String frontendUrl,
+            @Value("${app.cors.allowed-origins:*}") String origensDoCors,
             @Value("${app.recuperacao-senha.validade}") Duration validade
     ) {
         this.usuarioRepository = usuarioRepository;
@@ -61,8 +68,26 @@ public class RecuperacaoSenhaService {
         this.refreshTokenRepository = refreshTokenRepository;
         this.passwordEncoder = passwordEncoder;
         this.publicador = publicador;
-        this.frontendUrl = frontendUrl;
+        this.frontendUrl = enderecoDoFront(origensDoCors);
         this.validade = validade;
+    }
+
+    /**
+     * Converte o valor do CORS em um endereço que funcione como link de e-mail.
+     * O CORS pode listar várias origens separadas por vírgula, pode ser "*", e em
+     * produção chega sem protocolo (só o DNS do load balancer). Sem "http://" muitos
+     * clientes de e-mail não transformam o texto em link clicável.
+     */
+    static String enderecoDoFront(String origensDoCors) {
+        String primeira = origensDoCors == null ? "" : origensDoCors.split(",")[0].trim();
+
+        if (primeira.isEmpty() || primeira.equals("*")) {
+            return FRONT_PADRAO;
+        }
+        if (!primeira.startsWith("http://") && !primeira.startsWith("https://")) {
+            primeira = "http://" + primeira;
+        }
+        return primeira.endsWith("/") ? primeira.substring(0, primeira.length() - 1) : primeira;
     }
 
     /**

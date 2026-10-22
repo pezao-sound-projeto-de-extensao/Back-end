@@ -5,6 +5,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
@@ -42,7 +43,9 @@ import static org.mockito.Mockito.when;
 @DisplayName("Testes para RecuperacaoSenhaService")
 class RecuperacaoSenhaServiceTest {
 
-    private static final String FRONTEND = "http://localhost:5173";
+    /** Como a variável CORS chega em produção: só o DNS do load balancer, sem protocolo. */
+    private static final String CORS_PRODUCAO = "stockflow-alb-123.us-east-1.elb.amazonaws.com";
+    private static final String FRONTEND = "http://" + CORS_PRODUCAO;
 
     @Mock
     private UsuarioRepository usuarioRepository;
@@ -65,7 +68,7 @@ class RecuperacaoSenhaServiceTest {
     void setUp() {
         service = new RecuperacaoSenhaService(
                 usuarioRepository, tokenRepository, refreshTokenRepository,
-                passwordEncoder, publicador, FRONTEND, Duration.ofMinutes(30)
+                passwordEncoder, publicador, CORS_PRODUCAO, Duration.ofMinutes(30)
         );
     }
 
@@ -102,6 +105,26 @@ class RecuperacaoSenhaServiceTest {
         ArgumentCaptor<EmailMensagem> captor = ArgumentCaptor.forClass(EmailMensagem.class);
         verify(publicador).publicar(eq(RabbitMQConfig.FILA_EMAIL), captor.capture());
         return captor.getValue();
+    }
+
+    @ParameterizedTest(name = "CORS \"{0}\" vira \"{1}\"")
+    @CsvSource(delimiter = '|', value = {
+            "stockflow-alb.elb.amazonaws.com             | http://stockflow-alb.elb.amazonaws.com",
+            "http://localhost:8080                       | http://localhost:8080",
+            "https://stockflow.com.br/                   | https://stockflow.com.br",
+            "http://localhost:8080,http://localhost:5173 | http://localhost:8080",
+            "*                                           | http://localhost:5173",
+            "''                                          | http://localhost:5173"
+    })
+    @DisplayName("Deve transformar o valor do CORS no endereço do link")
+    void deveTransformarCorsEmEnderecoDoFront(String cors, String esperado) {
+        assertEquals(esperado, RecuperacaoSenhaService.enderecoDoFront(cors));
+    }
+
+    @Test
+    @DisplayName("Deve usar o endereço padrão quando o CORS não estiver definido")
+    void deveUsarPadraoSemCors() {
+        assertEquals(RecuperacaoSenhaService.FRONT_PADRAO, RecuperacaoSenhaService.enderecoDoFront(null));
     }
 
     @Test
