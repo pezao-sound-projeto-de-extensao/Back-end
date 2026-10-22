@@ -1,5 +1,7 @@
 package sound.pezao.backend.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.core.Queue;
@@ -21,6 +23,8 @@ import java.util.List;
 
 @Component
 public class ImagemItemProcessor {
+
+    private static final Logger log = LoggerFactory.getLogger("eventos");
 
     static final String FILA = "imagens.processar";
     static final String FILA_DLQ = FILA + ".dlq";
@@ -80,6 +84,7 @@ public class ImagemItemProcessor {
         for (String chave : chavesAnteriores.split(",")) {
             armazenamento.deletar(chave);
         }
+        log.info("imagem_processada id={} bytes_original={}", id, mensagem.getBody().length);
     }
 
     public static boolean isImagem(byte[] conteudo) {

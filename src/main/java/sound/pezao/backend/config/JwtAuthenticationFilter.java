@@ -94,19 +94,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 .orElse(null);
     }
 
-    /**
-     * Exceção lançada dentro de um filtro não passa pelo GlobalExceptionHandler,
-     * que só alcança o que acontece a partir do controller. Sem esta resposta, um
-     * token expirado — situação rotineira com access token de 15 minutos — chega
-     * ao cliente como 500 em vez de 401, e o front não sabe que basta renovar.
-     */
+
     private void responderNaoAutorizado(HttpServletResponse response, String mensagem) throws IOException {
         SecurityContextHolder.clearContext();
 
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, mensagem);
         problemDetail.setType(URI.create("about:blank"));
-        // texto em vez de Instant: esta resposta não pode depender de o ObjectMapper
-        // ter o módulo de datas registrado, sob pena de falhar ao relatar a falha
+
         problemDetail.setProperty("TimeStamp", Instant.now().toString());
 
         response.setStatus(HttpStatus.UNAUTHORIZED.value());
