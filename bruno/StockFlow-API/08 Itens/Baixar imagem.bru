@@ -5,9 +5,17 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/itens/{{itemId}}/imagem/download
+  url: {{baseUrl}}/itens/{{itemId}}/imagem/download?tipo=full
   body: none
   auth: inherit
+}
+
+params:query {
+  tipo: full
+}
+
+script:pre-request {
+  await bru.sleep(3000);
 }
 
 tests {
@@ -15,7 +23,12 @@ tests {
     expect(res.getStatus()).to.equal(200);
   });
 
-  test("devolve o arquivo", function () {
-    expect(res.getHeader("content-type")).to.contain("image/png");
+  test("devolve a versão full em webp", function () {
+    expect(res.getHeader("content-type")).to.contain("image/webp");
   });
+}
+
+docs {
+  `tipo=full` (padrão) devolve a versão com lado máximo de 900px. Espera 3s antes de chamar para
+  dar tempo ao consumidor do RabbitMQ processar o upload anterior.
 }

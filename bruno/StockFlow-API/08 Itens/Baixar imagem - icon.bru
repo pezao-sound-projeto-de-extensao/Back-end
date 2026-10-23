@@ -1,0 +1,29 @@
+meta {
+  name: Baixar imagem - icon
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{baseUrl}}/itens/{{itemId}}/imagem/download?tipo=icon
+  body: none
+  auth: inherit
+}
+
+params:query {
+  tipo: icon
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("devolve a versão icon em webp", function () {
+    expect(res.getHeader("content-type")).to.contain("image/webp");
+  });
+}
+
+docs {
+  `tipo=icon` devolve a versão reduzida (lado máximo de 120px), usada em listagens.
+}

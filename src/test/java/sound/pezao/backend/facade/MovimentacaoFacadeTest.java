@@ -130,8 +130,10 @@ class MovimentacaoFacadeTest {
         MovimentacaoRequest request = request("saida", 2);
 
         when(itemRepository.findByIdParaMovimentacao(1)).thenReturn(Optional.of(item));
-        when(mapper.toEntity(request, item)).thenReturn(new Movimentacao());
+        Movimentacao movimentacao = new Movimentacao();
+        when(mapper.toEntity(request, item)).thenReturn(movimentacao);
         when(usuarioAutenticadoService.obter()).thenReturn(usuario);
+        when(movimentacaoService.salvar(movimentacao)).thenReturn(movimentacao);
 
         facade.registrar(request);
 
