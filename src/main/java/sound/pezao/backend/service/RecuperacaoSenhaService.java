@@ -21,12 +21,6 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.Optional;
 
-/**
- * Fluxo de "esqueci minha senha".
- *
- * 1. solicitar: gera um token de uso único e publica o e-mail com o link na fila.
- * 2. redefinir: valida o token, troca a senha e encerra as sessões abertas.
- */
 @Service
 public class RecuperacaoSenhaService {
 
@@ -35,10 +29,8 @@ public class RecuperacaoSenhaService {
     static final String ASSUNTO = "StockFlow - Redefinição de senha";
     static final String MENSAGEM_TOKEN_INVALIDO = "Link de redefinição inválido ou expirado.";
 
-    /** Intervalo mínimo entre dois e-mails para o mesmo usuário, contra spam na caixa de entrada. */
     static final Duration INTERVALO_MINIMO_ENTRE_PEDIDOS = Duration.ofMinutes(1);
 
-    /** Usado quando o CORS libera qualquer origem ("*"), como no padrão de desenvolvimento. */
     static final String FRONT_PADRAO = "http://localhost:5173";
 
     private final UsuarioRepository usuarioRepository;
@@ -50,10 +42,6 @@ public class RecuperacaoSenhaService {
     private final Duration validade;
     private final SecureRandom secureRandom = new SecureRandom();
 
-    /**
-     * @param origensDoCors a mesma variável CORS que libera o front na API. O link do
-     *                      e-mail aponta para o primeiro endereço dela.
-     */
     public RecuperacaoSenhaService(
             UsuarioRepository usuarioRepository,
             TokenRecuperacaoSenhaRepository tokenRepository,
@@ -72,12 +60,6 @@ public class RecuperacaoSenhaService {
         this.validade = validade;
     }
 
-    /**
-     * Converte o valor do CORS em um endereço que funcione como link de e-mail.
-     * O CORS pode listar várias origens separadas por vírgula, pode ser "*", e em
-     * produção chega sem protocolo (só o DNS do load balancer). Sem "http://" muitos
-     * clientes de e-mail não transformam o texto em link clicável.
-     */
     static String enderecoDoFront(String origensDoCors) {
         String primeira = origensDoCors == null ? "" : origensDoCors.split(",")[0].trim();
 
@@ -90,10 +72,6 @@ public class RecuperacaoSenhaService {
         return primeira.endsWith("/") ? primeira.substring(0, primeira.length() - 1) : primeira;
     }
 
-    /**
-     * Não informa se o e-mail existe: a resposta da API é a mesma nos dois casos,
-     * para que ninguém use esta rota para descobrir quem tem conta no sistema.
-     */
     @Transactional
     public void solicitar(String email) {
         Optional<Usuario> encontrado = usuarioRepository.findByEmailIgnoreCase(email);

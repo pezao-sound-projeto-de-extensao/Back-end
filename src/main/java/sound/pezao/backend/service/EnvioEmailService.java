@@ -6,10 +6,6 @@ import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 import sound.pezao.backend.mensageria.email.EmailMensagem;
 
-/**
- * Envio efetivo do e-mail via SMTP. Só é chamado pelo consumidor da fila;
- * o restante da aplicação publica uma EmailMensagem em vez de chamar este serviço.
- */
 @Service
 public class EnvioEmailService {
 

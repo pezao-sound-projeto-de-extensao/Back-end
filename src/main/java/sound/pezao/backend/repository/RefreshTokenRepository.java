@@ -12,10 +12,6 @@ import java.util.Optional;
 public interface RefreshTokenRepository extends JpaRepository<RefreshToken, Long> {
     Optional<RefreshToken> findByIdAndRevogadoEmIsNull(Long id);
 
-    /**
-     * Encerra todas as sessões do usuário. Usado quando a senha é redefinida:
-     * quem estava logado com a senha antiga precisa entrar de novo.
-     */
     @Modifying
     @Query("""
             UPDATE RefreshToken r

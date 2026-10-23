@@ -7,14 +7,6 @@ import org.springframework.stereotype.Component;
 import sound.pezao.backend.config.RabbitMQConfig;
 import sound.pezao.backend.service.EnvioEmailService;
 
-/**
- * Consome a fila de e-mails.
- *
- * Se o SMTP falhar, a exceção sobe e o Spring tenta de novo (configurado em
- * application.properties). Esgotadas as tentativas, a mensagem vai para a DLQ
- * stockflow.email.dlq. A DLQ não tem consumidor de propósito: a mensagem fica
- * parada lá, visível no painel do RabbitMQ, até alguém investigar.
- */
 @Component
 public class EmailConsumer {
 

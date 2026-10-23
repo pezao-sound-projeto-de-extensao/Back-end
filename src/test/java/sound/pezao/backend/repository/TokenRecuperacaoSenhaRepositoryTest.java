@@ -20,10 +20,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * Confere as consultas de atualização em lote contra o banco de verdade (H2),
- * já que um erro de JPQL só aparece quando a consulta roda.
- */
 @DataJpaTest
 @DisplayName("Testes das consultas usadas na recuperação de senha")
 class TokenRecuperacaoSenhaRepositoryTest {

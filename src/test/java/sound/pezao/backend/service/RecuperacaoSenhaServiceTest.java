@@ -43,7 +43,6 @@ import static org.mockito.Mockito.when;
 @DisplayName("Testes para RecuperacaoSenhaService")
 class RecuperacaoSenhaServiceTest {
 
-    /** Como a variável CORS chega em produção: só o DNS do load balancer, sem protocolo. */
     private static final String CORS_PRODUCAO = "stockflow-alb-123.us-east-1.elb.amazonaws.com";
     private static final String FRONTEND = "http://" + CORS_PRODUCAO;
 
@@ -59,7 +58,6 @@ class RecuperacaoSenhaServiceTest {
     @Mock
     private PublicadorDeMensagens publicador;
 
-    // Encoder real e de custo baixo: os testes conferem o hash de verdade, sem ficar lentos.
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder(4);
 
     private RecuperacaoSenhaService service;
@@ -91,7 +89,6 @@ class RecuperacaoSenhaServiceTest {
         return token;
     }
 
-    /** Executa o pedido e devolve o e-mail que foi para a fila. */
     private EmailMensagem solicitarEObterEmail(Usuario usuario) {
         when(usuarioRepository.findByEmailIgnoreCase("ana@email.com")).thenReturn(Optional.of(usuario));
         when(tokenRepository.save(any(TokenRecuperacaoSenha.class))).thenAnswer(invocation -> {
