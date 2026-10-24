@@ -60,7 +60,7 @@ public class AuthenticationController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Trocar senha no primeiro acesso")
+    @Operation(summary = "Trocar a senha informando a senha atual")
     @PostMapping("/trocar-senha")
     public ResponseEntity<Void> trocarSenha(@Valid @RequestBody AuthTrocarSenhaRequest authTrocarSenhaRequest) {
         authenticationService.trocarSenha(authTrocarSenhaRequest);
@@ -83,7 +83,7 @@ public class AuthenticationController {
         return ResponseEntity.noContent().build();
     }
 
-    @Operation(summary = "Resetar a senha do usuário para a padrão")
+    @Operation(summary = "Invalida a senha do usuário e envia por e-mail o link para criar uma nova")
     @PutMapping("/resetar-senha/{id}")
     public ResponseEntity<Void> resetarSenha(@PathVariable int id) {
         authenticationService.resetarSenha(id);

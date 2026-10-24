@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class RecuperacaoSenhaService {
@@ -27,9 +28,12 @@ public class RecuperacaoSenhaService {
     private static final Logger log = LoggerFactory.getLogger(RecuperacaoSenhaService.class);
 
     static final String ASSUNTO = "StockFlow - Redefinição de senha";
+    static final String ASSUNTO_CONVITE = "StockFlow - Crie sua senha de acesso";
+    static final String ASSUNTO_RESET = "StockFlow - Sua senha foi redefinida";
     static final String MENSAGEM_TOKEN_INVALIDO = "Link de redefinição inválido ou expirado.";
 
     static final Duration INTERVALO_MINIMO_ENTRE_PEDIDOS = Duration.ofMinutes(1);
+    static final Duration VALIDADE_CONVITE = Duration.ofHours(24);
 
     static final String FRONT_PADRAO = "http://localhost:5173";
 
@@ -91,19 +95,52 @@ public class RecuperacaoSenhaService {
 
         tokenRepository.invalidarPendentesDoUsuario(usuario.getId(), agora);
 
-        String segredo = gerarSegredo();
-        TokenRecuperacaoSenha token = new TokenRecuperacaoSenha();
-        token.setUsuario(usuario);
-        token.setTokenHash(passwordEncoder.encode(segredo));
-        token.setExpiraEm(agora.plus(validade));
-        TokenRecuperacaoSenha salvo = tokenRepository.save(token);
-
-        String link = frontendUrl + "/redefinir-senha?token=" + salvo.getId() + "." + segredo;
+        String link = gerarLink(usuario, agora.plus(validade));
 
         publicador.publicar(
                 RabbitMQConfig.FILA_EMAIL,
                 new EmailMensagem(usuario.getEmail(), ASSUNTO, montarCorpo(usuario.getNome(), link))
         );
+    }
+
+    @Transactional
+    public void convidar(Usuario usuario) {
+        String link = gerarLink(usuario, Instant.now().plus(VALIDADE_CONVITE));
+
+        publicador.publicar(
+                RabbitMQConfig.FILA_EMAIL,
+                new EmailMensagem(usuario.getEmail(), ASSUNTO_CONVITE,
+                        montarCorpoComLinkLongo(usuario.getNome(), "Sua conta no StockFlow foi criada.", link))
+        );
+    }
+
+    @Transactional
+    public void resetar(Usuario usuario) {
+        Instant agora = Instant.now();
+
+        usuario.setSenhaHash(passwordEncoder.encode(UUID.randomUUID().toString()));
+        usuarioRepository.save(usuario);
+        refreshTokenRepository.revogarTodosDoUsuario(usuario.getId(), agora);
+        tokenRepository.invalidarPendentesDoUsuario(usuario.getId(), agora);
+
+        String link = gerarLink(usuario, agora.plus(VALIDADE_CONVITE));
+
+        publicador.publicar(
+                RabbitMQConfig.FILA_EMAIL,
+                new EmailMensagem(usuario.getEmail(), ASSUNTO_RESET,
+                        montarCorpoComLinkLongo(usuario.getNome(), "Um administrador redefiniu a senha da sua conta no StockFlow.", link))
+        );
+    }
+
+    private String gerarLink(Usuario usuario, Instant expiraEm) {
+        String segredo = gerarSegredo();
+        TokenRecuperacaoSenha token = new TokenRecuperacaoSenha();
+        token.setUsuario(usuario);
+        token.setTokenHash(passwordEncoder.encode(segredo));
+        token.setExpiraEm(expiraEm);
+        TokenRecuperacaoSenha salvo = tokenRepository.save(token);
+
+        return frontendUrl + "/redefinir-senha?token=" + salvo.getId() + "." + segredo;
     }
 
     @Transactional
@@ -150,6 +187,19 @@ public class RecuperacaoSenhaService {
 
                 Se você não fez esse pedido, ignore este e-mail: sua senha atual continua valendo.
                 """.formatted(nome, validade.toMinutes(), link);
+    }
+
+    private String montarCorpoComLinkLongo(String nome, String motivo, String link) {
+        return """
+                Olá, %s!
+
+                %s
+                Para definir sua senha e acessar o sistema, use o link abaixo (válido por %d horas):
+
+                %s
+
+                Se o link expirar, use a opção "Esqueceu sua senha?" na tela de login.
+                """.formatted(nome, motivo, VALIDADE_CONVITE.toHours(), link);
     }
 
     private String gerarSegredo() {

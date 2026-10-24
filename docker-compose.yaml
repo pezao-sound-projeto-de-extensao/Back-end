@@ -9,7 +9,7 @@ services:
     volumes:
       - floci-data:/app/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4566/health"]
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/4566"]
       interval: 10s
       timeout: 5s
       retries: 5

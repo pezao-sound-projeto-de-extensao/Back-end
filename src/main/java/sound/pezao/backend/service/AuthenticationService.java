@@ -17,7 +17,6 @@ import sound.pezao.backend.dto.usuarioDTO.UsuarioMapper;
 import sound.pezao.backend.entities.Usuario;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.exception.LoginInvalidoException;
-import sound.pezao.backend.exception.PrimeiroAcessoException;
 import sound.pezao.backend.repository.UsuarioRepository;
 import sound.pezao.backend.security.JwtService;
 import sound.pezao.backend.security.UserAuthenticated;
@@ -33,14 +32,17 @@ public class AuthenticationService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
+    private final RecuperacaoSenhaService recuperacaoSenhaService;
 
     public AuthenticationService(JwtService jwtService, AuthenticationManager authenticationManager,
-                                 UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, RefreshTokenService refreshTokenService) {
+                                 UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, RefreshTokenService refreshTokenService,
+                                 RecuperacaoSenhaService recuperacaoSenhaService) {
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenService = refreshTokenService;
+        this.recuperacaoSenhaService = recuperacaoSenhaService;
     }
 
     public AuthResponse authenticate(AuthRequest authRequest){
@@ -84,13 +86,8 @@ public class AuthenticationService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário", id));
 
-        String senhaPadrao = gerarSenhaPadraoDoUsuario(usuario.getId());
-        usuario.setSenhaHash(passwordEncoder.encode(senhaPadrao));
-        usuarioRepository.save(usuario);
-    }
-
-    private String gerarSenhaPadraoDoUsuario(Integer usuarioId) {
-        return "Pezao_" + String.format("%04d", usuarioId);
+        recuperacaoSenhaService.resetar(usuario);
+        log.info("senha_resetada usuario={}", id);
     }
 
     public AuthResponse refreshToken(String token) {

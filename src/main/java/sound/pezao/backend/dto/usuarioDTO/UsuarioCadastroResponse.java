@@ -6,6 +6,6 @@ public record UsuarioCadastroResponse(
     Integer id,
     String nome,
     String email,
-    String senhaPadraoTemporaria,
+    boolean conviteEnviado,
     LocalDateTime criadoEm
 ) { }

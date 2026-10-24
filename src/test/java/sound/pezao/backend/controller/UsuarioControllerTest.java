@@ -111,7 +111,7 @@ class UsuarioControllerTest {
                     1,
                     "Usuário Teste",
                     "teste@email.com",
-                    "Pezao_0001",
+                    true,
                     null
             );
 

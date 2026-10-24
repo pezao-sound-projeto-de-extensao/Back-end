@@ -27,6 +27,8 @@ import java.time.Instant;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -153,6 +155,56 @@ class RecuperacaoSenhaServiceTest {
         assertTrue(passwordEncoder.matches(segredo, salvo.getTokenHash()));
         assertTrue(salvo.getExpiraEm().isAfter(Instant.now().plus(Duration.ofMinutes(29))));
         assertTrue(salvo.getExpiraEm().isBefore(Instant.now().plus(Duration.ofMinutes(31))));
+    }
+
+    @Test
+    @DisplayName("Deve enviar o convite com link válido por 24 horas")
+    void deveEnviarConvite() {
+        Usuario usuario = usuario(true);
+        when(tokenRepository.save(any(TokenRecuperacaoSenha.class))).thenAnswer(invocation -> {
+            TokenRecuperacaoSenha salvo = invocation.getArgument(0);
+            salvo.setId(7L);
+            return salvo;
+        });
+
+        service.convidar(usuario);
+
+        ArgumentCaptor<EmailMensagem> email = ArgumentCaptor.forClass(EmailMensagem.class);
+        verify(publicador).publicar(eq(RabbitMQConfig.FILA_EMAIL), email.capture());
+        assertEquals("ana@email.com", email.getValue().destinatario());
+        assertEquals(RecuperacaoSenhaService.ASSUNTO_CONVITE, email.getValue().assunto());
+        assertTrue(email.getValue().corpo().contains(FRONTEND + "/redefinir-senha?token=7."));
+        assertTrue(email.getValue().corpo().contains("24 horas"));
+
+        ArgumentCaptor<TokenRecuperacaoSenha> token = ArgumentCaptor.forClass(TokenRecuperacaoSenha.class);
+        verify(tokenRepository).save(token.capture());
+        assertTrue(token.getValue().getExpiraEm().isAfter(Instant.now().plus(Duration.ofHours(23))));
+        verify(tokenRepository, never()).invalidarPendentesDoUsuario(anyInt(), any());
+    }
+
+    @Test
+    @DisplayName("O reset do admin deve invalidar a senha e as sessões e enviar o link")
+    void deveResetarEnviarLink() {
+        Usuario usuario = usuario(true);
+        String hashAntigo = usuario.getSenhaHash();
+        when(tokenRepository.save(any(TokenRecuperacaoSenha.class))).thenAnswer(invocation -> {
+            TokenRecuperacaoSenha salvo = invocation.getArgument(0);
+            salvo.setId(7L);
+            return salvo;
+        });
+
+        service.resetar(usuario);
+
+        assertNotEquals(hashAntigo, usuario.getSenhaHash());
+        assertFalse(passwordEncoder.matches("senhaAntiga", usuario.getSenhaHash()));
+        verify(usuarioRepository).save(usuario);
+        verify(refreshTokenRepository).revogarTodosDoUsuario(eq(1), any(Instant.class));
+        verify(tokenRepository).invalidarPendentesDoUsuario(eq(1), any(Instant.class));
+
+        ArgumentCaptor<EmailMensagem> email = ArgumentCaptor.forClass(EmailMensagem.class);
+        verify(publicador).publicar(eq(RabbitMQConfig.FILA_EMAIL), email.capture());
+        assertEquals(RecuperacaoSenhaService.ASSUNTO_RESET, email.getValue().assunto());
+        assertTrue(email.getValue().corpo().contains(FRONTEND + "/redefinir-senha?token=7."));
     }
 
     @Test
