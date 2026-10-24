@@ -15,10 +15,6 @@ public interface TokenRecuperacaoSenhaRepository extends JpaRepository<TokenRecu
 
     boolean existsByUsuario_IdAndCriadoEmAfter(Integer usuarioId, Instant limite);
 
-    /**
-     * Ao pedir um link novo, os anteriores deixam de valer:
-     * só o e-mail mais recente funciona.
-     */
     @Modifying
     @Query("""
             UPDATE TokenRecuperacaoSenha t

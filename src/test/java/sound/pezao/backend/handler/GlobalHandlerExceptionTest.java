@@ -68,11 +68,6 @@ class GlobalExceptionHandlerTest {
             throw new LoginInvalidoException();
         }
 
-        @GetMapping("/primeiro-acesso")
-        public void primeiroAcesso() {
-            throw new PrimeiroAcessoException("Altere a senha no primeiro acesso");
-        }
-
         @GetMapping("/estoque-insuficiente")
         public void estoqueInsuficiente() {
             throw new EstoqueInsuficienteException(5, 7);
@@ -171,15 +166,6 @@ class GlobalExceptionHandlerTest {
         mockMvc.perform(get("/test-exception/login-invalido"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.detail").exists())
-                .andExpect(jsonPath("$.TimeStamp").exists());
-    }
-
-    @Test
-    @DisplayName("Deve retornar 403 quando PrimeiroAcessoException for lançada")
-    void deveRetornar403QuandoPrimeiroAcessoExceptionForLancada() throws Exception {
-        mockMvc.perform(get("/test-exception/primeiro-acesso"))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.detail").value("Altere a senha no primeiro acesso"))
                 .andExpect(jsonPath("$.TimeStamp").exists());
     }
 

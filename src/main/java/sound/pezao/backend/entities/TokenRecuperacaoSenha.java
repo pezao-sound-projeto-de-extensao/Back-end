@@ -7,10 +7,6 @@ import lombok.Setter;
 
 import java.time.Instant;
 
-/**
- * Token do link de "esqueci minha senha". Segue o mesmo desenho do RefreshToken:
- * o usuário recebe "id.segredo" e o banco guarda apenas o hash do segredo.
- */
 @Entity
 @Table(
         name = "tokens_recuperacao_senha",

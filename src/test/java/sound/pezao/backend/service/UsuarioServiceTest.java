@@ -39,7 +39,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.isNull;
-import static org.mockito.ArgumentMatchers.startsWith;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,6 +53,9 @@ class UsuarioServiceTest {
 
     @Mock
     private PasswordEncoder passwordEncoder;
+
+    @Mock
+    private RecuperacaoSenhaService recuperacaoSenhaService;
 
     @InjectMocks
     private UsuarioService usuarioService;
@@ -169,7 +171,7 @@ class UsuarioServiceTest {
         void cadastrarDeveCadastrarUsuarioQuandoDadosValidos() {
             when(usuarioRepository.existsByEmailIgnoreCase(usuarioRequest.email())).thenReturn(false);
             when(cargoRepository.findById(usuarioRequest.cargo_id())).thenReturn(Optional.of(cargo));
-            when(passwordEncoder.encode("Pezao_0001")).thenReturn("hash-padrao");
+            when(passwordEncoder.encode(anyString())).thenReturn("hash-aleatorio");
             when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocation -> {
                 Usuario u = invocation.getArgument(0);
                 u.setId(1);
@@ -183,8 +185,8 @@ class UsuarioServiceTest {
 
             verify(usuarioRepository).existsByEmailIgnoreCase(usuarioRequest.email());
             verify(cargoRepository).findById(usuarioRequest.cargo_id());
-            verify(passwordEncoder).encode("Pezao_0001");
-            verify(usuarioRepository, times(2)).save(any(Usuario.class));
+            verify(passwordEncoder).encode(anyString());
+            verify(usuarioRepository).save(any(Usuario.class));
         }
 
         @Test
@@ -233,16 +235,16 @@ class UsuarioServiceTest {
             verify(usuarioRepository).save(captor.capture());
 
             assertEquals("hash-escolhido", captor.getValue().getSenhaHash());
-            // nao gera senha padrao nem a devolve: quem cadastrou ja conhece a senha
-            verify(passwordEncoder, never()).encode(startsWith("Pezao_"));
-            assertNull(resposta.senhaPadraoTemporaria());
+            verify(recuperacaoSenhaService, never()).convidar(any());
+            assertFalse(resposta.conviteEnviado());
         }
 
         @Test
-        @DisplayName("Deve devolver a senha padrão gerada quando nenhuma é informada")
-        void cadastrarDeveDevolverSenhaGerada() {
+        @DisplayName("Deve enviar o convite por e-mail quando nenhuma senha é informada")
+        void cadastrarDeveEnviarConviteSemSenha() {
             when(usuarioRepository.existsByEmailIgnoreCase(usuarioRequest.email())).thenReturn(false);
             when(cargoRepository.findById(usuarioRequest.cargo_id())).thenReturn(Optional.of(cargo));
+            when(passwordEncoder.encode(anyString())).thenReturn("hash-aleatorio");
             when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> {
                 Usuario u = inv.getArgument(0);
                 u.setId(7);
@@ -251,7 +253,11 @@ class UsuarioServiceTest {
 
             UsuarioCadastroResponse resposta = usuarioService.cadastrar(usuarioRequest);
 
-            assertEquals("Pezao_0007", resposta.senhaPadraoTemporaria());
+            ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
+            verify(recuperacaoSenhaService).convidar(captor.capture());
+            assertEquals(7, captor.getValue().getId());
+            assertEquals("hash-aleatorio", captor.getValue().getSenhaHash());
+            assertTrue(resposta.conviteEnviado());
         }
 
         @Test
@@ -279,12 +285,14 @@ class UsuarioServiceTest {
             when(cargoRepository.findById(inativo.cargo_id())).thenReturn(Optional.of(cargo));
             when(usuarioRepository.save(any(Usuario.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            usuarioService.cadastrar(inativo);
+            UsuarioCadastroResponse resposta = usuarioService.cadastrar(inativo);
 
             ArgumentCaptor<Usuario> captor = ArgumentCaptor.forClass(Usuario.class);
             verify(usuarioRepository, atLeastOnce()).save(captor.capture());
 
             assertFalse(captor.getValue().isAtivo());
+            verify(recuperacaoSenhaService, never()).convidar(any());
+            assertFalse(resposta.conviteEnviado());
         }
     }
 
@@ -475,9 +483,10 @@ class UsuarioServiceSecurityTest {
         UsuarioService usuarioService(
                 UsuarioRepository usuarioRepository,
                 CargoRepository cargoRepository,
-                PasswordEncoder passwordEncoder
+                PasswordEncoder passwordEncoder,
+                RecuperacaoSenhaService recuperacaoSenhaService
         ) {
-            return new UsuarioService(usuarioRepository, cargoRepository, passwordEncoder);
+            return new UsuarioService(usuarioRepository, cargoRepository, passwordEncoder, recuperacaoSenhaService);
         }
     }
 
@@ -489,6 +498,9 @@ class UsuarioServiceSecurityTest {
 
     @MockitoBean
     private PasswordEncoder passwordEncoder;
+
+    @MockitoBean
+    private RecuperacaoSenhaService recuperacaoSenhaService;
 
     @Resource
     private UsuarioService usuarioService;

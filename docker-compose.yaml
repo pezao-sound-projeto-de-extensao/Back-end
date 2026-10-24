@@ -9,7 +9,7 @@ services:
     volumes:
       - floci-data:/app/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4566/health"]
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/4566"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -57,8 +57,6 @@ services:
         aws --endpoint-url http://floci:4566 s3 mb s3://stockflow-dev || true
         echo "Bucket pronto!"
 
-  # Fila das tarefas em segundo plano (processamento de imagens e envio de e-mails).
-  # Painel de administração: http://localhost:15672 (usuário e senha: stockflow)
   rabbitmq:
     image: rabbitmq:4-management
     container_name: rabbitmq-dev
@@ -66,8 +64,6 @@ services:
       - "5672:5672"
       - "15672:15672"
     environment:
-      # O usuário "guest" padrão só aceita conexões de dentro do próprio container,
-      # então a aplicação rodando na máquina host não conseguiria se conectar com ele.
       RABBITMQ_DEFAULT_USER: stockflow
       RABBITMQ_DEFAULT_PASS: stockflow
     volumes:
@@ -79,8 +75,6 @@ services:
       retries: 5
       start_period: 20s
 
-  # Servidor SMTP falso: captura todos os e-mails enviados, sem entregar a ninguém.
-  # Caixa de entrada: http://localhost:8025
   mailpit:
     image: axllent/mailpit:latest
     container_name: mailpit-dev
