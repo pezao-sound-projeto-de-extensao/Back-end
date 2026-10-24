@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -255,6 +256,31 @@ class JwtAuthenticationFilterTest {
             assertEquals(HttpStatus.UNAUTHORIZED.value(), responseReal.getStatus());
             assertTrue(responseReal.getContentAsString().contains("inválido"));
             assertNull(chainReal.getRequest());
+        }
+
+        @Test
+        @DisplayName("Não deve barrar rota pública quando o access_token está expirado")
+        void naoDeveBarrarRotaPublicaComTokenExpirado() throws Exception {
+            MockHttpServletRequest refresh = new MockHttpServletRequest("POST", "/api/auth/refresh");
+            refresh.setCookies(new Cookie("access_token", "token-expirado"));
+
+            jwtAuthenticationFilter.doFilter(refresh, responseReal, chainReal);
+
+            assertEquals(HttpStatus.OK.value(), responseReal.getStatus());
+            assertEquals(refresh, chainReal.getRequest());
+            verifyNoInteractions(jwtService);
+        }
+
+        @Test
+        @DisplayName("Não deve barrar o Swagger quando o access_token está expirado")
+        void naoDeveBarrarSwaggerComTokenExpirado() throws Exception {
+            MockHttpServletRequest swagger = new MockHttpServletRequest("GET", "/api/swagger-ui/index.html");
+            swagger.setCookies(new Cookie("access_token", "token-expirado"));
+
+            jwtAuthenticationFilter.doFilter(swagger, responseReal, chainReal);
+
+            assertEquals(swagger, chainReal.getRequest());
+            verifyNoInteractions(jwtService);
         }
     }
 }
