@@ -16,7 +16,9 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void configurePathMatch(PathMatchConfigurer configurer){
-        configurer.addPathPrefix("/api", HandlerTypePredicate.forAnnotation(RestController.class));
+        // só os controllers do projeto: os do springdoc já têm o caminho definido em application.properties
+        configurer.addPathPrefix("/api", HandlerTypePredicate.forAnnotation(RestController.class)
+                .and(HandlerTypePredicate.forBasePackage("sound.pezao.backend")));
     }
 
 }
