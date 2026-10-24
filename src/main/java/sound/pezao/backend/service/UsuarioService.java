@@ -1,11 +1,13 @@
 package sound.pezao.backend.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.transaction.annotation.Transactional;
 
 import sound.pezao.backend.dto.authDTO.AuthMeResponse;
 import sound.pezao.backend.dto.usuarioDTO.UsuarioMapper;
@@ -19,18 +21,25 @@ import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.repository.CargoRepository;
 import sound.pezao.backend.repository.UsuarioRepository;
 
+import java.util.UUID;
+
 @PreAuthorize("hasAuthority('GERENCIAR_USUARIOS')")
 @Service
 public class UsuarioService {
 
+    private static final Logger log = LoggerFactory.getLogger("eventos");
+
     final UsuarioRepository usuarioRepository;
     final CargoRepository cargoRepository;
     final PasswordEncoder passwordEncoder;
+    final RecuperacaoSenhaService recuperacaoSenhaService;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, CargoRepository cargoRepository, PasswordEncoder passwordEncoder) {
+    public UsuarioService(UsuarioRepository usuarioRepository, CargoRepository cargoRepository, PasswordEncoder passwordEncoder,
+                          RecuperacaoSenhaService recuperacaoSenhaService) {
         this.usuarioRepository = usuarioRepository;
         this.cargoRepository = cargoRepository;
         this.passwordEncoder = passwordEncoder;
+        this.recuperacaoSenhaService = recuperacaoSenhaService;
     }
 
     public Page<UsuarioResponse> listar(String search, Integer cargoId, Pageable pageable){
@@ -46,6 +55,7 @@ public class UsuarioService {
         return UsuarioMapper.toResponse(usuario);
     }
 
+    @Transactional
     public UsuarioCadastroResponse cadastrar(UsuarioRequest usuarioRequest){
 
         if (usuarioRepository.existsByEmailIgnoreCase(usuarioRequest.email())){
@@ -58,40 +68,23 @@ public class UsuarioService {
         usuario.setCargo(cargo);
         usuario.setAtivo(usuarioRequest.ativo() == null || usuarioRequest.ativo());
 
-        // Com senha informada pelo administrador, ela vale e nada é devolvido no
-        // response: quem cadastrou já a conhece.
-        if (usuarioRequest.temSenha()) {
-            usuario.setSenhaHash(passwordEncoder.encode(usuarioRequest.senha()));
-            Usuario salvo = usuarioRepository.save(usuario);
+        String senha = usuarioRequest.temSenha() ? usuarioRequest.senha() : UUID.randomUUID().toString();
+        usuario.setSenhaHash(passwordEncoder.encode(senha));
+        Usuario salvo = usuarioRepository.save(usuario);
 
-            return new UsuarioCadastroResponse(
-                    salvo.getId(),
-                    salvo.getNome(),
-                    salvo.getEmail(),
-                    null,
-                    salvo.getCriadoEm()
-            );
+        boolean convidado = !usuarioRequest.temSenha() && salvo.isAtivo();
+        if (convidado) {
+            recuperacaoSenhaService.convidar(salvo);
         }
-
-        // Sem senha informada, o usuário recebe a senha padrão derivada do id, que
-        // é devolvida uma única vez para ser compartilhada com ele.
-        Usuario usuarioSalvo = usuarioRepository.save(usuario);
-
-        String senhaPadrao = gerarSenhaPadraoDoUsuario(usuarioSalvo.getId());
-        usuarioSalvo.setSenhaHash(passwordEncoder.encode(senhaPadrao));
-        usuarioRepository.save(usuarioSalvo);
+        log.info("usuario_criado id={} cargo={} convite={}", salvo.getId(), cargo.getId(), convidado);
 
         return new UsuarioCadastroResponse(
-            usuarioSalvo.getId(),
-            usuarioSalvo.getNome(),
-            usuarioSalvo.getEmail(),
-            senhaPadrao,
-            usuarioSalvo.getCriadoEm()
+                salvo.getId(),
+                salvo.getNome(),
+                salvo.getEmail(),
+                convidado,
+                salvo.getCriadoEm()
         );
-    }
-
-    private String gerarSenhaPadraoDoUsuario(Integer usuarioId) {
-        return "Pezao_" + String.format("%04d", usuarioId);
     }
 
     public UsuarioResponse atualizar(
@@ -116,12 +109,12 @@ public class UsuarioService {
             usuario.setAtivo(usuarioRequest.ativo());
         }
 
-        // A senha só é tocada quando vem preenchida: editar nome ou cargo não pode
-        // trocar a senha de ninguém.
+
         if (usuarioRequest.temSenha()) {
             usuario.setSenhaHash(passwordEncoder.encode(usuarioRequest.senha()));
         }
 
+        log.info("usuario_atualizado id={} cargo={} ativo={} senha_alterada={}", id, cargo.getId(), usuario.isAtivo(), usuarioRequest.temSenha());
         return UsuarioMapper.toResponse(usuarioRepository.save(usuario));
     }
 
@@ -132,6 +125,7 @@ public class UsuarioService {
 
         usuario.setAtivo(!usuario.isAtivo());
         usuarioRepository.save(usuario);
+        log.info("usuario_{} id={}", usuario.isAtivo() ? "ativado" : "inativado", id);
     }
 
     @PreAuthorize("isAuthenticated()")

@@ -58,6 +58,9 @@ class AuthenticationServiceTest {
     @Mock
     private RefreshTokenService refreshTokenService;
 
+    @Mock
+    private RecuperacaoSenhaService recuperacaoSenhaService;
+
     @InjectMocks
     private AuthenticationService authenticationService;
 
@@ -256,25 +259,18 @@ class AuthenticationServiceTest {
                     () -> authenticationService.resetarSenha(1)
             );
 
-            verify(passwordEncoder, never()).encode(any());
-            verify(usuarioRepository, never()).save(any());
+            verify(recuperacaoSenhaService, never()).resetar(any());
         }
 
         @Test
-        @DisplayName("Deve salvar senha padrão quando usuário existe")
-        void deveSalvarSenhaPadraoQuandoUsuarioExiste() {
+        @DisplayName("Deve invalidar a senha e enviar o link quando usuário existe")
+        void deveEnviarLinkQuandoUsuarioExiste() {
             when(usuarioRepository.findById(1))
                     .thenReturn(Optional.of(usuario));
 
-            when(passwordEncoder.encode("Pezao_0001"))
-                    .thenReturn("hash-padrao");
-
             authenticationService.resetarSenha(1);
 
-            assertEquals("hash-padrao", usuario.getSenhaHash());
-            verify(passwordEncoder)
-                    .encode("Pezao_0001");
-            verify(usuarioRepository).save(usuario);
+            verify(recuperacaoSenhaService).resetar(usuario);
         }
     }
 
@@ -369,14 +365,16 @@ class AuthenticationServiceSecurityTest {
                 AuthenticationManager authenticationManager,
                 UsuarioRepository usuarioRepository,
                 PasswordEncoder passwordEncoder,
-                RefreshTokenService refreshTokenService
+                RefreshTokenService refreshTokenService,
+                RecuperacaoSenhaService recuperacaoSenhaService
         ) {
             return new AuthenticationService(
                     jwtService,
                     authenticationManager,
                     usuarioRepository,
                     passwordEncoder,
-                    refreshTokenService
+                    refreshTokenService,
+                    recuperacaoSenhaService
             );
         }
     }
@@ -396,6 +394,9 @@ class AuthenticationServiceSecurityTest {
     @MockitoBean
     private RefreshTokenService refreshTokenService;
 
+    @MockitoBean
+    private RecuperacaoSenhaService recuperacaoSenhaService;
+
     @Resource
     private AuthenticationService authenticationService;
 
@@ -409,17 +410,12 @@ class AuthenticationServiceSecurityTest {
         when(usuarioRepository.findById(1))
                 .thenReturn(Optional.of(usuario));
 
-        when(passwordEncoder.encode("Pezao_0001"))
-                .thenReturn("hash-padrao");
-
         assertDoesNotThrow(
                 () -> authenticationService.resetarSenha(1)
         );
 
         verify(usuarioRepository).findById(1);
-        verify(passwordEncoder)
-                .encode("Pezao_0001");
-        verify(usuarioRepository).save(usuario);
+        verify(recuperacaoSenhaService).resetar(usuario);
     }
 
     @Test
@@ -432,8 +428,7 @@ class AuthenticationServiceSecurityTest {
         );
 
         verify(usuarioRepository, never()).findById(any());
-        verify(passwordEncoder, never()).encode(any());
-        verify(usuarioRepository, never()).save(any());
+        verify(recuperacaoSenhaService, never()).resetar(any());
     }
 
     @Test
@@ -446,7 +441,6 @@ class AuthenticationServiceSecurityTest {
         );
 
         verify(usuarioRepository, never()).findById(any());
-        verify(passwordEncoder, never()).encode(any());
-        verify(usuarioRepository, never()).save(any());
+        verify(recuperacaoSenhaService, never()).resetar(any());
     }
 }

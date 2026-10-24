@@ -19,7 +19,7 @@ public record UsuarioRequest (
         @Positive int cargo_id,
 
         @Schema(description = "Senha do usuário. Opcional: quando não informada no cadastro, o "
-                + "usuário recebe a senha padrão e precisa trocá-la no primeiro acesso. Na edição, "
+                + "usuário recebe um e-mail com o link para criar a própria senha. Na edição, "
                 + "só é alterada se vier preenchida.", example = "SenhaSegura123")
         @Size(min = 8, max = 20, message = "Senha deve ter entre 8 e 20 caracteres")
         String senha,

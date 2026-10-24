@@ -9,7 +9,7 @@ services:
     volumes:
       - floci-data:/app/data
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:4566/health"]
+      test: ["CMD", "bash", "-c", "exec 3<>/dev/tcp/localhost/4566"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -57,6 +57,32 @@ services:
         aws --endpoint-url http://floci:4566 s3 mb s3://stockflow-dev || true
         echo "Bucket pronto!"
 
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: rabbitmq-dev
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: stockflow
+      RABBITMQ_DEFAULT_PASS: stockflow
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: mailpit-dev
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
 volumes:
   floci-data:
   mysql-data:
+  rabbitmq-data:

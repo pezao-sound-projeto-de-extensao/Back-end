@@ -1,5 +1,7 @@
 package sound.pezao.backend.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jakarta.transaction.Transactional;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
@@ -33,6 +35,8 @@ import java.util.UUID;
 
 @Service
 public class ItemService {
+
+    private static final Logger log = LoggerFactory.getLogger("eventos");
 
     static final String OBSERVACAO_ESTOQUE_INICIAL = "Estoque inicial do cadastro do produto";
 
@@ -82,6 +86,7 @@ public class ItemService {
         Item salvo = repository.save(item);
 
         registrarEstoqueInicial(salvo);
+        log.info("produto_criado id={} nome=\"{}\" quantidade={}", salvo.getId(), salvo.getNome(), salvo.getQuantidadeAtual());
 
         return ItemMapper.toResponse(salvo, arquivoRepository);
     }
@@ -165,6 +170,7 @@ public class ItemService {
         item.setPrecoVenda(request.precoVenda());
 
         Item salvo = repository.save(item);
+        log.info("produto_atualizado id={} nome=\"{}\"", salvo.getId(), salvo.getNome());
         return ItemMapper.toResponse(salvo, arquivoRepository);
     }
 
@@ -191,6 +197,7 @@ public class ItemService {
         arquivoRepository.save(arq);
 
         imagemProcessor.enfileirar(id, conteudo, chavesAntigas);
+        log.info("produto_imagem_enviada produto={} imagem={} bytes={}", itemId, id, conteudo.length);
 
         return ItemMapper.toResponse(item, arquivoRepository);
     }
@@ -238,6 +245,7 @@ public class ItemService {
                 .orElseThrow(() -> new EntityNotFoundException("Item", id));
         item.setAtivo(false);
         repository.save(item);
+        log.info("produto_inativado id={}", id);
     }
 
     @PreAuthorize("hasAuthority('EXCLUIR_ITENS')")
@@ -246,6 +254,7 @@ public class ItemService {
                 .orElseThrow(() -> new EntityNotFoundException("Item", id));
         item.setAtivo(true);
         repository.save(item);
+        log.info("produto_reativado id={}", id);
     }
 
     @PreAuthorize("hasAuthority('EXCLUIR_ITENS')")
@@ -258,6 +267,7 @@ public class ItemService {
         if (arq != null) {
             arquivoRepository.delete(arq);
             chaves(arq).forEach(armazenamento::deletar);
+            log.info("produto_imagem_removida produto={}", itemId);
         }
     }
 }

@@ -12,5 +12,7 @@ docs {
   - `quantidadeAtual` > 0 no cadastro gera uma movimentação de **entrada** automática;
   - na edição `quantidadeAtual` é ignorada (o saldo só muda por movimentação);
   - item inativo não pode ser editado (400);
-  - `status` é calculado: `ZERADO` (≤ 0), `BAIXO` (≤ mínima), `OK`.
+  - `status` é calculado: `ZERADO` (≤ 0), `BAIXO` (≤ mínima), `OK`;
+  - imagem: o upload responde 201 na hora e a conversão para WebP (`icon` 120px e `full` 900px)
+    roda assíncrona pelo RabbitMQ; o download escolhe a versão com `?tipo=icon|full` (padrão `full`).
 }

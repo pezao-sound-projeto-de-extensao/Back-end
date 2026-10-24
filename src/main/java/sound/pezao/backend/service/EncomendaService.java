@@ -1,5 +1,7 @@
 package sound.pezao.backend.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import jakarta.transaction.Transactional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -29,6 +31,8 @@ import java.util.List;
 @PreAuthorize("hasAuthority('GERENCIAR_ENCOMENDAS')")
 @Service
 public class EncomendaService {
+
+    private static final Logger log = LoggerFactory.getLogger("eventos");
 
     private final EncomendaRepository repository;
     private final OrcamentoRepository orcamentoRepository;
@@ -132,6 +136,7 @@ public class EncomendaService {
         encomenda.setStatus(StatusEncomenda.RECEBIDA);
         encomenda.setRecebidaEm(LocalDateTime.now());
 
+        log.info("encomenda_recebida id={} orcamento={} produto={}", id, encomenda.getOrcamento().getId(), item.getId());
         return mapper.toResponse(repository.save(encomenda));
     }
 
@@ -159,6 +164,7 @@ public class EncomendaService {
 
         Encomenda salva = repository.save(encomenda);
         concluirOrcamentoSeTodasEntregues(encomenda.getOrcamento());
+        log.info("encomenda_concluida id={} orcamento={}", id, encomenda.getOrcamento().getId());
 
         return mapper.toResponse(salva);
     }

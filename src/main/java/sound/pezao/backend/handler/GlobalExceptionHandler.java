@@ -90,17 +90,6 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(problemDetail);
     }
 
-    @ExceptionHandler(PrimeiroAcessoException.class)
-    public ResponseEntity<ProblemDetail> handleSenhaPadrao(PrimeiroAcessoException ex) {
-        ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
-                HttpStatus.FORBIDDEN, ex.getMessage()
-        );
-        problemDetail.setType(URI.create("about:blank"));
-        problemDetail.setProperty("TimeStamp", Instant.now());
-
-        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(problemDetail);
-    }
-
     @ExceptionHandler(EstoqueInsuficienteException.class)
     public ResponseEntity<ProblemDetail> handleEstoqueInsuficiente(EstoqueInsuficienteException ex) {
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(

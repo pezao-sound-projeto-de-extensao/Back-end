@@ -1,6 +1,8 @@
 package sound.pezao.backend.service;
 
 import jakarta.validation.constraints.NotBlank;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -15,7 +17,6 @@ import sound.pezao.backend.dto.usuarioDTO.UsuarioMapper;
 import sound.pezao.backend.entities.Usuario;
 import sound.pezao.backend.exception.EntityNotFoundException;
 import sound.pezao.backend.exception.LoginInvalidoException;
-import sound.pezao.backend.exception.PrimeiroAcessoException;
 import sound.pezao.backend.repository.UsuarioRepository;
 import sound.pezao.backend.security.JwtService;
 import sound.pezao.backend.security.UserAuthenticated;
@@ -24,19 +25,24 @@ import java.time.LocalDateTime;
 
 @Service
 public class AuthenticationService {
+    private static final Logger log = LoggerFactory.getLogger("eventos");
+
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final RefreshTokenService refreshTokenService;
+    private final RecuperacaoSenhaService recuperacaoSenhaService;
 
     public AuthenticationService(JwtService jwtService, AuthenticationManager authenticationManager,
-                                 UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, RefreshTokenService refreshTokenService) {
+                                 UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder, RefreshTokenService refreshTokenService,
+                                 RecuperacaoSenhaService recuperacaoSenhaService) {
         this.jwtService = jwtService;
         this.authenticationManager = authenticationManager;
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
         this.refreshTokenService = refreshTokenService;
+        this.recuperacaoSenhaService = recuperacaoSenhaService;
     }
 
     public AuthResponse authenticate(AuthRequest authRequest){
@@ -54,6 +60,7 @@ public class AuthenticationService {
         String accessToken = jwtService.generateToken(authentication);
         String refreshToken = refreshTokenService.criar(usuario);
         UserAuthenticated userDetails = (UserAuthenticated) authentication.getPrincipal();
+        log.info("login usuario={}", userDetails.getUsername());
         return new AuthResponse(accessToken, refreshToken, userDetails.getUsername(), UsuarioMapper.toResponse(usuario));
     }
 
@@ -79,13 +86,8 @@ public class AuthenticationService {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário", id));
 
-        String senhaPadrao = gerarSenhaPadraoDoUsuario(usuario.getId());
-        usuario.setSenhaHash(passwordEncoder.encode(senhaPadrao));
-        usuarioRepository.save(usuario);
-    }
-
-    private String gerarSenhaPadraoDoUsuario(Integer usuarioId) {
-        return "Pezao_" + String.format("%04d", usuarioId);
+        recuperacaoSenhaService.resetar(usuario);
+        log.info("senha_resetada usuario={}", id);
     }
 
     public AuthResponse refreshToken(String token) {
