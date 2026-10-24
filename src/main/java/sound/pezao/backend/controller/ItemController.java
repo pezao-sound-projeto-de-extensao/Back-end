@@ -6,6 +6,8 @@ import jakarta.validation.Valid;
 import org.springframework.core.io.Resource;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -48,6 +50,7 @@ public class ItemController {
             @RequestParam(required = false) String search,
             @RequestParam(required = false) Integer categoriaId,
             @RequestParam(required = false) Boolean apenasAlerta,
+            @PageableDefault(page = 0, size = 10, sort = "id", direction = Sort.Direction.ASC)
             Pageable pageable
     ) {
         return ResponseEntity.ok(

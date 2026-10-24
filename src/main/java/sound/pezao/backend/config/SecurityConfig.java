@@ -37,8 +37,7 @@ public class SecurityConfig {
     public static final String [] ENDPOINTS_PUBLICOS = {
             "/api/auth/login", "/api/auth/trocar-senha", "/api/health", "/api/auth/refresh", "/api/auth/logout",
             "/api/auth/esqueci-senha", "/api/auth/redefinir-senha",
-            // Swagger: na raiz em dev, debaixo de /api em prod (ver application-prod.properties)
-            "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
+            // Swagger (caminhos em application.properties)
             "/api/swagger-ui.html", "/api/swagger-ui/**", "/api/v3/api-docs/**"
     };
     public final String [] ENDPOINTS_AUTENTICADO = {
