@@ -5,6 +5,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
@@ -16,6 +17,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -32,20 +34,15 @@ public class SecurityConfig {
     private String allowedOrigins;
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    public final String [] ENDPOINTS_PUBLICOS = {
+    public static final String [] ENDPOINTS_PUBLICOS = {
             "/api/auth/login", "/api/auth/trocar-senha", "/api/health", "/api/auth/refresh", "/api/auth/logout",
-            "/api/auth/esqueci-senha", "/api/auth/redefinir-senha"
+            "/api/auth/esqueci-senha", "/api/auth/redefinir-senha",
+            // Swagger: na raiz em dev, debaixo de /api em prod (ver application-prod.properties)
+            "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**",
+            "/api/swagger-ui.html", "/api/swagger-ui/**", "/api/v3/api-docs/**"
     };
     public final String [] ENDPOINTS_AUTENTICADO = {
-            "/api/alertas",
-            "/swagger-ui/**",
-            "/swagger-ui.html",
-            "/swagger-resources",
-            "/swagger-resources/**",
-            "/configuration/ui",
-            "/configuration/security",
-            "/webjars/**",
-            "/v3/api-docs/**",
+            "/api/alertas"
     };
     public final String [] ENDPOINTS_LISTAR_AUTENTICADO = {
             "/api/categorias", //GET
@@ -94,6 +91,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, ENDPOINTS_LISTAR_AUTENTICADO).authenticated()
                         .anyRequest().authenticated()
                 )
+                // sem isso o Spring responde 403 a quem não mandou token, e o front só tenta o refresh no 401
+                .exceptionHandling(e -> e.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

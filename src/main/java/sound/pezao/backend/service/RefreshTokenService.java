@@ -44,6 +44,9 @@ public class RefreshTokenService {
 
     @Transactional
     public Usuario validar(String token){
+        if (token == null){
+            throw new IllegalArgumentException("Refresh token ausente");
+        }
         String[] partes = token.split("\\.", 2);
 
         if (partes.length != 2){
@@ -71,6 +74,9 @@ public class RefreshTokenService {
 
     @Transactional
     public void revogar (String token){
+        if (token == null){
+            return;
+        }
         String[] partes = token.split("\\.", 2);
 
         if (partes.length != 2){

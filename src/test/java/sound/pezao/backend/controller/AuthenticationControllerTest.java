@@ -1,6 +1,7 @@
 package sound.pezao.backend.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.Cookie;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -91,6 +92,22 @@ class AuthenticationControllerTest {
 
             verify(authenticationService).refreshToken(request.refreshToken());
         }
+
+        @Test
+        @DisplayName("Deve usar o cookie refresh_token quando o corpo vem vazio, como o front envia")
+        void refreshDeveUsarCookieQuandoCorpoVazio() throws Exception {
+            AuthResponse response = new AuthResponse("new-access-token", "new-refresh-token", "teste@email.com", null);
+
+            when(authenticationService.refreshToken("cookie-refresh-token")).thenReturn(response);
+
+            mockMvc.perform(post("/auth/refresh")
+                            .cookie(new Cookie("refresh_token", "cookie-refresh-token"))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isOk());
+
+            verify(authenticationService).refreshToken("cookie-refresh-token");
+        }
     }
 
     @Nested
@@ -110,6 +127,18 @@ class AuthenticationControllerTest {
                     .andExpect(status().isNoContent());
 
             verify(authenticationService).logout(request.refreshToken());
+        }
+
+        @Test
+        @DisplayName("Deve revogar o cookie refresh_token quando o corpo vem vazio, como o front envia")
+        void logoutDeveUsarCookieQuandoCorpoVazio() throws Exception {
+            mockMvc.perform(post("/auth/logout")
+                            .cookie(new Cookie("refresh_token", "cookie-refresh-token"))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isNoContent());
+
+            verify(authenticationService).logout("cookie-refresh-token");
         }
     }
 

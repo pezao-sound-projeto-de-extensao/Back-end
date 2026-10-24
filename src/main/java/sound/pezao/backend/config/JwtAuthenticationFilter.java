@@ -16,6 +16,8 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 import sound.pezao.backend.security.JwtService;
@@ -25,9 +27,15 @@ import java.io.IOException;
 import java.net.URI;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
+
+    private static final List<RequestMatcher> ROTAS_PUBLICAS = Arrays.stream(SecurityConfig.ENDPOINTS_PUBLICOS)
+            .map(PathPatternRequestMatcher.withDefaults()::matcher)
+            .collect(Collectors.toList());
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
@@ -82,6 +90,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         }
 
         filterChain.doFilter(request, response);
+    }
+
+    // Rotas públicas não podem ser barradas por um access_token vencido ou inválido (ex.: o próprio /auth/refresh)
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        return ROTAS_PUBLICAS.stream().anyMatch(rota -> rota.matches(request));
     }
 
     private String extractTokenFromCookie(HttpServletRequest request) {

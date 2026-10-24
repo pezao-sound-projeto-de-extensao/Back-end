@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -26,6 +27,10 @@ public class AuthenticationController {
     private final UsuarioService usuarioService;
     private final RecuperacaoSenhaService recuperacaoSenhaService;
 
+    // o cookie vence junto com o JWT
+    @Value("${jwt.expiration:300000}")
+    private long jwtExpirationMs;
+
     public AuthenticationController(AuthenticationService authenticationService, UsuarioService usuarioService,
                                     RecuperacaoSenhaService recuperacaoSenhaService) {
         this.authenticationService = authenticationService;
@@ -44,18 +49,20 @@ public class AuthenticationController {
 
     @Operation(summary = "Gera novo accessToken e refreshToken.")
     @PostMapping("/refresh")
-    public ResponseEntity<AuthResponse> refresh(@Valid @RequestBody RefreshTokenRequest request,
+    public ResponseEntity<AuthResponse> refresh(@CookieValue(name = "refresh_token", required = false) String cookie,
+                                                 @RequestBody(required = false) RefreshTokenRequest request,
                                                  HttpServletResponse response) {
-        AuthResponse authResponse = authenticationService.refreshToken(request.refreshToken());
+        AuthResponse authResponse = authenticationService.refreshToken(refreshToken(cookie, request));
         setAuthCookies(response, authResponse.accessToken(), authResponse.refreshToken());
         return ResponseEntity.ok(authResponse);
     }
 
     @Operation(summary = "Revoga o refreshToken")
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout(@Valid @RequestBody RefreshTokenRequest request,
+    public ResponseEntity<Void> logout(@CookieValue(name = "refresh_token", required = false) String cookie,
+                                        @RequestBody(required = false) RefreshTokenRequest request,
                                         HttpServletResponse response) {
-        authenticationService.logout(request.refreshToken());
+        authenticationService.logout(refreshToken(cookie, request));
         clearAuthCookies(response);
         return ResponseEntity.noContent().build();
     }
@@ -101,13 +108,21 @@ public class AuthenticationController {
         return ResponseEntity.ok(response);
     }
 
+    // O front usa o cookie HttpOnly; o corpo continua aceito para clientes como o Bruno
+    private String refreshToken(String cookie, RefreshTokenRequest request) {
+        if (request != null && request.refreshToken() != null && !request.refreshToken().isBlank()) {
+            return request.refreshToken();
+        }
+        return cookie;
+    }
+
     private void setAuthCookies(HttpServletResponse response, String accessToken, String refreshToken) {
         ResponseCookie accessCookie = ResponseCookie.from("access_token", accessToken)
                 .httpOnly(true)
                 .secure(false)        // obrigatório false em HTTP
                 .sameSite("Lax")      // não pode ser "None" sem HTTPS
                 .path("/")
-                .maxAge(Duration.ofMinutes(15))
+                .maxAge(Duration.ofMillis(jwtExpirationMs))
                 .build();
 
         ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", refreshToken)
