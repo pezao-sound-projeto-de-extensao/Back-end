@@ -64,6 +64,10 @@ class SwaggerConfigTest {
         mockMvc.perform(get("/api/swagger-ui/swagger-initializer.js"))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("restoreSwaggerSession")))
+                .andExpect(content().string(containsString(
+                        "requestInterceptor: window.stockflowSwaggerSession.requestInterceptor")))
+                .andExpect(content().string(containsString(
+                        "onComplete: window.stockflowSwaggerSession.onComplete")))
                 .andExpect(content().string(containsString("/api/v3/api-docs/swagger-config")));
         mockMvc.perform(get("/api/v3/api-docs/swagger-config"))
                 .andExpect(status().isOk())

@@ -51,8 +51,13 @@ public class SwaggerConfig {
                                 return transformed;
                         }
                         String initializer = transformed.getContentAsString(StandardCharsets.UTF_8);
+                                                initializer = initializer.replace("SwaggerUIBundle({", """
+                                                                                SwaggerUIBundle({
+                                                                                        requestInterceptor: window.stockflowSwaggerSession.requestInterceptor,
+                                                                                        onComplete: window.stockflowSwaggerSession.onComplete,
+                                                                                """);
                         return new TransformedResource(transformed,
-                                        (initializer + "\n" + sessionScript).getBytes(StandardCharsets.UTF_8));
+                                                                                (sessionScript + "\n" + initializer).getBytes(StandardCharsets.UTF_8));
                 };
         }
 }

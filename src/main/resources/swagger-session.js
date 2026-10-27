@@ -1,6 +1,4 @@
-window.addEventListener("load", function () {
-    const config = window.ui.getConfigs();
-    const originalInterceptor = config.requestInterceptor;
+window.stockflowSwaggerSession = (function () {
     const publicPaths = new Set([
         "/api/health",
         "/api/auth/login",
@@ -37,17 +35,20 @@ window.addEventListener("load", function () {
         return sessionRequest;
     }
 
-    config.requestInterceptor = async function (request) {
+    async function requestInterceptor(request) {
         const url = new URL(request.url, window.location.origin);
         if (url.origin === window.location.origin && url.pathname.startsWith("/api/")) {
             request.credentials = "same-origin";
-                if (!publicPaths.has(url.pathname)
+            if (!publicPaths.has(url.pathname)
                     && !url.pathname.startsWith("/api/v3/api-docs")) {
                 await restoreSwaggerSession();
             }
         }
-        return originalInterceptor ? originalInterceptor(request) : request;
-    };
+        return request;
+    }
 
-    restoreSwaggerSession();
-});
+    return {
+        requestInterceptor: requestInterceptor,
+        onComplete: restoreSwaggerSession
+    };
+})();
