@@ -11,6 +11,7 @@ COPY src ./src
 RUN mvn clean package -P${SPRING_PROFILE} -DskipTests
 
 FROM eclipse-temurin:21-jre
+ARG SPRING_PROFILE=prod
 WORKDIR /app
 
 COPY --from=build /app/target/app.jar app.jar
