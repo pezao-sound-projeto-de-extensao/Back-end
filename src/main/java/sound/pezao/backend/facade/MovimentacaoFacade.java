@@ -1,5 +1,6 @@
 package sound.pezao.backend.facade;
 
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import jakarta.transaction.Transactional;
@@ -77,6 +78,7 @@ public class MovimentacaoFacade {
         );
     }
 
+    @WithSpan
     @Transactional
     public MovimentacaoResponse registrar(MovimentacaoRequest request) {
         TipoMovimentacao tipo = TipoMovimentacao.fromValor(request.tipo());

@@ -1,5 +1,6 @@
 package sound.pezao.backend.service;
 
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.springframework.stereotype.Service;
 import sound.pezao.backend.entities.Item;
 import sound.pezao.backend.entities.TipoMovimentacao;
@@ -18,6 +19,7 @@ public class EstoqueService {
     /**
      * Aplica a movimentação no estoque do item e devolve o saldo anterior.
      */
+    @WithSpan
     public int aplicarMovimentacao(Item item, TipoMovimentacao tipo, Integer quantidade) {
         validarQuantidade(quantidade);
 

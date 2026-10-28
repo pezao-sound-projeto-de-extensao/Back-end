@@ -1,5 +1,7 @@
 package sound.pezao.backend.service;
 
+import io.opentelemetry.instrumentation.annotations.SpanAttribute;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import jakarta.transaction.Transactional;
@@ -105,8 +107,9 @@ public class OrcamentoService {
         return mapper.toResponse(repository.save(orcamento));
     }
 
+    @WithSpan
     @Transactional
-    public OrcamentoResponse aceitar(Integer id) {
+    public OrcamentoResponse aceitar(@SpanAttribute("orcamento.id") Integer id) {
         Orcamento orcamento = alterarStatus(id, StatusOrcamento.ACEITO);
 
         int encomendas = encomendaService.gerarParaOrcamento(orcamento).size();
