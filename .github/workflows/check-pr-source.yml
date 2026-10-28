@@ -7,11 +7,15 @@ on:
       - synchronize
     branches:
       - main
+  # PR aberto pelo auto-pr não dispara pull_request; o push na development marca o check no mesmo commit
+  push:
+    branches:
+      - development
 
 jobs:
   check-source:
     runs-on: ubuntu-latest
-    if: ${{ github.head_ref != 'development' }}
+    if: ${{ github.event_name == 'pull_request' && github.head_ref != 'development' }}
     steps:
       - name: Bloquear PR de branches não autorizadas
         run: |
