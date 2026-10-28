@@ -6,6 +6,7 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.amqp.core.Message;
 import org.springframework.amqp.core.MessageBuilder;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import sound.pezao.backend.exception.ArquivoInvalidoException;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -13,6 +14,9 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -47,5 +51,23 @@ class ImagemItemProcessorTest {
         assertEquals(60, iconLido.getHeight());
         assertEquals(900, fullLido.getWidth());
         assertEquals(450, fullLido.getHeight());
+    }
+
+    @Test
+    @DisplayName("Deve recusar imagem acima de 50 megapixels sem decodificá-la")
+    void deveRecusarImagemGigante() throws Exception {
+        // 1 bit por pixel: 64MP ocupam ~8MB em memória e poucos KB em PNG
+        ByteArrayOutputStream png = new ByteArrayOutputStream();
+        ImageIO.write(new BufferedImage(8000, 8000, BufferedImage.TYPE_BYTE_BINARY), "png", png);
+
+        assertThrows(ArquivoInvalidoException.class, () -> ImagemItemProcessor.isImagem(png.toByteArray()));
+        assertTrue(ImagemItemProcessor.isImagem(pngDe(10, 10)));
+        assertFalse(ImagemItemProcessor.isImagem("não sou imagem".getBytes()));
+    }
+
+    private static byte[] pngDe(int largura, int altura) throws Exception {
+        ByteArrayOutputStream png = new ByteArrayOutputStream();
+        ImageIO.write(new BufferedImage(largura, altura, BufferedImage.TYPE_INT_RGB), "png", png);
+        return png.toByteArray();
     }
 }
