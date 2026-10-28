@@ -10,8 +10,10 @@ import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
+import sound.pezao.backend.exception.ArquivoInvalidoException;
 
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
@@ -19,6 +21,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.util.Iterator;
 import java.util.List;
 
 @Component
@@ -31,6 +34,7 @@ public class ImagemItemProcessor {
     static final List<String> TIPOS = List.of("icon", "full");
     static final int LADO_MAXIMO_ICON = 120;
     static final int LADO_MAXIMO_FULL = 900;
+    static final long PIXELS_MAXIMO = 50_000_000L;
 
     private final RabbitTemplate rabbitTemplate;
     private final ArmazenamentoArquivoService armazenamento;
@@ -89,7 +93,23 @@ public class ImagemItemProcessor {
 
     public static boolean isImagem(byte[] conteudo) {
         try (var entrada = ImageIO.createImageInputStream(new ByteArrayInputStream(conteudo))) {
-            return entrada != null && ImageIO.getImageReaders(entrada).hasNext();
+            if (entrada == null) {
+                return false;
+            }
+            Iterator<ImageReader> leitores = ImageIO.getImageReaders(entrada);
+            if (!leitores.hasNext()) {
+                return false;
+            }
+            ImageReader leitor = leitores.next();
+            try {
+                leitor.setInput(entrada);
+                if ((long) leitor.getWidth(0) * leitor.getHeight(0) > PIXELS_MAXIMO) {
+                    throw new ArquivoInvalidoException("A imagem excede o limite de 50 megapixels.");
+                }
+            } finally {
+                leitor.dispose();
+            }
+            return true;
         } catch (IOException e) {
             return false;
         }
