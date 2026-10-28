@@ -1,5 +1,7 @@
 package sound.pezao.backend.service;
 
+import io.opentelemetry.instrumentation.annotations.SpanAttribute;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import jakarta.transaction.Transactional;
@@ -111,8 +113,9 @@ public class EncomendaService {
         return repository.saveAll(encomendas);
     }
 
+    @WithSpan
     @Transactional
-    public EncomendaResponse receber(Integer id, Integer itemId) {
+    public EncomendaResponse receber(@SpanAttribute("encomenda.id") Integer id, Integer itemId) {
         Encomenda encomenda = buscarEntidade(id);
 
         if (encomenda.getStatus() != StatusEncomenda.PENDENTE) {
@@ -140,8 +143,9 @@ public class EncomendaService {
         return mapper.toResponse(repository.save(encomenda));
     }
 
+    @WithSpan
     @Transactional
-    public EncomendaResponse concluir(Integer id) {
+    public EncomendaResponse concluir(@SpanAttribute("encomenda.id") Integer id) {
         Encomenda encomenda = buscarEntidade(id);
 
         if (encomenda.getStatus() != StatusEncomenda.RECEBIDA) {
