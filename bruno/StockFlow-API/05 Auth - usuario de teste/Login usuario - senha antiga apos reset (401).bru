@@ -1,0 +1,29 @@
+meta {
+  name: Login usuario - senha antiga apos reset (401)
+  type: http
+  seq: 12
+}
+
+post {
+  url: {{baseUrl}}/auth/login
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "email": "{{usuarioEmail}}",
+    "senha": "{{usuarioSenhaNova}}"
+  }
+}
+
+tests {
+  test("status 401", function () {
+    expect(res.getStatus()).to.equal(401);
+  });
+}
+
+docs {
+  O reset troca a senha por uma aleatória: a senha que valia antes deixa de funcionar.
+  A nova só é criada pelo link do e-mail, então a collection não loga mais com esse usuário.
+}

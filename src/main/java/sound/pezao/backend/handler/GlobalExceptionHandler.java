@@ -2,6 +2,9 @@ package sound.pezao.backend.handler;
 
 import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.persistence.EntityExistsException;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.AuthenticationException;
@@ -20,6 +23,8 @@ import java.util.stream.Collectors;
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
+    private static final Logger log = LoggerFactory.getLogger("eventos");
+
     @Override
     protected ResponseEntity<Object> handleMethodArgumentNotValid(
             MethodArgumentNotValidException ex, HttpHeaders headers,
@@ -30,6 +35,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         );
         var errors = ex.getBindingResult().getFieldErrors().stream()
                 .collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage));
+        // o EventoLogFilter só tem a mensagem genérica do Spring; aqui ficam os campos
+        log.warn("validacao_recusada {} campos={}", request.getDescription(false), errors);
         problemDetail.setProperty("errors", errors);
         problemDetail.setProperty("TimeStamp", Instant.now());
 
@@ -113,7 +120,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<ProblemDetail> handleAcessoNegado(AccessDeniedException ex) {
+    public ResponseEntity<ProblemDetail> handleAcessoNegado(AccessDeniedException ex, HttpServletRequest request) {
+        // o EventoLogFilter já registra as escritas; GET só aparece aqui
+        if ("GET".equals(request.getMethod())) {
+            log.warn("acesso_negado metodo=GET rota={}", request.getRequestURI());
+        }
         ProblemDetail problemDetail = ProblemDetail.forStatusAndDetail(
                 HttpStatus.FORBIDDEN, ex.getMessage()
         );

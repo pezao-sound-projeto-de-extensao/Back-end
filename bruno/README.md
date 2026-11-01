@@ -67,14 +67,14 @@ Variáveis de runtime definidas no `collection.bru`:
 
 | Pasta | O que cobre |
 |---|---|
-| 00 Health | smoke test público |
-| 01 Auth | login (200/401/400), `/auth/me`, refresh com rotação, reúso de refresh token (400) |
+| 00 Health | smoke test público e documento OpenAPI (`/v3/api-docs`, público) |
+| 01 Auth | login (200/401/400), `/auth/me`, refresh com rotação, reúso de refresh token (400), refresh só pelo cookie `refresh_token` |
 | 02 Permissoes | as 10 permissões do sistema |
 | 03 Cargos | CRUD, nome duplicado (409), permissão inexistente (400), exclusão |
-| 04 Usuarios | cadastro com senha padrão `Pezao_<id>`, e-mail duplicado (409), filtros, toggle de ativo, login de usuário inativo (401), exclusão de cargo em uso (409) |
-| 05 Auth - usuario de teste | troca de senha, login com o usuário de teste, **403** para quem não tem permissão, reset de senha |
+| 04 Usuarios | cadastro com senha e por convite (sem senha, `conviteEnviado: true`), e-mail duplicado (409), filtros, toggle de ativo, login de usuário inativo (401), exclusão de cargo em uso (409) |
+| 05 Auth - usuario de teste | troca de senha, login com o usuário de teste, **403** para quem não tem permissão, reset de senha (a senha antiga deixa de valer: 401) |
 | 06 Categorias / 07 Unidades | CRUD, duplicados (409), validações (400), exclusão |
-| 08 Itens | movimentação automática do estoque inicial, `quantidadeAtual` ignorada na edição, filtros, upload de imagem com processamento assíncrono (RabbitMQ → WebP), download `icon`/`full`, tipo inválido (400), remoção de imagem, inativar/reativar, edição de item inativo (400) |
+| 08 Itens | movimentação automática do estoque inicial, `quantidadeAtual` ignorada na edição, filtros, upload de imagem com processamento assíncrono (RabbitMQ → WebP), download `icon`/`full`, tipo inválido (400), remoção de imagem, inativar/reativar, edição de item inativo (400), paginação padrão (`size=10`, por `id`), imagem acima de 50 MP (400) |
 | 09 Alertas | lista e filtro por `zerado` / `estoque_baixo` |
 | 10 Movimentacoes | entrada/saída com saldo antes/depois, saída acima do estoque (400), validações, filtros, nota fiscal, exclusão com reversão do estoque, reversão bloqueada de entrada já consumida (400) |
 | 11 Dashboard e Relatorios | KPIs, itens de atenção, relatório por período (datas obrigatórias) |
@@ -93,8 +93,10 @@ A senha do `adm@email.com` nunca é alterada: a troca e o reset de senha usam o 
   de logar com outro usuário as requests seguintes seguem autenticadas como ele. Por isso a pasta 05
   termina com *Login admin de volta*. Se algo der 403 inesperado, rode **01 Auth / Login admin**.
 - **Uploads** usam os arquivos de `fixtures/` e precisam do S3 local (floci) do stack `dev`.
-- **`PATCH /encomendas/{id}/receber`** precisa de `Content-Type: application/json`, mesmo sem
-  `itemId`. As requests mandam `{}`; sem corpo a API responde 415.
+- **`PATCH /encomendas/{id}/receber`**, **`/auth/refresh`** e **`/auth/logout`** pelo cookie precisam
+  de `Content-Type: application/json`, mesmo sem dados no corpo. As requests mandam `{}`; sem corpo
+  a API responde 415.
 - **`/relatorios`** devolve o `tipo` do histórico em MAIÚSCULO (`ENTRADA`), diferente de
   `/movimentacoes` (`entrada`).
-- Access token dura 15 min. Se expirar no meio do uso manual, rode **Login admin** ou **Refresh**.
+- Access token dura 5 min. Se expirar no meio do uso manual, rode **Login admin** ou **Refresh**.
+- **Sem token, rota protegida responde 401** (não 403). O 403 fica só para falta de permissão.

@@ -8,6 +8,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import sound.pezao.backend.dto.authDTO.AuthRequest;
@@ -47,14 +48,24 @@ public class AuthenticationService {
 
     public AuthResponse authenticate(AuthRequest authRequest){
         Usuario usuario = usuarioRepository.findByEmailIgnoreCase(authRequest.email())
-                .orElseThrow(LoginInvalidoException::new);
+                .orElseThrow(() -> {
+                    log.warn("login_recusado usuario={} motivo=email_inexistente", authRequest.email());
+                    return new LoginInvalidoException();
+                });
 
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        authRequest.email(),
-                        authRequest.senha()
-                )
-        );
+        Authentication authentication;
+        try {
+            authentication = authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(
+                            authRequest.email(),
+                            authRequest.senha()
+                    )
+            );
+        } catch (AuthenticationException e) {
+            // BadCredentialsException = senha errada, DisabledException = usuário inativo
+            log.warn("login_recusado usuario={} motivo={}", authRequest.email(), e.getClass().getSimpleName());
+            throw e;
+        }
         usuario.setUltimoAcesso(LocalDateTime.now());
         usuarioRepository.save(usuario);
         String accessToken = jwtService.generateToken(authentication);

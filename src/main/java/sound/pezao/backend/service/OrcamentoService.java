@@ -1,5 +1,6 @@
 package sound.pezao.backend.service;
 
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.instrumentation.annotations.SpanAttribute;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.slf4j.Logger;
@@ -135,8 +136,12 @@ public class OrcamentoService {
             StatusOrcamento novoStatus
     ) {
         Orcamento orcamento = buscarEntidade(id);
+        Span.current().setAttribute("orcamento.status", orcamento.getStatus().name());
 
         if (orcamento.getStatus() != StatusOrcamento.PENDENTE) {
+            log.warn("orcamento_transicao_recusada id={} motivo=status_invalido de={} para={}",
+                    id, orcamento.getStatus(), novoStatus);
+            Span.current().setAttribute("orcamento.recusa", "status_invalido");
             String acao = novoStatus == StatusOrcamento.ACEITO
                     ? "aceitar"
                     : "rejeitar";

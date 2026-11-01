@@ -1,5 +1,6 @@
 package sound.pezao.backend.service;
 
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.instrumentation.annotations.SpanAttribute;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
 import org.slf4j.Logger;
@@ -117,8 +118,10 @@ public class EncomendaService {
     @Transactional
     public EncomendaResponse receber(@SpanAttribute("encomenda.id") Integer id, Integer itemId) {
         Encomenda encomenda = buscarEntidade(id);
+        anotarSpan(encomenda);
 
         if (encomenda.getStatus() != StatusEncomenda.PENDENTE) {
+            recusar("encomenda_recebimento_recusado", encomenda, "status_invalido");
             throw new IllegalArgumentException(
                     "Só é possível receber uma encomenda pendente. Esta está como "
                             + encomenda.getStatus() + "."
@@ -147,8 +150,10 @@ public class EncomendaService {
     @Transactional
     public EncomendaResponse concluir(@SpanAttribute("encomenda.id") Integer id) {
         Encomenda encomenda = buscarEntidade(id);
+        anotarSpan(encomenda);
 
         if (encomenda.getStatus() != StatusEncomenda.RECEBIDA) {
+            recusar("encomenda_conclusao_recusada", encomenda, "status_invalido");
             throw new IllegalArgumentException(
                     "Só é possível concluir uma encomenda recebida. Esta está como "
                             + encomenda.getStatus() + "."
@@ -171,6 +176,18 @@ public class EncomendaService {
         log.info("encomenda_concluida id={} orcamento={}", id, encomenda.getOrcamento().getId());
 
         return mapper.toResponse(salva);
+    }
+
+    private void anotarSpan(Encomenda encomenda) {
+        Span span = Span.current();
+        span.setAttribute("orcamento.id", encomenda.getOrcamento().getId());
+        span.setAttribute("encomenda.status", encomenda.getStatus().name());
+    }
+
+    private void recusar(String evento, Encomenda encomenda, String motivo) {
+        log.warn("{} id={} orcamento={} motivo={} status={}",
+                evento, encomenda.getId(), encomenda.getOrcamento().getId(), motivo, encomenda.getStatus());
+        Span.current().setAttribute("encomenda.recusa", motivo);
     }
 
     public Encomenda buscarEntidade(Integer id) {
@@ -201,6 +218,7 @@ public class EncomendaService {
         }
 
         if (encomenda.getItem() == null) {
+            recusar("encomenda_recebimento_recusado", encomenda, "produto_nao_cadastrado");
             throw new IllegalArgumentException(
                     "A encomenda '" + encomenda.getDescricao()
                             + "' é de um produto que não estava cadastrado. "
