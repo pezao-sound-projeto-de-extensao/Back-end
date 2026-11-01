@@ -1,0 +1,26 @@
+meta {
+  name: Swagger - api-docs
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/v3/api-docs
+  body: none
+  auth: none
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("documento OpenAPI", function () {
+    expect(res.body).to.have.property("openapi");
+    expect(res.body).to.have.property("paths");
+  });
+}
+
+docs {
+  Público, sem token. A interface fica em `{{baseUrl}}/swagger-ui.html`.
+}

@@ -1,0 +1,36 @@
+meta {
+  name: Criar usuario - convite por e-mail
+  type: http
+  seq: 14
+}
+
+post {
+  url: {{baseUrl}}/usuarios
+  body: json
+  auth: inherit
+}
+
+body:json {
+  {
+    "nome": "Usuario Convite {{runId}}",
+    "email": "convite.{{runId}}@example.com",
+    "cargo_id": {{cargoId}}
+  }
+}
+
+tests {
+  test("status 201", function () {
+    expect(res.getStatus()).to.equal(201);
+  });
+
+  test("sem senha, envia o convite por e-mail", function () {
+    expect(res.body.conviteEnviado).to.equal(true);
+    expect(res.body).to.not.have.property("senhaPadraoTemporaria");
+  });
+}
+
+docs {
+  Sem `senha`, o usuário recebe um e-mail com o link para criar a própria senha (válido por 24 h).
+  A publicação vai para a fila de e-mail no RabbitMQ; o envio em si não muda a resposta.
+  O e-mail usa `example.com` (reservado para testes), porque o convite é enviado de verdade.
+}

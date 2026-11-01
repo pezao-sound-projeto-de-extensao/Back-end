@@ -1,0 +1,43 @@
+meta {
+  name: Refresh - pelo cookie
+  type: http
+  seq: 9
+}
+
+post {
+  url: {{baseUrl}}/auth/refresh
+  body: json
+  auth: none
+}
+
+body:json {
+  {}
+}
+
+script:pre-request {
+  bru.setVar("refreshTokenAnterior", bru.getVar("refreshToken"));
+}
+
+script:post-response {
+  if (res.getStatus() === 200) {
+    bru.setVar("accessToken", res.body.accessToken);
+    bru.setVar("refreshToken", res.body.refreshToken);
+  }
+}
+
+tests {
+  test("status 200", function () {
+    expect(res.getStatus()).to.equal(200);
+  });
+
+  test("devolve um novo par de tokens", function () {
+    expect(res.body.accessToken).to.be.a("string");
+    expect(res.body.refreshToken).to.not.equal(bru.getVar("refreshTokenAnterior"));
+  });
+}
+
+docs {
+  Corpo `{}`, sem `refreshToken`: o backend lê o token do cookie `refresh_token`, gravado pelo
+  **Refresh** anterior. Mesmo fluxo do front (`api.post('/auth/refresh', {})`), que não tem
+  acesso ao token (cookie HttpOnly). Sem `Content-Type: application/json` a API responde 415.
+}

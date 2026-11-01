@@ -1,3 +1,40 @@
+# Swagger Pela Infraestrutura
+
+Em dev, acesse `http://localhost:8080/api/swagger-ui.html`. Em producao, use
+`http(s)://<host-publico>/api/swagger-ui.html`. Os proxies encaminham apenas
+`/api` para o backend; `/swagger-ui.html` sem esse prefixo vai ao frontend.
+
+A configuracao e a especificacao ficam em `/api/v3/api-docs/swagger-config` e
+`/api/v3/api-docs`. As chamadas usam a mesma origem da pagina, sem hostname
+interno de container ou endereco fixo de dev/prod.
+
+Ao abrir o Swagger, a interface consulta `/api/auth/me` e, se receber 401,
+envia `POST /api/auth/refresh` usando o cookie da sessao. Antes de executar
+rotas protegidas, repete essa verificacao e compartilha a renovacao entre
+chamadas simultaneas. O navegador aplica os novos cookies automaticamente.
+
+Sem uma sessao valida, execute `POST /api/auth/login` pelo proprio Swagger
+ou entre no frontend no mesmo host. Depois disso, nao e necessario copiar
+tokens. Os tokens permanecem nos cookies HttpOnly, nao em variaveis de
+ambiente ou no localStorage; nenhuma credencial de usuario e embutida na UI.
+
+Depois de atualizar o backend, reconstrua/reimplante sua imagem. No dev:
+
+```powershell
+docker compose -f ../DevOps/dev/docker-compose.yml up -d --build app
+```
+
+Se ocorrer erro de carga, confira no Network do navegador os dois endpoints
+de documentacao acima. HTML em vez de JSON indica roteamento para o frontend;
+404 pode indicar uma imagem antiga ou caminho errado; 5xx exige conferir os
+logs do backend. O teste de regressao pode ser executado com:
+
+```powershell
+./mvnw.cmd -Dtest=SwaggerConfigTest test
+```
+
+---
+
 # Padrão de Commits e Fluxo de Desenvolvimento
 
 Este documento define o padrão de commits e o fluxo de trabalho do projeto.

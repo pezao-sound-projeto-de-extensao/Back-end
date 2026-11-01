@@ -4,6 +4,7 @@ meta {
 }
 
 docs {
-  Exige `GERENCIAR_USUARIOS`. O e-mail é único. Sem `senha` no cadastro, o usuário recebe a
-  senha padrão `Pezao_<id com 4 dígitos>`, devolvida uma única vez em `senhaPadraoTemporaria`.
+  Exige `GERENCIAR_USUARIOS`. O e-mail é único. Sem `senha` no cadastro, o usuário recebe por
+  e-mail um link para criar a própria senha (`conviteEnviado: true`); não existe mais senha padrão.
+  O usuário de teste é criado com senha, para os passos da pasta 05 conseguirem logar.
 }
