@@ -6,5 +6,7 @@ meta {
 docs {
   Login do administrador (`adm@email.com`, criado pelo `init.sql` com todas as 10 permissões).
   `/auth/login`, `/auth/refresh`, `/auth/logout` e `/auth/trocar-senha` são públicos.
-  O access token dura 15 min; o refresh token 7 dias e é **de uso único** (rotação).
+  O access token (e o cookie `access_token`) dura 5 min (`jwt.expiration`); o refresh token 7 dias
+  e é **de uso único** (rotação). `/auth/refresh` e `/auth/logout` leem o token do corpo ou, com
+  corpo `{}`, do cookie HttpOnly `refresh_token` (é o que o front usa).
 }

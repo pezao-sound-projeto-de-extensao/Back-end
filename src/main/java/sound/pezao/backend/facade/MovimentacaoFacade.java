@@ -167,6 +167,7 @@ public class MovimentacaoFacade {
                 .anyMatch(autoridade -> permissao.equals(autoridade.getAuthority()));
 
         if (!autorizado) {
+            log.warn("movimentacao_recusada motivo=sem_permissao tipo={} permissao={}", tipo, permissao);
             throw new AccessDeniedException(
                     "Usuário não tem a permissão " + permissao + " para movimentar o estoque.");
         }

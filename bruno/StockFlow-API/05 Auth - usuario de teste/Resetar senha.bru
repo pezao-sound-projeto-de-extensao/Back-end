@@ -17,5 +17,6 @@ tests {
 }
 
 docs {
-  Exige `GERENCIAR_USUARIOS`. Volta a senha do usuário para a padrão `Pezao_<id>`.
+  Exige `GERENCIAR_USUARIOS`. Invalida a senha do usuário (troca por uma aleatória), revoga os
+  refresh tokens dele e envia por e-mail o link para criar uma nova (válido por 24 h).
 }

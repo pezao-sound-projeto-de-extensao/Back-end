@@ -22,8 +22,9 @@ docs {
   # StockFlow API
 
   Todas as requests herdam `Bearer {{accessToken}}` desta collection, exceto os
-  endpoints públicos (`/health`, `/auth/login`, `/auth/refresh`, `/auth/logout`,
-  `/auth/trocar-senha`), que usam `auth: none`.
+  endpoints públicos (`/health`, `/v3/api-docs`, `/auth/login`, `/auth/refresh`, `/auth/logout`,
+  `/auth/trocar-senha`), que usam `auth: none`. Sem token, uma rota protegida responde 401
+  (não 403); 403 é só falta de permissão.
 
   Execute as pastas na ordem numérica (ou *Run Collection*): cada pasta usa ids
   capturados pelas anteriores. Veja `README.md` na pasta `bruno/`.

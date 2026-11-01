@@ -1,6 +1,9 @@
 package sound.pezao.backend.service;
 
+import io.opentelemetry.api.trace.Span;
 import io.opentelemetry.instrumentation.annotations.WithSpan;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import sound.pezao.backend.entities.Item;
 import sound.pezao.backend.entities.TipoMovimentacao;
@@ -9,6 +12,8 @@ import sound.pezao.backend.repository.ItemRepository;
 
 @Service
 public class EstoqueService {
+
+    private static final Logger log = LoggerFactory.getLogger("eventos");
 
     private final ItemRepository itemRepository;
 
@@ -25,8 +30,17 @@ public class EstoqueService {
 
         int estoqueAntes = saldoAtual(item);
 
+        Span span = Span.current();
+        span.setAttribute("item.id", item.getId());
+        span.setAttribute("movimentacao.tipo", tipo.name());
+        span.setAttribute("movimentacao.quantidade", quantidade);
+        span.setAttribute("estoque.antes", estoqueAntes);
+
         if (tipo == TipoMovimentacao.SAIDA) {
             if (estoqueAntes < quantidade) {
+                log.warn("movimentacao_recusada motivo=estoque_insuficiente tipo={} produto={} solicitado={} disponivel={}",
+                        tipo, item.getId(), quantidade, estoqueAntes);
+                span.setAttribute("movimentacao.recusa", "estoque_insuficiente");
                 throw new EstoqueInsuficienteException(estoqueAntes, quantidade);
             }
             item.setQuantidadeAtual(estoqueAntes - quantidade);
@@ -35,6 +49,7 @@ public class EstoqueService {
         }
 
         itemRepository.save(item);
+        span.setAttribute("estoque.depois", item.getQuantidadeAtual());
         return estoqueAntes;
     }
 
@@ -49,6 +64,8 @@ public class EstoqueService {
 
         if (tipo == TipoMovimentacao.ENTRADA) {
             if (estoqueAtual < quantidade) {
+                log.warn("movimentacao_reversao_recusada motivo=entrada_ja_consumida produto={} quantidade={} disponivel={}",
+                        item.getId(), quantidade, estoqueAtual);
                 throw new EstoqueInsuficienteException(estoqueAtual, quantidade);
             }
             item.setQuantidadeAtual(estoqueAtual - quantidade);
